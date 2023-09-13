@@ -40,7 +40,12 @@ ampl=0.05*tlim;     % Dipoles
 [xplot,yplot]=setxpl(sl(dipoles),ll(dipoles),[0;0;1;1;0],ampl*[0;1;1;0;0]);
 %[xplot,yplot]=setxpl(sl(dipoles),ll(dipoles),[0;0;1;1;0],ampl*[-1;1;1;-1;-1]);
 if (~isempty(xplot) && ~isempty(yplot))
-  p1=patch(xplot,yplot,[0.5 0.5 1],'DisplayName','Dipoles');
+    [bendType, ColCode] = FindSpecialDipoles(dipoles,rok); % dentify anti-bend, transv.grad bends and assign colors
+    ii=[];
+    for ii =1:length(xplot)
+        p1=patch(xplot(:,ii),yplot(:,ii),ColCode{ii},'DisplayName',bendType{ii});
+    end
+  %%p1=patch(xplot,yplot,[0.5 0.5 1],'DisplayName','Dipoles');
   %p1=patch(ax,xplot,yplot,[0.5 0.5 1],'DisplayName','Dipoles');
 else
   p1={};
