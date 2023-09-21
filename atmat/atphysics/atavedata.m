@@ -58,10 +58,10 @@ if any(long)
         K=zeros(size(L)); %long
         K(foc)=atgetfieldvalues(ring(qp),'PolynomB',{2});
         K2=[K -K]; %long
-        sel=false(size(avebeta,1)); %refpts
+        sel=false(size(avebeta,1),1); %refpts
         sel(lg)=foc;
         avebeta(sel,:)=betafoc(beta1(foc,:),alpha0(foc,:),alpha1(foc,:),K2(foc,:),L2(foc,:));
-        avedisp(sel,[1 3])=dispfoc(disp0(foc,[2 4]),disp1(foc,[2 4]),K2(foc,:),L2(foc,:));
+        avedisp(sel,[1 3])=dispfoc(disp0(foc,:),disp1(foc,:),K2(foc,:),L2(foc,:));
     end
     avedisp(lg,[2 4])=(disp1(:,[1 3])-disp0(:,[1 3]))./L2;
 end
@@ -77,7 +77,8 @@ end
     end
 
     function avedisp=dispfoc(dispp0,dispp1,K,L)
-        avedisp=(dispp0-dispp1)./K./L;
+        % 2nd degree polynomial approx.
+        avedisp = (dispp0(:,[1 3]) + dispp1(:,[1 3]))/2 - (dispp0(:,[2 4]) + dispp1(:,[2 4])).*(L)/12;
     end
 
 end
