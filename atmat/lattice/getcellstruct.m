@@ -14,6 +14,10 @@ function values = getcellstruct(CELLARRAY,field,varargin)
 % 	 of strings if specified fields contain strings.
 %
 % See also ATGETFIELDVALUES SETCELLSTRUCT FINDCELLS
+if numel(varargin) > 1
+    values=atgetfieldvalues(CELLARRAY(varargin{1}),field,varargin(2:end));
+else
+    values=atgetfieldvalues(CELLARRAY(varargin{1}),field);
+end
 
-values=atgetfieldvalues(CELLARRAY(varargin{1}),field,varargin(2:end));
 end
