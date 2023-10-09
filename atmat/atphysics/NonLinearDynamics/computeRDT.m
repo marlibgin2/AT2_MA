@@ -172,11 +172,18 @@ end
 
 % Extract higher order fields (sextupole, octupole), which may have changed
 % while linear lattice kept static
-b = getcellstruct(ring,'PolynomB',indDQSO,1,3:4); % <-- 2nd most significant expense next to running the RDTelegantAT mex-function
-b = cat(1,b{:});
-b3L=b(:,1).*elemL;
+B = getcellstruct(ring,'PolynomB',indDQSO); % <-- 2nd most significant expense next to running the RDTelegantAT mex-function
+% b3L = cellfun(@(x) x(3*double(3 <= numel(x))), b) .* elemL;
+% b4L = cellfun(@(x) x(4*double(4 <= numel(x))), b) .* elemL;
+b = zeros(size(B,1),4); for n = 1:size(B,1), b(n,1:numel(B{n})) = B{n}; end
+% b = atgetfieldvalues(ring(indDQSO),'PolynomB',3:4);
+% b = cat(1,b{:});
+% 
+% b3L = cellfun(@(x,n) x(n*(n <= numel(x))), b);
+
+b3L=b(:,3).*elemL;
 b3L(isnan(b3L))=0;
-b4L=b(:,2).*elemL;
+b4L=b(:,4).*elemL;
 b4L(isnan(b4L))=0;
 
 % If nPeriods > 1, expand the sextupole/octupole vectors
