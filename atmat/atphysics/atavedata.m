@@ -47,23 +47,28 @@ if any(long)
     disp1=cat(2,lind(final).Dispersion)'; %long
     
     L2=[L L]; %long
-    avebeta(lg,:)=betadrift(beta0,beta1,alpha0,L2);
-    avemu(lg,:)=0.5*(mu0+mu1);
-    avedisp(lg,[1 3])=(disp1(:,[1 3])+disp0(:,[1 3]))*0.5;
+    avebeta(lg,:)       = betadrift(beta0,beta1,alpha0,L2);
+    avemu(lg,:)         = 0.5*(mu0+mu1);
+    avedisp(lg,[1 3])   = (disp1(:,[1 3])+disp0(:,[1 3]))*0.5;
+    avedisp(lg,[2 4])   = (disp1(:,[2 4])+disp0(:,[2 4]))*0.5;
     
-    foc=atgetcells(ring(long),'PolynomB',@(el,polb) length(polb)>=2 && polb(2)~=0); %long
+    foc  = atgetcells(ring(long),'PolynomB',@(el,polb) length(polb)>=2 && polb(2)~=0); %long
+    bnd  = atgetcells(ring(long),'BendingAngle',@(el,ang) ang ~= 0 );
     if any(foc)
         qp=false(size(long));
         qp(long)=foc;
+        bend = false(size(long));
+        bend(long) = bnd;
         K=zeros(size(L)); %long
         K(foc)=atgetfieldvalues(ring(qp),'PolynomB',{2});
         K2=[K -K]; %long
+        Linvrho = zeros(size(L));
+        Linvrho(bnd)=atgetfieldvalues(ring(bend),'BendingAngle');
         sel=false(size(avebeta,1),1); %refpts
         sel(lg)=foc;
         avebeta(sel,:)=betafoc(beta1(foc,:),alpha0(foc,:),alpha1(foc,:),K2(foc,:),L2(foc,:));
-        avedisp(sel,[1 3])=dispfoc(disp0(foc,:),disp1(foc,:),K2(foc,:),L2(foc,:));
+        avedisp(sel,:)=dispfoc(disp0(foc,:),disp1(foc,:),K2(foc,:),L2(foc,:),Linvrho(foc,:)./L2(foc,:));
     end
-    avedisp(lg,[2 4])=(disp1(:,[1 3])-disp0(:,[1 3]))./L2;
 end
 
     function avebeta=betadrift(beta0,beta1,alpha0,L)
@@ -76,9 +81,31 @@ end
         avebeta=0.5*((gamma1+K.*beta1).*L+alpha1-alpha0)./K./L;
     end
 
-    function avedisp=dispfoc(dispp0,dispp1,K,L)
-        % 2nd degree polynomial approx.
-        avedisp = (dispp0(:,[1 3]) + dispp1(:,[1 3]))/2 - (dispp0(:,[2 4]) + dispp1(:,[2 4])).*(L)/12;
+    function avedisp=dispfoc(dispp0,dispp1,K,L,invrho)
+        % Analytical solution based on quadrupole linear transfer matrix
+        % Approaches drift solution in limit K -> 0
+        % While <D> = (1/2)*( D'(0) - D'(L) )/(K*L) is analytically
+        % identical and correct, it misbehaves for is more sensitive to small errors.
+        avedisp = dispp0;
+
+        k = (invrho.^2 + K);
+%        k = K;
+        avedisp(:,[1 3]) = 0.5*( (dispp0(:,[1 3]) + dispp1(:,[1 3])) .* sin(sqrt(k).*L)./(sqrt(k).*L) + (dispp0(:,[2 4]) - dispp1(:,[2 4]))./sqrt(k) .* (1 - cos(sqrt(k).*L))./(sqrt(k).*L) );
+        avedisp(:,[2 4]) = 0.5*( (dispp0(:,[2 4]) + dispp1(:,[2 4])) .* sin(sqrt(k).*L)./(sqrt(k).*L) - (dispp0(:,[1 3]) - dispp1(:,[1 3]))./sqrt(k) .* (1 - cos(sqrt(k).*L))./(sqrt(k).*L) );
+
+% avedisp(:,[1 3]) = ( (dispp0(:,[1 3])) .* sin(sqrt(k).*L)./(sqrt(k).*L) + (dispp0(:,[2 4]))./sqrt(k) .* (1 - cos(sqrt(k).*L))./(sqrt(k).*L) );
+% avedisp(:,[1 3]) = ( (dispp1(:,[1 3])) .* sin(sqrt(k).*L)./(sqrt(k).*L) - (dispp1(:,[2 4]))./sqrt(k) .* (1 - cos(sqrt(k).*L))./(sqrt(k).*L) );
+
+%         avedisp(:,[1 3]) = (1./L).*( dispp0(:,[1 3])./sqrt(K).*sin(sqrt(K).*L) + dispp0(:,[2 4])./K .* (1 - cos(sqrt(K).*L)));
+%         avedisp(:,[2 4]) = (1./L).*( dispp0(:,[2 4])./sqrt(K).*sin(sqrt(K).*L) - dispp0(:,[1 3])./K .* (1 - cos(sqrt(K).*L)));
+
+%         avedisp(:,[1 3]) = 0.5*(dispp0(:,[2 4]) - dispp1(:,[2 4]))./(k.*L);
+
     end
+
+% Bloody hell, we'll need the combined gradient bend equations too...
+% obviously that messes with the dispersion.
+% More general approach perhaps? 
+
 
 end
