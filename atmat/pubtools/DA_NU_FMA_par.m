@@ -12,7 +12,7 @@
 % INPUT:
 % RING      = an AT2 compliant lattice ring (def: RING)
 % filename  = and FMA output file to save the result of the calculation (def: 'fma')
-% nturn     = the 1/2 number of turns used to compute tunes and diffusion
+% nturn     = the 2x number of turns used to compute tunes and diffusion
 %             via calcnaff (def: 2048=1024+1024)
 % nx,y      = the number of "pixels" in x,y (def: 200/128)
 % x,ymax    = the +/- horizontal space offset and the + vertical offset in
