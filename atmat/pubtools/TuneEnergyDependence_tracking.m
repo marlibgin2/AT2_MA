@@ -1,9 +1,19 @@
 function [nux, nuy, MDnux, MDnuy] = TuneEnergyDependence_tracking(RING,nturn,ndp,dppmin,dppMAX)
 
-% ------------------------------------------
-% calculate tune shift with energy 
-% using tracking and NAFF
-% ---------------------------------------
+% --------------------------------------------------------
+% calculate tune shift with energy using tracking and NAFF
+%
+% INPUT:
+% RING        = an AT2 compliant lattice ring (def: RING)
+% nturn       = the number of turns used to compute tunes and diffusion
+% ndp         = number of energy bins
+% dppmin,MAX  = min/MAX value of energy (should be symmetric)
+% 
+% OUTPUT:
+% nux,y       = the tunes as a function of energy shift
+% MDnux,y     = maximal displacement of the tunes from the nominal (dpp=0)
+%               value
+% --------------------------------------------------------
 
 c = parcluster;
 % next line is optional at MAX IV
