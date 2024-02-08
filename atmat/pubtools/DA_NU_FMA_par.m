@@ -1,17 +1,31 @@
 % -------------------------------
-% calculate DA/NU diffusion rates 
-% using parallel capabilites
+% calculate DA/NU diffusion rates using parallel capabilites
 %
-% from an original file used at 
-% Diamond Light Source
+% from an original file used at Diamond Light Source
 %
 % makes use of at-code calcnaff
 % 
-% adapted to work on clusters
-% (Aurora, local... ) at MAXIV
+% adapted to work on clusters (Aurora, local... ) at MAXIV
 %
 % MA 01012024
-% -------------------------------
+%
+% INPUT:
+% RING      = an AT2 compliant lattice ring (def: RING)
+% filename  = and FMA output file to save the result of the calculation (def: 'fma')
+% nturn     = the 1/2 number of turns used to compute tunes and diffusion
+%             via calcnaff (def: 2048=1024+1024)
+% nx,y      = the number of "pixels" in x,y (def: 200/128)
+% x,ymax    = the +/- horizontal space offset and the + vertical offset in
+%             the DA search in m (def: 12e-3 / 7e-3) 
+% varargin  = used to activate sevral options, namely
+%             'verbosity': print out information for the run 
+%             'new_calc' : perform a new calculation of the diffusion map
+%             'aurora cluster' : uses the maxiv Aurora HPC 
+%             'local cluster'  : uses the local accdev0 cluster (max 12 cores)
+%             'cluster cores'  : define the n. of cluster cores (def: 56 for Aurora/12 for local)
+%             'graphic_plots'  : activate the plotting of final results
+%             'file_output'    : output results 
+% ------------------------------------------------------------------------------------
 
 %function [x0pos, y0pos, nuxpos, nuypos, diffuvec, WA] = DA_NU_FMA_par(ring,filename,nturn,nx,ny,xmax,ymax)
 function [x0pos, y0pos, nuxpos, nuypos, diffuvec, WA] = DA_NU_FMA_par(ring,filename,nturn,nx,ny,xmax,ymax,varargin)
@@ -35,7 +49,7 @@ calc           = 0; % new fresh calculation
 controlgcp     = 0; % use cluster
 filo           = 0; % decide whether to produce an output file 
 CLUname        ='';
-CLUnodes       = 0;
+CLUcores       = 0;
 
 for ik = length(varargin):-1:1
     if strcmpi(varargin{ik},'verbosity')
@@ -55,8 +69,8 @@ for ik = length(varargin):-1:1
         controlgcp     = 1; % 1=use cluster
         CLUname        = 'local'; % use maxiv Aurora cluster
         varargin(ik)   = [];        
-    elseif strcmpi(varargin{ik},'cluster nodes')
-        CLUnodes       = varargin{ik+1}; % use maxiv Aurora cluster
+    elseif strcmpi(varargin{ik},'cluster cores')
+        CLUcores       = varargin{ik+1}; % use maxiv Aurora cluster
         varargin(ik+1)   = []; 
         varargin(ik) = [];         
     elseif strcmpi(varargin{ik},'graphic_plots')
@@ -109,9 +123,9 @@ if calc==1
         %%%%parpool('aurora R2022a',56) %%% TEST with reduced nodes 
         %%%%parpool('local',12)
         if strcmpi(CLUname,'local')
-            CLUnodes=ge(CLUnodes,12)*12+lt(CLUnodes,12)*CLUnodes; % local cluster max nodes is 12! 
+            CLUcores=ge(CLUcores,12)*12+lt(CLUcores,12)*CLUcores; % local cluster max nodes is 12! 
         end
-        parpool(CLUname, CLUnodes)
+        parpool(CLUname, CLUcores)
         pp = gcp; 
     end
     WA = da_fma_fast_mach(ring, nturn, r, [d outfile], display_output);    
