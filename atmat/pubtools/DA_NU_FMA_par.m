@@ -25,6 +25,12 @@
 %             'cluster cores'  : define the n. of cluster cores (def: 56 for Aurora/12 for local)
 %             'graphic_plots'  : activate the plotting of final results
 %             'file_output'    : output results 
+%
+% OUTPUT:
+% x,y0pos: coordinates is space (DA)
+% nux,ypos: coordinates in tune-space (TFP)
+% diffuvec: vector containing the diffusion "grade"
+% WA:       weighted aread giving the total diffusion rate
 % ------------------------------------------------------------------------------------
 
 %function [x0pos, y0pos, nuxpos, nuypos, diffuvec, WA] = DA_NU_FMA_par(ring,filename,nturn,nx,ny,xmax,ymax)
