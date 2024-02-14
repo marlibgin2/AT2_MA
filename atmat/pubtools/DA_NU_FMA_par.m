@@ -1,28 +1,93 @@
 % -------------------------------
-% calculate DA/NU diffusion rates 
-% using parallel capabilites
+% calculate DA/NU diffusion rates using parallel capabilites
 %
-% from an original file used at 
-% Diamond Light Source
+% from an original file used at Diamond Light Source
+%
+% makes use of at-code calcnaff
 % 
+% adapted to work on clusters (Aurora, local... ) at MAXIV
+%
 % MA 01012024
-% -------------------------------
+%
+% INPUT:
+% RING      = an AT2 compliant lattice ring (def: RING)
+% filename  = and FMA output file to save the result of the calculation (def: 'fma')
+% nturn     = the 2x number of turns used to compute tunes and diffusion
+%             via calcnaff (def: 2048=1024+1024)
+% nx,y      = the number of "pixels" in x,y (def: 200/128)
+% x,ymax    = the +/- horizontal space offset and the + vertical offset in
+%             the DA search in m (def: 12e-3 / 7e-3) 
+% varargin  = used to activate sevral options, namely
+%             'verbosity': print out information for the run 
+%             'new_calc' : perform a new calculation of the diffusion map
+%             'aurora cluster' : uses the maxiv Aurora HPC 
+%             'local cluster'  : uses the local accdev0 cluster (max 12 cores)
+%             'cluster cores'  : define the n. of cluster cores (def: 56 for Aurora/12 for local)
+%             'graphic_plots'  : activate the plotting of final results
+%             'file_output'    : output results 
+%
+% OUTPUT:
+% x,y0pos: coordinates is space (DA)
+% nux,ypos: coordinates in tune-space (TFP)
+% diffuvec: vector containing the diffusion "grade"
+% WA:       weighted aread giving the total diffusion rate
+% ------------------------------------------------------------------------------------
 
-function [x0pos, y0pos, nuxpos, nuypos, diffuvec, WA] = DA_NU_FMA_par(ring,filename,nturn,nx,ny,xmax,ymax)
+%function [x0pos, y0pos, nuxpos, nuypos, diffuvec, WA] = DA_NU_FMA_par(ring,filename,nturn,nx,ny,xmax,ymax)
+function [x0pos, y0pos, nuxpos, nuypos, diffuvec, WA] = DA_NU_FMA_par(ring,filename,nturn,nx,ny,xmax,ymax,varargin)
 
 % -------------
 % default input
 % -------------
+if nargin<3
+    nturn    = 2048; %1056; 
+    nx       = 50;
+    ny       = 32;
+    xmax     = 12e-3;
+    ymax     = 7e-3;
+end  
 if nargin<2
     filename = 'fma';
-    nturn    = 1056; 
-    nx       = 40;
-    ny       = 40;
-    xmax     = 15e-3;
-    ymax     = 10e-3;
-end  
+end
+display_output = 0; % verbosity flag  
+graf           = 0;
+calc           = 0; % new fresh calculation
+controlgcp     = 0; % use cluster
+filo           = 0; % decide whether to produce an output file 
+CLUname        ='';
+CLUcores       = 0;
 
-display_output = 1; % verbosity flag... 
+for ik = length(varargin):-1:1
+    if strcmpi(varargin{ik},'verbosity')
+        display_output = 1; % verbosity flag... 
+        varargin(ik)   = [];        
+    elseif strcmpi(varargin{ik},'newcalc')
+        calc           = 1; % 1= new fresh calculation
+        varargin(ik)   = [];        
+%     elseif strcmpi(varargin{ik},'use_cluster')
+%         controlgcp     = 1; % 1=use cluster
+%         varargin(ik)   = [];     
+    elseif strcmpi(varargin{ik},'aurora cluster')
+        controlgcp     = 1; % 1=use cluster
+        CLUname        = 'aurora R2022a'; % use maxiv Aurora cluster
+        varargin(ik)   = [];        
+    elseif strcmpi(varargin{ik},'local cluster')
+        controlgcp     = 1; % 1=use cluster
+        CLUname        = 'local'; % use maxiv Aurora cluster
+        varargin(ik)   = [];        
+    elseif strcmpi(varargin{ik},'cluster cores')
+        CLUcores       = varargin{ik+1}; % use maxiv Aurora cluster
+        varargin(ik+1)   = []; 
+        varargin(ik) = [];         
+    elseif strcmpi(varargin{ik},'graphic_plots')
+        graf           = 1; % 1=use cluster
+        varargin(ik)   = [];        
+    elseif strcmpi(varargin{ik},'file_output')
+        filo           = 1; % 1=use cluster
+        varargin(ik)   = [];        
+    end
+end
+ 
 
 d = '';                     % directory to save data
 outfile = [filename '.out'];% filename
@@ -42,13 +107,14 @@ dy = (vec(1,2) - vec(1,1))/2;        % y-step size
 % --------------------------------------------------
 % calculate DA diffusion rate for every grid element
 % --------------------------------------------------
-controlgcp = 1; % 1=use cluster
-calc = 1; % 1= new fresh calculation
-graf = 1; % 1=final plots / 0=no final plots
-filo = 0; % decide wether to produce an output file 
+% calc       = 1; % 1= new fresh calculation
+% controlgcp = 1; % 1=use cluster
+% graf       = 1; % 1=final plots / 0=no final plots
+% filo       = 0; % decide whether to produce an output file 
 if graf == 1
-    filo = 1;
+    filo = 1; % for graphic plots filo is needed
 end
+
 if calc==1
     if controlgcp==1
         c = parcluster;
@@ -58,31 +124,34 @@ if calc==1
         c.AdditionalProperties.WallTime = '06:00:00';
         % hyperthreading enabled
         c.NumThreads = 6;
-        c.saveProfile
+        c.saveProfile;
         %%%%parpool('aurora R2022a',56) %%% IMPORTANT REFERENCE ---
-        parpool('aurora R2022a',56) %%% TEST with reduced nodes 
+        %%%%parpool('aurora R2022a',56) %%% TEST with reduced nodes 
         %%%%parpool('local',12)
+        if strcmpi(CLUname,'local')
+            CLUcores=ge(CLUcores,12)*12+lt(CLUcores,12)*CLUcores; % local cluster max nodes is 12! 
+        end
+        parpool(CLUname, CLUcores)
         pp = gcp; 
     end
-    WA = da_fma_fast_mach(ring, nturn, r, [d outfile], display_output);
-    
+    WA = da_fma_fast_mach(ring, nturn, r, [d outfile], display_output);    
 end
 if controlgcp==1
     delete(pp)
 end
+
 x0pos=[]; y0pos=[]; nuxpos=[]; nuypos=[]; diffuvec=[]; 
 if graf==1
-    [x0pos, y0pos, nuxpos, nuypos, diffuvec] = plot_fma_machine(nturn, [0 1 0 1], [d outfile], dx, dy,display_output);
-    TuneEnergyDependence(ring); Ae=[]; 
-    %     [covM, h, Ae] = NU_cov(nturn);
-   figure(36); axis([0 0.5 0 0.5]); 
-   %hold on
-%     plot(h.XData, h.YData,'color','r','linewidth',3)
-%     text(0.05, 0.05, ['AE = ' num2str(Ae,5)],'color','r')
+    [x0pos, y0pos, nuxpos, nuypos, diffuvec] = plot_fma_machine(nturn, [0 1 0 1], [d outfile], dx, dy, graf);
+    %TuneEnergyDependence(ring); Ae=[];
+    disp('calculating the tune-energy dependence ...')
+    [qx, qy] = TuneEnergyDependence_tracking(ring,nturn,17,-4e-2,+4e-2);
+    figure(36); hold on; axis([0 0.5 0 0.5]);
+    plot(qx(10:17),qy(10:17),'ro','MarkerFaceColor','r')
+    plot(qx(9),  qy(9),  'ko','MarkerFaceColor','k')
+    plot(qx(1:8),  qy(1:8),  'co','MarkerFaceColor','c')
 end
-% if controlgcp==1
-%     delete(pp)
-% end
+
 
 function WA = da_fma_fast_mach(RING,  nturn, r, outfile, display_output)
 vv = [];
@@ -211,7 +280,7 @@ end
 
 end
 
-function [x0pos, y0pos, nuxpos, nuypos, diffuvec] = plot_fma_machine(nturn, qrange, filestr, dx, dy,display_output)
+function [x0pos, y0pos, nuxpos, nuypos, diffuvec] = plot_fma_machine(nturn, qrange, filestr, dx, dy, graf)
 %
 % this MATLAB script plots the frequency map as computed by tracy-II
 % in the file fmap.out
@@ -257,7 +326,7 @@ for ny=1:ntune
         x0grid(icounter)=x0(icounter);
         y0grid(icounter)=y0(icounter);
         
-        % the rectangule is described in clockwise way from bottom left point
+        % the rectangle is described in clockwise way from bottom left point
         x0pos(:,icounter) = ...
             [x0grid(icounter)-dmx; x0grid(icounter)-dmx; x0grid(icounter)+dpx; x0grid(icounter)+dpx];
         y0pos(:,icounter) = ...
@@ -293,7 +362,7 @@ for ny=1:ntune
     end
 end
 
-if display_output
+if graf
     figure(35); clf
     fill(x0pos*1e3, y0pos*1e3, diffuvec);
     axis([-max(x0(:))*1e3, max(x0(:))*1e3, 0, max(y0(:))*1e3]);

@@ -109,8 +109,8 @@ args=getdparg(args(1:funcarg-1));
             else
                 dppstring='';
             end
-            line1=sprintf('\\nu_x=%8.3f      %s',tunes(1),dppstring);
-            line2=sprintf('\\nu_z=%8.3f      %2i %s, C=%10.3f',tunes(2),...
+            line1=sprintf('\\nu_x=%8.5f      %s',tunes(1),dppstring);
+            line2=sprintf('\\nu_z=%8.5f      %2i %s, C=%10.3f',tunes(2),...
                 curve.periodicity,['period' plural],circumference);
             curve.comment=text(ax,-0.14,1.12,{line1;line2},'Units','normalized',...
                 'VerticalAlignment','top');
