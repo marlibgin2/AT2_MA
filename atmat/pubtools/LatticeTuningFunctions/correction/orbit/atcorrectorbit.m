@@ -70,7 +70,7 @@ end
 
 if nargin<4
     if printouttext
-        disp('get BPM and Correctors indexes'); end;
+        disp('get BPM and Correctors indexes'); end
     indBPM=finc(atgetcells(rerr,'Class','Monitor'));
     indHCor=finc(atgetcells(rerr,'iscorH','H'));
     indVCor=finc(atgetcells(rerr,'iscorV','V'));
@@ -90,23 +90,23 @@ end
 
 if nargin<8
     if printouttext
-        disp(' --- scale set to 1.0'); end;
+        disp(' --- scale set to 1.0'); end
     scalefactor=1.0;
 end
 
 if nargin<9
-    if printouttext, disp(' --- computing orbit Response matrix'); end;
+    if printouttext, disp(' --- computing orbit Response matrix'); end
     ModelRM=[];
 end
 
 if nargin<10
-    if printouttext, disp(' --- reference orbit = 0'); end;
+    if printouttext, disp(' --- reference orbit = 0'); end
     reforbit=zeros(2,length(indBPM));
 end
 
 if scalefactor<0 || scalefactor>1
     if printouttext
-        disp(' --- scale factor out of range. Set to 1.0'); end;
+        disp(' --- scale factor out of range. Set to 1.0'); end
     scalefactor=1.0;
 end
 
@@ -120,7 +120,7 @@ end
 if isempty(ModelRM)
     % get orbit RM
     if printouttext
-        disp('get orbit RM'); end;
+        disp('get orbit RM'); end
     
     ModelRM=getresponsematrices(...
         rerr,...          %1 AT lattice
@@ -156,6 +156,14 @@ oy0=o(3,:);
 
 %rerr0=rerr;
 
+% Determine corrector model type and the correct field to use
+if strcmpi(rerr{indHCor(1)}.PassMethod,'CorrectorPass'), xfname = 'KickAngle'; xfi = 1; xfj = 1; ...
+else, xfname = 'PolynomB'; xfi = 1; xfj = 1; ...
+end
+if strcmpi(rerr{indHCor(1)}.PassMethod,'CorrectorPass'), xfname = 'KickAngle'; yfi = 1; yfj = 1; ...
+else, yfname = 'PolynomB'; yfi = 1; yfj = 1; ...
+end
+
 % iterate correction
 Niter=size(neigSteerer,1);
 for iter=1:Niter
@@ -165,8 +173,8 @@ for iter=1:Niter
     end
     
     % initial corrector strengths
-    corh0=atgetfieldvalues(rerr,indHCor,'PolynomB',{1,1});
-    corv0=atgetfieldvalues(rerr,indVCor,'PolynomA',{1,1});
+    corh0=atgetfieldvalues(rerr,indHCor,xfname,{xfi,xfj});
+    corv0=atgetfieldvalues(rerr,indVCor,yfname,{yfi,yfj});
     
     % get current orbit
     o=findorbit6Err(rerr,indBPM,inCOD);
@@ -219,8 +227,8 @@ for iter=1:Niter
         vs(abs(vs)>steererlimit(2))=steererlimit(2);
     end
     
-    rtest=atsetfieldvalues(rerr,indHCor,'PolynomB',{1,1},hs);
-    rtest=atsetfieldvalues(rtest,indVCor,'PolynomA',{1,1},vs);
+    rtest=atsetfieldvalues(rerr,indHCor,xfname,{xfi,xfj},hs);
+    rtest=atsetfieldvalues(rtest,indVCor,yfname,{yfi,yfj},vs);
     
    
     if correctflags(1)
