@@ -1,5 +1,5 @@
-function [NewRing,penalty,dmin]=atmatch(...
-    Ring,Variables,Constraints,Tolerance,Calls,verbose,varargin)
+function [NewRing,penalty,dmin]=atmatch_mod(...
+    Ring,Variables,Constraints,Tolerance,TolX,Calls,verbose,varargin)
 %function [...
 %    NewRing,...
 %    penalty,...
@@ -130,8 +130,11 @@ twissin = p.Results.twissin;
 dpp = p.Results.dpp;
 usepar = p.Results.UseParallel;
 
-
-options=optimset(func2str(minimizer)); % NOTE: func2str is needed for Octave compatability
+if (not(strcmp(func2str(minimizer),'newtonraphson')))
+    options=optimset(func2str(minimizer)); % NOTE: func2str is needed for Octave compatability
+else
+    options = optimset('TolX', TolX);
+end
 
 IniVals=atGetVariableValue(Ring,Variables);
 splitvar=@(varvec) reshape(mat2cell(varvec,cellfun(@length,IniVals),1),size(Variables));
@@ -160,7 +163,7 @@ options=optimset(options,...
     'MaxIter',Calls,...
     'TypicalX',tipx,...
     'TolFun',Tolerance,...
-    'TolX', Tolerance,...
+    'TolX', TolX,...
     'UseParallel',usepar);
 
 if verbose == 0
@@ -189,6 +192,12 @@ switch func2str(minimizer)
         f = @(d)evalsum(Ring,Variables,Constraints,...
             splitvar(d),evalfunc,posarray,indinposarray,twissin,dpp); % scalar (sum of squares of f)
         args={initval,[],[],[],[],Blow,Bhigh,[]};
+        
+    case 'newtonraphson'
+        
+        f = @(d)evalsum(Ring,Variables,Constraints,...
+            splitvar(d),evalfunc,posarray,indinposarray,twissin,dpp); % scalar (sum of squares of f)
+        args={initval};
 end
 
 cstr1=atEvaluateConstraints(Ring,evalfunc,posarray,indinposarray,twissin,dpp);

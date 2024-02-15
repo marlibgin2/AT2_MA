@@ -1,4 +1,4 @@
-function [xx,zz]=atdynap(ring,nt,dpp,rfrac)
+function [apx,amx, apz]=atdynap_fast(ring,nt,nres)
 %ATDYNAP		Compute the dynamic aperture
 %
 %
@@ -12,21 +12,31 @@ function [xx,zz]=atdynap(ring,nt,dpp,rfrac)
 %			as a fraction of the maximum stable amplitude
 %			(default: 0.02)
 
-np=10;
-rlist=0:0.001:0.1;
-if nargin < 4, rfrac=0.02; end
-if nargin < 3, dpp=0.0; end
+%np=10;
+%rlist=0:0.0001:0.03;
+%if nargin < 4, rfrac=0.02; end
+%if nargin < 3, dpp=0.0; end
 
-if isnumeric(dpp)
-clorb=[findorbit4(ring,dpp);dpp;0];
-else
-   clorb=findorbit6(ring);
-end
+%if isnumeric(dpp)
+%clorb=[findorbit4(ring,dpp);dpp;0];
+%else
+%   clorb=findorbit6(ring);
+%end
+XMAX = 0.030;
+ZMAX = 0.010;
+clorb=[0 0 0 0 0 0];
+%t1=linspace(0,pi,2*np+3);
+rlist = 0:XMAX/nres:XMAX;
+xpmax = ascan(ring,nt,clorb,0,rlist);
+xmmax = ascan(ring,nt,clorb,pi,rlist);
+rlist = 0:ZMAX/nres:ZMAX;
+zmax  = ascan(ring,nt,clorb,0.5*pi,rlist);
 
-t1=linspace(0,pi,2*np+3);
-xpmax=ascan(ring,nt,clorb,0,rlist);
-zmax=ascan(ring,nt,clorb,0.5*pi,rlist);
-xmmax=ascan(ring,nt,clorb,pi,rlist);
+apx = xpmax;
+amx = -xmmax;
+apz = zmax;
+
+return
 % 
 % x1=[xpmax*ones(1,np+2) xmmax*ones(1,np+1)];
 % z1=zmax*ones(1,2*np+3);

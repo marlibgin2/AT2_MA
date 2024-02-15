@@ -1,4 +1,4 @@
-function RDT=computeRDT(ring, index, varargin)
+function [RDT,betax,betay,etax,phix,phiy,sIndex,indDQSO,b2L,b3L,b4L]=computeRDT(ring, index, varargin)
 %COMPUTERDT Computes Hamiltonian resonance driving terms (RDTs)
 %   This function calls RDTElegantAT mex function and returns the
 %   hamiltonian resonance driving terms, using the elegant c++ 
@@ -57,7 +57,7 @@ indDQSO=findcells(ring,'Class','Bend','Quadrupole','Sextupole','Octupole','Multi
 
 [~,AVEBETA,AVEMU,AVEDISP,~,~]=atavedata(ring,0,1:length(ring));
 
-Lin=atlinopt(ring,0,1:(length(ring)+1));
+Lin=atlinopt(ring,0,1:length(ring));
 
 %create input arguments for the mex function
 sIndex=findspos(ring,indDQSO);
@@ -76,9 +76,9 @@ b3L=getcellstruct(ring,'PolynomB',indDQSO,1,3).*getcellstruct(ring,'Length',indD
 b3L(isnan(b3L))=0;
 b4L=getcellstruct(ring,'PolynomB',indDQSO,1,4).*getcellstruct(ring,'Length',indDQSO);
 b4L(isnan(b4L))=0;
-Mux=Lin((length(ring)+1)).mu(1);
+Mux=Lin(length(ring)).mu(1);
 Tunex=Mux/2/pi;
-Muy=Lin((length(ring)+1)).mu(2);
+Muy=Lin(length(ring)).mu(2);
 Tuney=Muy/2/pi;
 nElem=length(indDQSO);
 

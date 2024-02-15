@@ -1,4 +1,4 @@
-function [M44, varargout]  = findm44(LATTICE,varargin)
+function [M44, varargout]  = findm44_fast(LATTICE,NE, props)
 %FINDM44 numerically finds the 4x4 transfer matrix of an accelerator lattice
 % for a particle with relative momentum deviation DP
 %
@@ -68,66 +68,72 @@ function [M44, varargout]  = findm44(LATTICE,varargin)
 %              2*delta
 %
 
-if ~iscell(LATTICE)
-    error('First argument must be a cell array');
-end
-NE = length(LATTICE);
-[fullflag,varargs]=getflag(varargin,'full');
-[XYStep,varargs]=getoption(varargs,'XYStep');
-[orbitin,varargs]=getoption(varargs,'orbit',[]);
-varargs=getdparg(varargs);
-[dp,varargs]=getoption(varargs,'dp',0.0);
-[dpargs,varargs]=getoption(varargs,{'dct','df'});
-[refpts,orbitin,varargs]=getargs(varargs,[],orbitin,'check',@(x) ~(ischar(x) || isstring(x))); %#ok<ASGLU>
+%if ~iscell(LATTICE)
+%    error('First argument must be a cell array');
+%end
 
-if islogical(refpts)
-    refpts(end+1:NE+1)=false;
-elseif isnumeric(refpts)
-    refpts=setelems(false(1,NE+1),refpts);
-else
-    error('REFPTS must be numeric or logical');
-end
+%[fullflag,varargs]=getflag(varargin,'full');
+%[XYStep,varargs]=getoption(varargs,'XYStep');
+%[orbitin,varargs]=getoption(varargs,'orbit',[]);
+%varargs=getdparg(varargs);
+%[dp,varargs]=getoption(varargs,'dp',0.0);
+%[dpargs,varargs]=getoption(varargs,{'dct','df'});
+%[refpts,orbitin,varargs]=getargs(varargs,[],orbitin,'check',@(x) ~(ischar(x) || isstring(x))); %#ok<ASGLU>
 
-if ~isempty(orbitin)
-    if length(orbitin) >= 5
-        dp=orbitin(5);
-    end
-    orbitin = [orbitin(1:4);dp;0];
-else
-    [~,orbitin]=findorbit4(LATTICE,'dp',dp,dpargs{:});
-end
+%if islogical(refpts)
+%    refpts(end+1:NE+1)=false;
+%elseif isnumeric(refpts)
+%    refpts=setelems(false(1,NE+1),refpts);
+%else
+%    error('REFPTS must be numeric or logical');
+%end
 
-refs=setelems(refpts,NE+1); % Add end-of-lattice
-reqs=refpts(refs);
+%if ~isempty(orbitin)
+%    if length(orbitin) >= 5
+%        dp=orbitin(5);
+%    end
+%    orbitin = [orbitin(1:4);dp;0];
+%else
+%    [~,orbitin]=findorbit4(LATTICE,'dp',dp,dpargs{:});
+%end
+
+%refs=setelems(refpts,NE+1); % Add end-of-lattice
+%reqs=refpts(refs);
 
 % Build a diagonal matrix of initial conditions
 % scaling=2*XYStep*[1 0.1 1 0.1];
+XYStep = 3E-8;
 scaling=XYStep*[1 1 1 1];
 D4 = [0.5*diag(scaling);zeros(2,4)];
 % Add to the orbit_in. First 8 columns for derivative
 % 9-th column is for closed orbit
-RIN = orbitin + [D4 -D4 zeros(6,1)];
-ROUT = linepass(LATTICE,RIN,refs);
+%orbitin = [0;0;0;0;0;0];
+%RIN = orbitin + [D4 -D4 zeros(6,1)];
+RIN = [D4 -D4 zeros(6,1)];
+%atpass(LATTICE,RIN,MODE,NTURNS,REFPTS,PREFUNC,POSTFUNC,NHIST,NUMTHREADS,RINGPROPS)
+ROUT=atpass(LATTICE,RIN,1,1,NE+1,cell(0),cell(0),1,1,props);
+%ROUT = linepass(LATTICE,RIN);
+%ROUT=RIN;
 TMAT3 = reshape(ROUT(1:4,:),4,9,[]);
 M44 = (TMAT3(:,1:4,end)-TMAT3(:,5:8,end))./scaling;
 
-if nargout >= 2 % Calculate matrices at all REFPTS.
-    MSTACK = (TMAT3(:,1:4,reqs)-TMAT3(:,5:8,reqs))./scaling;
+%if nargout >= 2 % Calculate matrices at all REFPTS.
+%    MSTACK = (TMAT3(:,1:4,reqs)-TMAT3(:,5:8,reqs))./scaling;
     
-    if fullflag
-        S2 = [0 1;-1 0];
-        S4 = [S2, zeros(2);zeros(2),S2]; % symplectic identity matrix
-        v=cellfun(@rotate,num2cell(MSTACK,[1 2]),'UniformOutput',false);
-        varargout{1}=cat(3,v{:});
-    else
-        varargout{1}=MSTACK;
-    end
+%    if fullflag
+%        S2 = [0 1;-1 0];
+%        S4 = [S2, zeros(2);zeros(2),S2]; % symplectic identity matrix
+%        v=cellfun(@rotate,num2cell(MSTACK,[1 2]),'UniformOutput',false);
+%        varargout{1}=cat(3,v{:});
+%    else
+%        varargout{1}=MSTACK;
+%    end
     % return the closed orbit if requested
-    if nargout == 3
-        varargout{2}=squeeze(TMAT3(:,9,reqs));
-    end
+%    if nargout == 3
+%        varargout{2}=squeeze(TMAT3(:,9,reqs));
+%    end
     
-end
+%end
 
     function mask=setelems(mask,idx)
         mask(idx)=true;

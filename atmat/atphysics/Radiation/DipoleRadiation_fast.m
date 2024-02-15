@@ -1,4 +1,4 @@
-function [I1,I2,I3,I4,I5,I6,Iv] = DipoleRadiation(ring,lindata)
+function [I1,I2,I3,I4,I5,I6,Iv] = DipoleRadiation_fast(ring,lindata,isdipole)
 %DIPOLERADIATION	Compute the radiation integrals in dipoles
 
 % Analytical integration from:
@@ -8,11 +8,13 @@ function [I1,I2,I3,I4,I5,I6,Iv] = DipoleRadiation(ring,lindata)
 % SLAC-PUB-1193, March 1973
 
 
-angle=atgetfieldvalues(ring,'BendingAngle');
-isdipole=isfinite(angle) & (angle~=0);
+%angle=atgetfieldvalues(ring,'BendingAngle');
+%isdipole=isfinite(angle) & (angle~=0);
 vini=lindata([isdipole;false])';
 vend=lindata([false;isdipole])';
+
 [di1,di2,di3,di4,di5,di6,div]=cellfun(@diprad,ring(isdipole),num2cell(vini),num2cell(vend));
+
 I1=sum(di1);
 I2=sum(di2);
 I3=sum(di3);
@@ -96,7 +98,7 @@ Iv=sum(div);
             K = elem.PolynomB(2);
             if isfield(elem,'K') && elem.K ~= K
                 warning('AT:InconsistentK',...
-                'Values in K and PolynomB(2) are different. Using PolynomB(2)');
+                strcat('Values in K and PolynomB(2) are different. Using PolynomB(2)',elem.FamName));
             end
         elseif isfield(elem,'K')
             K = elem.K;

@@ -30,6 +30,6 @@ while (change > dps) && (itercount < max_iterations)
 end
 
 if itercount == max_iterations
-    warning('Maximum number of iterations reached. Possible non-convergence')
+%    warning('Maximum number of iterations reached. Possible non-convergence'); 
 end
 end
