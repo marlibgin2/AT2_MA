@@ -141,20 +141,24 @@ MAGe.eQ = eQ; MAGe.eR = eR; MAGe.eS = eS; MAGe.eO = eO; MAGe.eD = eD;
 % errors.Sextupole =
 % errors.Octupole =
 % errors.Bend =
-
+% errors.
 
 % -------------------------------
 % girder random error table (RMS)
 % -------------------------------
+% <MSj> Given the girder shape, i.e. it's longer than it's wide, the
+% expectation is that roll will be harder to correctly determine. I
+% therefore swapped the yaw/pitch and roll values.
+%
 %        sway(um) heave(um) yaw(urad) pitch(urad) roll(urad)
 grdZero = 1;
-eGr{1}  = [100      100       25        25          10] * 1e-6  *grdZero;
-eGr{2}  = [100      100       25        25          10] * 1e-6  *grdZero;
-eGr{3}  = [100      100       25        25          10] * 1e-6  *grdZero;
-eGr{4}  = [100      100       25        25          10] * 1e-6  *grdZero;
-eGr{5}  = [100      100       25        25          10] * 1e-6  *grdZero;
-eGr{6}  = [100      100       25        25          10] * 1e-6  *grdZero;
-eGr{7}  = [100      100       25        25          10] * 1e-6  *grdZero;
+eGr{1}  = [100      100       10        10          25] * 1e-6  *grdZero;
+eGr{2}  = [100      100       10        10          25] * 1e-6  *grdZero;
+eGr{3}  = [100      100       10        10          25] * 1e-6  *grdZero;
+eGr{4}  = [100      100       10        10          25] * 1e-6  *grdZero;
+eGr{5}  = [100      100       10        10          25] * 1e-6  *grdZero;
+eGr{6}  = [100      100       10        10          25] * 1e-6  *grdZero;
+eGr{7}  = [100      100       10        10          25] * 1e-6  *grdZero;
 
 % --------------------------------------
 % girder test error table - fixed values
