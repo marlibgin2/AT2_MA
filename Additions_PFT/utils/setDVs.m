@@ -7,6 +7,7 @@ function NewLAT = setDVs(nLAT,LAT,LatticeOptData,DVs)
 %          3 if DVs are to be set to a LAT with same structure as UC in LatticeOptData
 %          4 if DVs are to be taken from LAT with same structure as IMC1 in LatticeOptData
 %          5 if DVs are to be taken from LAT with same structure as RING in LatticeOptData
+%          6 if DVs are to be taken from LAT with same structure as RINGGRD in LatticeOptData
 %
 % Note : the calling routine must check that the choice of nLAT and LAT are
 % compatible with each other.
@@ -45,6 +46,10 @@ if (isfield(LatticeOptData,'RING'))
     RING = LatticeOptData.RING;
 end
 
+if (isfield(LatticeOptData,'RINGGRD'))
+    RINGGRD = LatticeOptData.RINGGRD;
+end
+
 switch nLAT
     case 1
         Ifams  = LatticeOptData.IfamsH;
@@ -79,6 +84,14 @@ switch nLAT
     case 5
         Ifams  = LatticeOptData.IfamsRING;
         if (length(LAT)~=length(RING))
+            fprintf('Warning: Incompatible input to setDVs for nLAt = %2d \n',nLAT);
+            NewLAT = LAT;    
+            return
+        end
+
+    case 6
+        Ifams  = LatticeOptData.IfamsAllRINGGRD;
+        if (length(LAT)~=length(RINGGRD))
             fprintf('Warning: Incompatible input to setDVs for nLAt = %2d \n',nLAT);
             NewLAT = LAT;    
             return

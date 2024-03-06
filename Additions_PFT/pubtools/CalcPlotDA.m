@@ -7,10 +7,11 @@ function DA=CalcPlotDA(varargin)
 %
 %
 %% Input argument parsing
-[RING,DAoptions]=getargs(varargin,[],[]);
-plotf          = any(strcmpi(varargin,'plot'));
-dp             = getoption(varargin,'dp',DAoptions.dp);
-z0             = getoption(varargin,'z0',DAoptions.z0);
+[RING,DAoptions] = getargs(varargin,[],[]);
+plotf            = any(strcmpi(varargin,'plot'));
+verbosef         = any(strcmpi(varargin,'verbose'));
+dp               = getoption(varargin,'dp',DAoptions.dp);
+z0               = getoption(varargin,'z0',DAoptions.z0);
 
 DAoptions.dp=dp;
 DAoptions.z0=z0;
@@ -55,7 +56,7 @@ if (strcmp(DAmode,'grid'))
     npday      = DAoptions.npday;   % number of grid points in y direction is  npday+1
     npDA       = DAoptions.npDA;    % total numbr of grid points
     dx = XmaxDA/npdax; % grid stepsize in x [m]
-    dy = YmaxDA/npday;   % grid stepsize in y [m]
+    dy = YmaxDA/npday; % grid stepsize in y [m]
     dxdy = dx*dy;
     X0da = zeros(npDA,1);  % horizontal coordinates of grid points [m]
     Y0da = zeros(npDA,1);  % vertical coordinates of grid points [m]
@@ -75,15 +76,20 @@ PC=load('PC.mat');      %to prevent matlab from complaining about variable name 
 PhysConst = PC.PC;      %Load physical constants
 
 %% Calculates and plots DA
-angle=atgetfieldvalues(RING,'BendingAngle');
-isdipole=isfinite(angle) & (angle~=0);
-
+if (verbosef)
+    tic;
+    fprintf('*** \n');
+    fprintf('%s Starting DA calculation \n', datetime);
+end
 try
-   rpara = atsummary_fast(RING,isdipole);
+   rpara = atsummary(RING);
    etax = rpara.etax;
    if (isnan(z0))
-       ats=atsummary(RING);
-       z0 = PhysConst.c*(ats.syncphase-pi)/(2*pi*ats.revFreq*ats.harmon); %if z0 not givem choose the synchronous phase
+       if (check_6d(RING))
+        z0 = PhysConst.c*(rpara.syncphase-pi)/(2*pi*rpara.revFreq*rpara.harmon); %if z0 not given choose the synchronous phase
+       else
+        z0=0.0;
+       end
        DAoptions.z0=z0;
    end
    [DA,DAV] = calcDA_fast(RING,DAoptions,etax,rpara.beta0(1),rpara.beta0(2));
@@ -118,4 +124,8 @@ catch ME
      fprintf('Error calculating Dynamic Aperture \n');
      fprintf('Error message was:%s \n',ME.message);
      DA=NaN;
+end
+if(verbosef)
+    fprintf('DA calculation complete \n');
+    toc;
 end

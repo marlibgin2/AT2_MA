@@ -9,6 +9,7 @@ function DVs = getDVs(nLAT, LAT, LatticeOptData)
 %          3 if DVs are to be taken from LAT with same structure as UC in LatticeOptData
 %          4 if DVs are to be taken from LAT with same structure as IMC1 in LatticeOptData
 %          5 if DVs are to be taken from LAT with same structure as RING in LatticeOptData
+%          6 if DVs are to be taken from LAT with same structure as RINGGRD in LatticeOptData
 %
 % Note : the calling routine must check that the choice of nLAT and LAT are
 % compatible with each other.
@@ -39,11 +40,17 @@ end
 UC          = LatticeOptData.UC;
 ACHRO       = LatticeOptData.ACHRO;
 HACHRO      = LatticeOptData.HACHRO;
+
 if (isfield(LatticeOptData,'IMC1'))
     IMC1  = LatticeOptData.IMC1;
 end
+
 if (isfield(LatticeOptData,'RING'))
     RING = LatticeOptData.RING;
+end
+
+if (isfield(LatticeOptData,'RINGGRD'))
+    RINGGRD = LatticeOptData.RINGGRD;
 end
 
 DVs = NaN(1, nvars);
@@ -80,8 +87,15 @@ switch nLAT
     case 5
         Ifams  = LatticeOptData.IfamsRING;
         if (length(LAT)~=length(RING))
-            fprintf('Warning: Incompatible input to setDVs for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getDVs for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nvars);   
+            return
+        end
+    case 6
+        Ifams  = LatticeOptData.IfamsAllRINGGRD;
+        if (length(LAT)~=length(RINGGRD))
+            fprintf('Warning: Incompatible input to getDVs for nLAt = %2d \n',nLAT);
+            DVs=NaN(1,nallfams);   
             return
         end
 end

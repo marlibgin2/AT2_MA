@@ -34,7 +34,7 @@
 % ------------------------------------------------------------------------------------
 
 %function [x0pos, y0pos, nuxpos, nuypos, diffuvec, WA] = DA_NU_FMA_par(ring,filename,nturn,nx,ny,xmax,ymax)
-function [x0pos, y0pos, nuxpos, nuypos, diffuvec, DR] = DA_NU_FMA_par(ring,filename,nturn,nx,ny,xmax,ymax,varargin)
+function [x0pos, y0pos, nuxpos, nuypos, diffuvec, diffu, DR] = DA_NU_FMA_par(ring,filename,nturn,nx,ny,xmax,ymax,varargin)
 
 % -------------
 % default input
@@ -98,6 +98,7 @@ outfile = [filename '.out'];% filename
 r = zeros(6,nx*ny);
 x = repmat(linspace(-xmax,xmax,nx),1,ny);
 vec = repmat(linspace(1e-6,ymax,ny),nx,1);
+%vec = repmat(linspace(0.0,ymax,ny),nx,1);
 y = vec(:).';
 r(1,:) = x;
 r(3,:) = y;
@@ -142,7 +143,7 @@ end
 
 x0pos=[]; y0pos=[]; nuxpos=[]; nuypos=[]; diffuvec=[]; 
 if graf==1
-    [x0pos, y0pos, nuxpos, nuypos, diffuvec] = plot_fma_machine(nturn, [0 1 0 1], [d outfile], dx, dy, graf);
+    [x0pos, y0pos, nuxpos, nuypos, diffuvec, diffu] = plot_fma_machine(nturn, [0 1 0 1], [d outfile], dx, dy, graf);
     %TuneEnergyDependence(ring); Ae=[];
     disp('calculating the tune-energy dependence ...')
     [qx, qy] = TuneEnergyDependence_tracking(ring,nturn,17,-4e-2,+4e-2);
@@ -162,11 +163,11 @@ jj = 0; syms jj;
     
 nfreq = 1; % looking for 6 frequencies beside the tune: put 1 for plain FMA
 % Initialize ringpass
-ringpass(RING, [1e-4 0 0 0 0 0]');
+%ringpass(RING, [1e-4 0 0 0 0 0]');
 
 % establish twiss/global parameters
-dp = 1e-8;
-[Twiss, tune, chrom] = twissring(RING, dp, 1:(length(RING)+1), 'chrom');
+%dp = 1e-8;
+%[Twiss, tune, chrom] = twissring(RING, dp, 1:(length(RING)+1), 'chrom');
 nturn2 = nturn/2;     % track the 1st half of turns ... 
 
 if filo == 1
@@ -294,7 +295,7 @@ end
 
 end
 
-function [x0pos, y0pos, nuxpos, nuypos, diffuvec] = plot_fma_machine(nturn, qrange, filestr, dx, dy, graf)
+function [x0pos, y0pos, nuxpos, nuypos, diffuvec, diffu] = plot_fma_machine(nturn, qrange, filestr, dx, dy, graf)
 %
 % this MATLAB script plots the frequency map as computed by tracy-II
 % in the file fmap.out
@@ -357,12 +358,17 @@ for ny=1:ntune
         delta_tune= dfx(icounter)^2+dfy(icounter)^2;
         if (delta_tune > 0)
             diffu(icounter) = sqrt(delta_tune);
+            %diffu(icounter) = log10(diffu(icounter));
             diffu(icounter) = log10(diffu(icounter)/(nturn/2));
-            if (diffu(icounter) < (-10))
-                diffu(icounter) = -10;
-            end
+            %diffu(icounter) = sqrt(delta_tune/(nturn/2));
+            %diffu(icounter) = log10(diffu(icounter));
+            %diffu(icounter) = sqrt(delta_tune);
+            %diffu(icounter) = log10(diffu(icounter));
+            %if (diffu(icounter) < (-10))
+            %    diffu(icounter) = -10;
+            %end
         else
-            diffu(icounter) = -10;
+            diffu(icounter) = -20;
         end
         diffuvec(1:4,icounter) = diffu(icounter);
         diffuvec(1:4,icounter) = diffu(icounter);
@@ -371,8 +377,9 @@ for ny=1:ntune
         y0pos(:,icounter)  = [100; 100; 100; 100];
         nuxpos(:,icounter) = [0; 0; 0; 0];
         nuypos(:,icounter) = [0; 0; 0; 0];
-        diffuvec(:,icounter) = [-10; -10; -10; -10];
-        diffuvec(:,icounter) = [-10; -10; -10; -10];
+%        diffuvec(:,icounter) = [-30; -30; -30; -30];
+%        diffuvec(:,icounter) = [-10; -10; -10; -10];
+         diffuvec(:,icounter) = [nan; nan; nan; nan];
     end
 end
 
@@ -410,4 +417,6 @@ if graf
     ylabel('\nu_y');
     
 end
+x0pos=x0;
+y0pos=y0;
 end

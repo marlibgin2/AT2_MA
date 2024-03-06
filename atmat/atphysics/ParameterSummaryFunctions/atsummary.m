@@ -30,6 +30,7 @@ function varargout = atsummary(varargin)
 %
 %  Written by Eugene Tan
 %  Revised by Laurent S. Nadolski
+%  2024/02/16 PFT : Added values to output structure etax, betax, betay
 
 global THERING %#ok<GVMIS>
 
@@ -136,6 +137,10 @@ global THERING %#ok<GVMIS>
         etay = TD(1).Dispersion(3);
         etaprimex = TD(1).Dispersion(2);
         etaprimey = TD(1).Dispersion(4);
+
+        smm.etax = etax;
+        smm.etay = etay;
+        smm.beta0 = [bx by];
 
         if DisplayFlag
             SeparatorString = '   ******************************************************************\n';

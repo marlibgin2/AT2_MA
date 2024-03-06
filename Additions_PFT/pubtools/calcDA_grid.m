@@ -22,7 +22,7 @@ function DA = calcDA_grid(RING, X0, Y0, nturns, dp, z0, etax, xmax, xmin, ymax)
 
 np   = size(X0,1);
 DA   = zeros(np,1);
-%Evaluate the Chromatic orbit
+% Evaluate the Chromatic orbit
 % twiss=  gettwiss(THERING, 0.0);
 
 % x0=twiss.etax(1)*dp;

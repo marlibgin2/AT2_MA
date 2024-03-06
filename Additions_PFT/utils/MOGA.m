@@ -47,7 +47,7 @@ dx             = getoption(varargin,'dx',[]);
 PopSize        = getoption(varargin,'PopSize',1000);
 FuncTol        = getoption(varargin,'FuncTol', 1E-9);
 MaxGens        = getoption(varargin,'MaxGens', 100);
-X0_Lin         = getoption(varargin, 'X0_Lin', []);
+X0_Lin         = getoption(varargin,'X0_Lin', []);
 lb             = getoption(varargin,'lb',[]);
 ub             = getoption(varargin,'ub',[]);
 
@@ -65,12 +65,13 @@ optMode   = LatticeOptData.optMode;
 switch optfnct
     case 'LattOpt_EmitChro'
         fitvars     = {'Emit[pmrad]';'Sqrt(Chrox**2+Chroy**2)'};
-    case 'LattOpt_EmitDynAp'
+    case {'LattOpt_EmitDynAp';'RINGOpt_EmitDynAp'}
         fitvars     = {'Emit[pmrad]';'-AD[mm**2]'};  
     case 'LattOpt_EmitRDT'
         fitvars     = {'Emit[pmrad]';'RDT'};
     case 'LattOpt_EmitDiffRate'
         fitvars     = {'Emit[pmrad]';'DiffusionRate'};
+
     otherwise    
         fprintf('Invalid optimization function %s . Aborting .\n', optfnct);
         MOGAResults=[];
@@ -119,10 +120,10 @@ if (size(X0,2)==nvars)
     ub = X0+abs(X0)*dx/100;
 end
 
-fprintf('lower bounds reset to: ');
+fprintf('lower bounds set to: ');
 fprintf('%5.3f ', lb(1:nvars));
 fprintf('\r\n');
-fprintf('upper bounds reset to: ');
+fprintf('upper bounds set to: ');
 fprintf('%5.3f ', ub(1:nvars));
 fprintf('\r\n');
 
@@ -132,7 +133,7 @@ options = optimoptions('gamultiobj');
 % Modify options setting
 
 % creation options
-Range = cat(1,lb,ub);
+%Range = cat(1,lb,ub);
 %options = optimoptions(options,'CreationFcn', @gacreationuniform);
 %options = optimoptions(options,'InitialPopulationRange', Range);
 options = optimoptions(options,'CreationFcn', @gacreationnonlinearfeasible);
@@ -209,10 +210,11 @@ if (strcmp(optMode,'NonLinear'))
     fprintf('Linear Optics Vector size = %2d does not match lin fams vector size = %d , aborting... \n', size(DVLins,2), nlinfams)
     return
   else
-    LatticeOptData.HACHRO = setLins(1,LatticeOptData.HACHRO,LatticeOptData,DVLins);
-    LatticeOptData.ACHRO  = setLins(2,LatticeOptData.ACHRO,LatticeOptData,DVLins);
-    LatticeOptData.UC     = setLins(3,LatticeOptData.UC,LatticeOptData,DVLins);
-    LatticeOptData.RING   = setLins(5,LatticeOptData.RING,LatticeOptData,DVLins);
+    LatticeOptData.HACHRO  = setLins(1,LatticeOptData.HACHRO,LatticeOptData,DVLins);
+    LatticeOptData.ACHRO   = setLins(2,LatticeOptData.ACHRO,LatticeOptData,DVLins);
+    LatticeOptData.UC      = setLins(3,LatticeOptData.UC,LatticeOptData,DVLins);
+    LatticeOptData.RING    = setLins(5,LatticeOptData.RING,LatticeOptData,DVLins);
+    LatticeOptData.RINGGRD = setLins(6,LatticeOptData.RINGGRD,LatticeOptData,DVLins);
   end
 end
 

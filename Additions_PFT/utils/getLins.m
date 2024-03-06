@@ -9,6 +9,7 @@ function DVs = getLins(nLAT, LAT, LatticeOptData)
 %          3 if DVs are to be taken from LAT with same structure as UC in LatticeOptData
 %          4 if DVs are to be taken from LAT with same structure as IMC1 in LatticeOptData
 %          5 if DVs are to be taken from LAT with same structure as RING in LatticeOptData
+%          6 if DVS are to be taken from LAT with same structure as RINGGRD in LatticeOptData
 %
 % Note : the calling routine must check that the choice of nLAT and LAT are
 % compatible with each other.
@@ -61,42 +62,53 @@ if (isfield(LatticeOptData,'IMC1'))
     IMC1  = LatticeOptData.IMC1;
 end
 
+if (isfield(LatticeOptData,'RINGGRD'))
+    RINGGRD = LatticeOptData.RINGGRD;
+end
+
 DVs = NaN(1, nvars);
 
 switch nLAT
     case 1
         Ifams  = LatticeOptData.IfamsHlin;
         if (length(LAT)~=length(HACHRO))
-            fprintf('Warning: Incompatible input to getDVs for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getLins for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nvars);
             return
         end
     case 2
         Ifams  = LatticeOptData.IfamsFlin;
         if (length(LAT)~=length(ACHRO))
-            fprintf('Warning: Incompatible input to getDVs for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getLins for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nvars);
             return
         end
     case 3
         Ifams  = LatticeOptData.IfamsUClin;
         if (length(LAT)~=length(UC))
-            fprintf('Warning: Incompatible input to getDVs for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getLins for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nvars);
             return
         end
     case 4
         Ifams  = LatticeOptData.IfamsIMC1lin;
         if (length(LAT)~=length(IMC1))
-            fprintf('Warning: Incompatible input to getDVs for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getLins for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nvars);
             return
         end
      case 5
         Ifams  = LatticeOptData.IfamsRINGlin;
         if (length(LAT)~=length(RING))
-            fprintf('Warning: Incompatible input to getDVs for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getLins for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nvars);
+            return
+        end
+    case 6
+        Ifams  = LatticeOptData.IfamsAllRINGGRD;
+        if (length(LAT)~=length(RINGGRD))
+            fprintf('Warning: Incompatible input to getLins for nLAt = %2d \n',nLAT);
+            DVs=NaN(1,nallfams);   
             return
         end
          

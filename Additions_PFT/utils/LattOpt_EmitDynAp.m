@@ -4,17 +4,20 @@ function f = LattOpt_EmitDynAp(x, LatticeOptData)
 %        LatticeOptData: structure with optimization data, including the
 %                        list of decision and objective variables
 %
+%        LatticeOptData.ACHRO is the input lattice: this is one achromat.
+%
 %% output: row vector of fitness functions to be minimized.
 % f(1) = Emittance
 % f(2) = DA
 %
-% The dynamic aperture area in real space (possibly scaled to chosen 
+%
+% The dynamic aperture area of in real space (possibly scaled to chosen 
 % beta functions) and emittance are objective functions. 
 % Chromaticity is corrected to chosen target values with two
 % chose sextupole sextupole families. These are chosen when running
 % the scripts max4_UpgradeStudies/m4U and are recorded in LattOptData.
 %
-%% Comments relevant for optimization configured with max4_UpgradeStudies.m
+%% Comments relevant for optimization configured with max4_UpgradeStudies.m (Legacy)
 % For revBmode = "All", this function may be used in two optmization modes 
 %     SEXT : only the three sextupole family strengths above are
 %            variables: DVs DV1 to DV3; (this is actually more appropriate
@@ -32,7 +35,7 @@ function f = LattOpt_EmitDynAp(x, LatticeOptData)
 %
 %% Comments relevant for optmization configured with m4U.m
 %     This can used for MOGA runs with optimization modes 'Linear' or 'Full'.
-%     Optimizaiton mode "Non-linear" akes mre send for a SOGA 
+%     Optimization mode "Non-linear" intended for SOGA 
 %
 %% Parameters for dynamic aperture calculation
 %
@@ -64,7 +67,6 @@ end
 
 
 chrom_fams = LatticeOptData.chrom_fams; % list of sextupole families to be used for chromaticity correction
-
 
 ACHRO       = LatticeOptData.ACHRO;
 isdipole    = LatticeOptData.isdipole;

@@ -18,7 +18,11 @@ nangs      = DAoptions.nang;    % number of angular steps
 dang       = pi/(nangs-1);                     % angular step size [rad}
 nturns     = DAoptions.nturns;  % number of turns
 dp         = DAoptions.dp;      % initial dp/p (6d tracking) or fixed dp/p (4d tracking)
-z0         = DAoptions.z0;      % initial longitudinal coordinate (6d tracking)
+if (check_6d(LAT))
+    z0     = DAoptions.z0;      % initial longitudinal coordinate (6d tracking)
+else
+    z0     = 0.0;
+end
 res        = DAoptions.res;     % resolution [m]
 DAalpha    = DAoptions.alpha;   % DA radius enlargement factor
 

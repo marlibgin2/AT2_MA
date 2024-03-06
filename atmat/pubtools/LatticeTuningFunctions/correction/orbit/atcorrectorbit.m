@@ -61,53 +61,64 @@ indrfc=find(atgetcells(rerr,'Frequency'));
 f0=rerr{indrfc(1)}.Frequency;
 
 % default arguments
-if nargin<12
+if nargin<12 || isempty(printouttext)
     printouttext=true;
 end
-if nargin<11
+if nargin<11 || isempty(steererlimit)
     steererlimit=[];
 end
 
-if nargin<4
+if nargin<2 || isempty(indBPM)
     if printouttext
-        disp('get BPM and Correctors indexes'); end;
-    indBPM=finc(atgetcells(rerr,'Class','Monitor'));
-    indHCor=finc(atgetcells(rerr,'iscorH','H'));
-    indVCor=finc(atgetcells(rerr,'iscorV','V'));
+        disp('No BPM indices, guessing based on lattice'); end
+    indBPM=find(atgetcells(rerr,'Class','Monitor'));
 end
 
-if nargin<5
+if nargin<3 || isempty(indHCor)
+    if printouttext
+        disp('No hor. corrector indices, guessing based on lattice'); end
+    indHCor=find(atgetcells(rerr,'iscorH','H'));
+end
+
+if nargin<4 || isempty(indVCor)
+    if printouttext
+        disp('No ver. corrector indices, guessing based on lattice'); end
+    indVCor=find(atgetcells(rerr,'iscorV','V'));
+end
+
+
+if nargin<5 || isempty(inCOD)
     inCOD=[0 0 0 0 0 0]';
 end
 
-if nargin<6
-    neigSteerer=[length(indHCor) length(indVCor)]/2;
+if nargin<6 || isempty(neigSteerer)
+    neigSteerer=ones(10,1)*[length(indHCor)-20 length(indVCor)-20];
 end
 
-if nargin<7
+if nargin<7 || isempty(correctflags)
     correctflags=[true true];
 end
 
-if nargin<8
+if nargin<8 || isempty(scalefactor)
     if printouttext
-        disp(' --- scale set to 1.0'); end;
-    scalefactor=1.0;
+        disp(' --- scale set to 1.0'); end
+    scalefactor=0.2;
 end
 
-if nargin<9
-    if printouttext, disp(' --- computing orbit Response matrix'); end;
+if nargin<9 || isempty(ModelRM)
+    if printouttext, disp(' --- computing orbit Response matrix'); end
     ModelRM=[];
 end
 
-if nargin<10
-    if printouttext, disp(' --- reference orbit = 0'); end;
+if nargin<10 || isempty(reforbit)
+    if printouttext, disp(' --- reference orbit = 0'); end
     reforbit=zeros(2,length(indBPM));
 end
 
 if scalefactor<0 || scalefactor>1
     if printouttext
-        disp(' --- scale factor out of range. Set to 1.0'); end;
-    scalefactor=1.0;
+        disp(' --- scale factor out of range. Set to 1.0'); end
+    scalefactor=0.2;
 end
 
 if correctflags(1) % dpp correction
@@ -120,20 +131,20 @@ end
 if isempty(ModelRM)
     % get orbit RM
     if printouttext
-        disp('get orbit RM'); end;
+        disp('get orbit RM'); end
     
-    ModelRM=getresponsematrices(...
-        rerr,...          %1 AT lattice
-        indBPM,...      %2 bpm indexes in at lattice
-        indHCor,...     %3 h cor indexes
-        indVCor,...     %4 v cor indexes
-        [],...     %5 skew cor indexes
-        [],...     %6 quad cor indexes
-        [],...     %7 sext cor indexes
-        inCOD,...       %8 initial coordinates
-        rmsel...      %9 specifiy rm to be computed
-        );
-    
+%     ModelRM=getresponsematrices(...
+%         rerr,...          %1 AT lattice
+%         indBPM,...      %2 bpm indexes in at lattice
+%         indHCor,...     %3 h cor indexes
+%         indVCor,...     %4 v cor indexes
+%         [],...     %5 skew cor indexes
+%         [],...     %6 quad cor indexes
+%         [],...     %7 sext cor indexes
+%         inCOD,...       %8 initial coordinates
+%         rmsel...      %9 specifiy rm to be computed
+%         );
+ModelRM = getlinearrespmat(rerr,indBPM,indHCor,indVCor);    
     
     if ~correctflags(1) % dpp correction
         ModelRM.OrbHDPP=[];
@@ -145,8 +156,8 @@ end
 ormH=ModelRM.OrbHCor;
 ormV=ModelRM.OrbVCor;
 % kval=ModelRM.kval;
-dppH=ModelRM.OrbHDPP;
-dppV=ModelRM.OrbVDPP;
+% dppH=ModelRM.OrbHDPP;
+% dppV=ModelRM.OrbVDPP;
 % delta=ModelRM.delta;
 
 % get initial orbit
@@ -155,6 +166,18 @@ ox0=o(1,:);
 oy0=o(3,:);
 
 %rerr0=rerr;
+
+% Determine corrector model type and the correct field to use
+if strcmpi(rerr{indHCor(1)}.PassMethod,'CorrectorPass'), xfname = 'KickAngle'; xfi = 1; xfj = 1; ...
+else, xfname = 'PolynomB'; xfi = 1; xfj = 1; ...
+end
+if strcmpi(rerr{indVCor(1)}.PassMethod,'CorrectorPass'), yfname = 'KickAngle'; yfi = 1; yfj = 2; ...
+else, yfname = 'PolynomB'; yfi = 1; yfj = 1; ...
+end
+
+% Get BPM weight information.
+W = cell2mat(atgetfieldvalues(rerr,indBPM,'Weight'));
+W(isnan(W)) = 1;    % Any BPMs without specified weight are assumed to have weight 1.
 
 % iterate correction
 Niter=size(neigSteerer,1);
@@ -165,8 +188,8 @@ for iter=1:Niter
     end
     
     % initial corrector strengths
-    corh0=atgetfieldvalues(rerr,indHCor,'PolynomB',{1,1});
-    corv0=atgetfieldvalues(rerr,indVCor,'PolynomA',{1,1});
+    corh0=atgetfieldvalues(rerr,indHCor,xfname,{xfi,xfj});
+    corv0=atgetfieldvalues(rerr,indVCor,yfname,{yfi,yfj});
     
     % get current orbit
     o=findorbit6Err(rerr,indBPM,inCOD);
@@ -177,19 +200,36 @@ for iter=1:Niter
     ox=ox-reforbit(1,:);
     oy=oy-reforbit(2,:);
     
+
+
+
     % build RMs
     if correctflags(1) && correctflags(2) % dpp and mean0
-        RMH=[ [ormH{1};ones(size(indHCor))] [dppH';0] ];
-        RMV=[ [ormV{3};ones(size(indVCor))] [dppV';0] ];
+        dppH=ModelRM.OrbHDPP;
+        dppV=ModelRM.OrbVDPP;
+        RMH=[ [ormH{1};ones(size(indHCor(:)))'] [dppH(:);0] ];
+        RMV=[ [ormV{3};ones(size(indVCor(:)))'] [dppV(:);0] ];
     elseif correctflags(1) && ~correctflags(2)% dpp no mean 0
-        RMH=[ ormH{1} dppH' ];
-        RMV=[ ormV{3} dppV' ];
+        dppH=ModelRM.OrbHDPP;
+        dppV=ModelRM.OrbVDPP;
+        RMH=[ ormH{1} dppH(:) ];
+        RMV=[ ormV{3} dppV(:) ];
     elseif ~correctflags(1) && correctflags(2) % mean0 no dpp
-        RMH=[ormH{1};ones(size(indHCor))];
-        RMV=[ormV{3};ones(size(indVCor))];
+        RMH=[ormH{1};ones(size(indHCor(:)))'];
+        RMV=[ormV{3};ones(size(indVCor(:)))'];
     elseif ~correctflags(1) && ~correctflags(2) % no dpp no mean0
         RMH=ormH{1};
         RMV=ormV{3};
+    end
+    
+    % Apply BPM weights
+    ox = ox.*W(:,1)';
+    oy = oy.*W(:,2)';
+
+    % Rescale the ORM
+    for n = 1:numel(indBPM)
+        RMH(n,:) = RMH(n,:).*W(n,1);
+        RMV(n,:) = RMV(n,:).*W(n,2);
     end
     
     % compute correction
@@ -219,8 +259,8 @@ for iter=1:Niter
         vs(abs(vs)>steererlimit(2))=steererlimit(2);
     end
     
-    rtest=atsetfieldvalues(rerr,indHCor,'PolynomB',{1,1},hs);
-    rtest=atsetfieldvalues(rtest,indVCor,'PolynomA',{1,1},vs);
+    rtest=atsetfieldvalues(rerr,indHCor,xfname,{xfi,xfj},hs);
+    rtest=atsetfieldvalues(rtest,indVCor,yfname,{yfi,yfj},vs);
     
    
     if correctflags(1)
@@ -253,6 +293,9 @@ end
 o=findorbit6Err(rcor,indBPM,inCOD);
 oxc=o(1,:);
 oyc=o(3,:);
+    oxc = oxc.*W(:,1)';
+    oyc = oyc.*W(:,2)';
+
 Lh=atgetfieldvalues(rcor,indHCor,'Length');
 Lv=atgetfieldvalues(rcor,indVCor,'Length');
 hsL=hs.*Lh;
