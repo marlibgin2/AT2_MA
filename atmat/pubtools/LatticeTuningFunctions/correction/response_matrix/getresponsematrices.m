@@ -69,7 +69,10 @@ for ir=1:length(rmsel)
     switch rmsel(ir)
         case 1
             % orbit RM
-            ormH=findrespmat(r0,indBPM,indHorCor,kval,'PolynomB',1,1,'findorbit6Err',inCOD);
+            if strcmpi(r0{indHorCor(1)}.PassMethod,'CorrectorPass'), fname = 'KickAngle'; fi = 1; fj = 1; ...
+            else, fname = 'PolynomB'; fi = 1; fj = 1; ...
+            end
+            ormH=findrespmat(r0,indBPM,indHorCor,kval,fname,fi,fj,'findorbit6Err',inCOD);
             ormH{1}=ormH{1}./kval;
             ormH{2}=ormH{2}./kval;
             ormH{3}=ormH{3}./kval;
@@ -78,8 +81,10 @@ for ir=1:length(rmsel)
             % store data
             ModelRM.OrbHCor=ormH;
         case 2
-            
-            ormV=findrespmat(r0,indBPM,indVerCor,kval,'PolynomA',1,1,'findorbit6Err',inCOD);
+            if strcmpi(r0{indVerCor(1)}.PassMethod,'CorrectorPass'), fname = 'KickAngle'; fi = 1; fj = 2; ...
+            else, fname = 'PolynomA'; fi = 1; fj = 1; ...
+            end            
+            ormV=findrespmat(r0,indBPM,indVerCor,kval,fname,fi,fj,'findorbit6Err',inCOD);
             ormV{1}=ormV{1}./kval;
             ormV{2}=ormV{2}./kval;
             ormV{3}=ormV{3}./kval;
@@ -113,7 +118,10 @@ for ir=1:length(rmsel)
             
         case 4
             % trajectory
-            RMTH=findrespmat(r0,indBPM,indHorCor,kval,'PolynomB',1,1,'findtrajectory6Err',inCOD);
+            if strcmpi(r0{indHorCor(1)}.PassMethod,'CorrectorPass'), fname = 'KickAngle'; fi = 1; fj = 1; ...
+            else, fname = 'PolynomB'; fi = 1; fj = 1; ...
+            end
+            RMTH=findrespmat(r0,indBPM,indHorCor,kval,fname,fi,fj,'findtrajectory6Err',inCOD);
             RMTH{1}=RMTH{1}./kval;
             RMTH{2}=RMTH{2}./kval;
             RMTH{3}=RMTH{3}./kval;
@@ -123,8 +131,10 @@ for ir=1:length(rmsel)
             ModelRM.TrajHCor=RMTH;
             
         case 5
-            
-            RMTV=findrespmat(r0,indBPM,indVerCor,kval,'PolynomA',1,1,'findtrajectory6Err',inCOD);
+            if strcmpi(r0{indVerCor(1)}.PassMethod,'CorrectorPass'), fname = 'KickAngle'; fi = 1; fj = 2; ...
+            else, fname = 'PolynomA'; fi = 1; fj = 1; ...
+            end
+            RMTV=findrespmat(r0,indBPM,indVerCor,kval,fname,fi,fj,'findtrajectory6Err',inCOD);
             RMTV{1}=RMTV{1}./kval;
             RMTV{2}=RMTV{2}./kval;
             RMTV{3}=RMTV{3}./kval;
@@ -158,8 +168,10 @@ for ir=1:length(rmsel)
         case 7
             
             % dispersion RM steerers
-            
-            drmH=findrespmat(r0,indBPM,indHorCor,kval,'PolynomB',1,1,'finddispersion6Err',indrfc,alpha,delta,inCOD);
+            if strcmpi(r0{indHorCor(1)}.PassMethod,'CorrectorPass'), fname = 'KickAngle'; fi = 1; fj = 1; ...
+            else, fname = 'PolynomB'; fi = 1; fj = 1; ...
+            end
+            drmH=findrespmat(r0,indBPM,indHorCor,kval,fname,fi,fj,'finddispersion6Err',indrfc,alpha,delta,inCOD);
             drmH{1}=drmH{1}./kval;
             drmH{2}=drmH{2}./kval;
             drmH{3}=drmH{3}./kval;
@@ -169,9 +181,10 @@ for ir=1:length(rmsel)
             ModelRM.DispHCor=drmH;
             
         case 8
-            
-            
-            drmV=findrespmat(r0,indBPM,indHorCor,kval,'PolynomA',1,1,'finddispersion6Err',indrfc,alpha,delta,inCOD);
+            if strcmpi(r0{indVerCor(1)}.PassMethod,'CorrectorPass'), fname = 'KickAngle'; fi = 1; fj = 2; ...
+            else, fname = 'PolynomA'; fi = 1; fj = 1; ...
+            end            
+            drmV=findrespmat(r0,indBPM,indHorCor,kval,fname,fi,fj,'finddispersion6Err',indrfc,alpha,delta,inCOD);
             drmV{1}=drmV{1}./kval;
             drmV{2}=drmV{2}./kval;
             drmV{3}=drmV{3}./kval;

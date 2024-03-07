@@ -1,6 +1,6 @@
-function varargout = spoil_the_lattice_AT2(varargin)%, OrbitCorrectionFlag)
-% SPOIL_THE_LATTICE deployes misalignments for sliced magnets and 
-% [RINGWE, RING0, MAGe, GIRe, Xbpm, Ybpm] = spoil_the_lattice_AT2(RING)
+function varargout = applyErrorModel(varargin)%, OrbitCorrectionFlag)
+% SPOIL_THE_LATTICE deployes misalignments for sliced magnets and
+% [RINGWE, RING0, MAGe, GIRe, Xbpm, Ybpm] = applyErrorModel(RING,ErrorModel,...)
 %
 % INPUT
 % 1. RING   -   {cell array of structs} AT2 lattice, with or without
@@ -16,23 +16,30 @@ function varargout = spoil_the_lattice_AT2(varargin)%, OrbitCorrectionFlag)
 %                      any element in the input lattice a best guess will
 %                      be made. See markSlicedMagnets and getmagnetslices
 %                      for details.
-% 2. Flags:
+% 2. ErrorModel {cell array of structs, optional} See the error model
+%               functions for details.
+% 3. Flags:
 %       'Display'       Applied errors will be plotted
 %       'NoDisplay'     {default} No plot is generated. Note that
 %                       atplot(RING,@plotMisalignments) may be used to view
 %                       the errors at a later stage
 %
 %       'Relative'      {default} Errors are added to any already existing in the
-%                       input lattice. NB! Always the case for field errors! 
+%                       input lattice. NB! Always the case for field errors!
 %       'Absolute'      Pre-existing misalignment errors are overwritten.
 %                       Field errors are not affected.
+%
+%       'NoMisalignments'
+%       'NoFieldErrors'
+%       'NoGirderErrors'
 %
 % OUTPUT
 % 1. RINGWE -   {cell array of structs} AT2 lattice output, with new errors
 %               applied.
 % 2. RING0  -   {cell array of structs} AT2 lattice output, without errors.
-% 
-% See also markSlicedMagnets, getmagnetslices, getMagGroupsFromGirderIndex
+%
+% See also markSlicedMagnets, getmagnetslices, getMagGroupsFromGirderIndex,
+% atguessclass
 
 %T = load('ModelRM.mat'); ModelRM = T.ModelRM; clear T
 
@@ -40,6 +47,9 @@ function varargout = spoil_the_lattice_AT2(varargin)%, OrbitCorrectionFlag)
 DisplayFlag = false; % plot final results
 ExpandFlag = true;
 RelativeFlag = true;
+MisalignmentFlag = true;
+FieldErrorFlag = true;
+GirderFlag = true;
 
 %% Input handling
 if nargin < 2
@@ -70,9 +80,19 @@ for n = nargin:-1:1
             case 'absolute'
                 RelativeFlag = false;
                 varargin(n) = [];
+            case {'nomisalignments','nomisalignment'}
+                MisalignmentFlag = false;
+            case {'nofielderror','nofielderrors'}
+                FieldErrorFlag = false;
+            case {'nogirdererrors','nogirdererror'}
+                GirderFlag = false;
         end
     elseif isstruct(varargin{n})
-    
+        % Check whether it's an error model...
+        if any(isfield(varargin{n},{'Girder','Magnet'}))
+            ERRORMODEL = varargin{n};
+            varargin(n) = [];
+        end
     end
 end
 
@@ -93,7 +113,7 @@ end
 % If misalignment errors are to be applied on a clean lattice, use the
 % clean lattice instead.
 if RelativeFlag == false
-    RING = RING0; 
+    RING = RING0;
 end
 
 %% Calculate static information for quick look-up
@@ -121,116 +141,159 @@ index_girderelements = getMagGroupsFromGirderIndex(RING);
 
 %% DEFINE ERRORS
 % Should be given as an input to the function instead. Struct definition?
-
-% ----------------------------------------
-% single magnet error table (RMS) --> MAGe
-% ----------------------------------------
-%      grad(frac)   dx(um)    dy(um)
-gradZero  = 1;  % 1 turn off/on the gradient errors
-shiftZero = 1;  % 1 turn off/on the displacement errors
-rollZero  = 1;  % 1 turn off/on the roll errors
-eQ = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % quadrupole
-eR = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % reverse-bends
-eS = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % sextupole
-eO = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % octupole
-eD = [ 5e-4*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % dipole
-MAGe.eQ = eQ; MAGe.eR = eR; MAGe.eS = eS; MAGe.eO = eO; MAGe.eD = eD;
-
-% errors.Quadrupole =
-% errors.ReverseBend =
-% errors.Sextupole =
-% errors.Octupole =
-% errors.Bend =
-% errors.
-
-% -------------------------------
-% girder random error table (RMS)
-% -------------------------------
-% <MSj> Given the girder shape, i.e. it's longer than it's wide, the
-% expectation is that roll will be harder to correctly determine. I
-% therefore swapped the yaw/pitch and roll values.
 %
-%        sway(um) heave(um) yaw(urad) pitch(urad) roll(urad)
-grdZero = 1;
-eGr{1}  = [100      100       10        10          25] * 1e-6  *grdZero;
-eGr{2}  = [100      100       10        10          25] * 1e-6  *grdZero;
-eGr{3}  = [100      100       10        10          25] * 1e-6  *grdZero;
-eGr{4}  = [100      100       10        10          25] * 1e-6  *grdZero;
-eGr{5}  = [100      100       10        10          25] * 1e-6  *grdZero;
-eGr{6}  = [100      100       10        10          25] * 1e-6  *grdZero;
-eGr{7}  = [100      100       10        10          25] * 1e-6  *grdZero;
-
-% --------------------------------------
-% girder test error table - fixed values
-% --------------------------------------
-%        sway(um) heave(um) yaw(urad) pitch(urad) roll(urad)
-egt{1}  = [  0        0        0         0          0] * 1e-6;
-egt{2}  = [300        0      100         0          0] * 1e-6;
-egt{3}  = [123        0     -100         0          0] * 1e-6;
-egt{4}  = [  0        0        0         0          0] * 1e-6;
-egt{5}  = [  0     -123        0        50          0] * 1e-6;
-egt{6}  = [  0     -300        0       -50          0] * 1e-6;
-egt{7}  = [  0        0        0         0          0] * 1e-6;
-
-girder_move_type = 'nomove'; % 'fixed' / 'nomove' / 'random'
-GIRe.type = girder_move_type;
-if strcmpi(girder_move_type,'random')
-    GIRe.gir = eGr;
-elseif strcmpi(girder_move_type,'fixed')
-    GIRe.gir = egt;
-else
-    GIRe.gir = [];
-end
+% % ----------------------------------------
+% % single magnet error table (RMS) --> MAGe
+% % ----------------------------------------
+% %      grad(frac)   dx(um)    dy(um)
+% gradZero  = 1;  % 1 turn off/on the gradient errors
+% shiftZero = 1;  % 1 turn off/on the displacement errors
+% rollZero  = 1;  % 1 turn off/on the roll errors
+% eQ = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % quadrupole
+% eR = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % reverse-bends
+% eS = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % sextupole
+% eO = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % octupole
+% eD = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % dipole
+% MAGe.eQ = eQ; MAGe.eR = eR; MAGe.eS = eS; MAGe.eO = eO; MAGe.eD = eD;
+%
+%
+% % -------------------------------
+% % girder random error table (RMS)
+% % -------------------------------
+% % <MSj> Given the girder shape, i.e. it's longer than it's wide, the
+% % expectation is that roll will be harder to correctly determine. I
+% % therefore swapped the yaw/pitch and roll values.
+%
+% %        sway(um) heave(um) yaw(urad) pitch(urad) roll(urad)
+% grdZero = 0.5;
+% eGr{1}  = [100      100       10        10          25] * 1e-6  *grdZero;
+% eGr{2}  = [100      100       10        10          25] * 1e-6  *grdZero;
+% eGr{3}  = [100      100       10        10          25] * 1e-6  *grdZero;
+% eGr{4}  = [100      100       10        10          25] * 1e-6  *grdZero;
+% eGr{5}  = [100      100       10        10          25] * 1e-6  *grdZero;
+% eGr{6}  = [100      100       10        10          25] * 1e-6  *grdZero;
+% eGr{7}  = [100      100       10        10          25] * 1e-6  *grdZero;
+%
+% % --------------------------------------
+% % girder test error table - fixed values
+% % --------------------------------------
+% %        sway(um) heave(um) yaw(urad) pitch(urad) roll(urad)
+% egt{1}  = [  0        0        0         0          0] * 1e-6;
+% egt{2}  = [300        0      100         0          0] * 1e-6;
+% egt{3}  = [123        0     -100         0          0] * 1e-6;
+% egt{4}  = [  0        0        0         0          0] * 1e-6;
+% egt{5}  = [  0     -123        0        50          0] * 1e-6;
+% egt{6}  = [  0     -300        0       -50          0] * 1e-6;
+% egt{7}  = [  0        0        0         0          0] * 1e-6;
+%
+% girder_move_type = 'nomove'; % 'fixed' / 'nomove' / 'random'
+% GIRe.type = girder_move_type;
+% if strcmpi(girder_move_type,'random')
+%     GIRe.gir = eGr;
+% elseif strcmpi(girder_move_type,'fixed')
+%     GIRe.gir = egt;
+% else
+%     GIRe.gir = [];
+% end
 
 
 %% Deploy girder errors
-for n = 1:numel(index_girderelements)
+if GirderFlag
+    for n = 1:numel(index_girderelements)
+        % Get girder type, if any. Otherwise just apply the baseline
+        if isfield(RING{index_girderelements{n}(1)},'GirderType')
+            girderType = {RING{index_girderelements{n}(1)}.GirderType};
+        else
+            girderType = {'Baseline'};
+        end
+        iFound = filterByGirder(girderType);
 
-    % Depending on the girder type there may be different error magnitudes
-    girderTypeIndex = mod(n-1,7)+1;
-    move_grd(index_girderelements{n},eGr{girderTypeIndex});
+
+
+        for p = 1:numel(iFound)
+            % Depending on the girder type there may be different error magnitudes
+            move_grd(index_girderelements{n}, ERRORMODEL.Girder{iFound(p)}.Random{1}, ERRORMODEL.Girder{iFound(p)}.Systematic{1});
+        end
+    end
 end
+
+    function iFound = filterByGirder(girderType)
+        iFound = cellfun(@(x) any(strcmpi(x.ID, girderType)), ERRORMODEL.Girder);
+        iFound = find(iFound);
+    end
 
 
 %% Deploy magnet errors
 
+% First, filter away all errors that do not have an ID and warn the user
+k = findcells(ERRORMODEL.Magnet,'ID');
+if numel(k) < numel(ERRORMODEL.Magnet)
+    warning('applyErrorModel:Magnet error model contained error specifications not associated to any magnet type (missing ID). These have been ignored.');
+end
+ERRORMODEL.Magnet = ERRORMODEL.Magnet(k);
+EM_classIDs = getcellstruct(ERRORMODEL.Magnet,'ID',k);
+
 for n = 1:numel(index_magnetslices)
     % Get class
+    % NB! May be better to base the guess on integrated strengths, which
+    % means a new function.
     atclass = atguessclass(RING{index_magnetslices{n}(1)});
 
-    % Get the correct error amplitudes
-    switch lower(atclass)
-        case 'bend'
-            % NB! Errors may be different for reverse bends. Current
-            % assumption is that they are similar to the quadrupole error
-            % level.
-            if RING{index_magnetslices{n}(1)}.BendingAngle > 0
-                misalignmentError = eD;
-                fieldError = eD;
-            else
-                misalignmentError = eQ;
-                fieldError = eQ;
-            end
-        case 'quadrupole'
-            misalignmentError = eQ;
-            fieldError = eQ;
-        case 'sextupole'
-            misalignmentError = eS;
-            fieldError = eS;
-        case {'multipole','octupole'}
-            % NB! atguessclass do not identify octupoles as such, only as
-            % multipoles.
-            misalignmentError = eO;
-            fieldError = eO;
-        otherwise
-            fprintf('Unknown magnet class [%d - %d: %s], no error deployed.\n',index_magnetslices{n}(1),index_magnetslices{n}(end),atclass);
-    end
+    % Check which errors are applicable
+    k = find(strcmpi(atclass,EM_classIDs));
 
-    % Deploy errors via nested functions to speed up the execution (no need
+    % Deploy all applicable errors via nested functions to speed up the execution (no need
     % to pass the RING variable to the functions)
-    move_mag(index_magnetslices{n},misalignmentError);
-    chgrad_mag(index_magnetslices{n},fieldError);
+    % NB! Possible speed improvement by removing a loop (strcmpi does on
+    % internally)
+    for i = 1:numel(ERRORMODEL.Magnet(k))
 
+        % For each applicable error
+        args_misalignment = cell(1,2);
+        args_field = cell(1,2);
+
+        if isfield(ERRORMODEL.Magnet{k(i)},'Systematic')
+            for j = 1:numel(ERRORMODEL.Magnet{k(i)}.Systematic)
+                if any(isfield(ERRORMODEL.Magnet{k(i)}.Systematic{j},{'Heave','Sway','Surge','Pitch','Yaw','Roll'}))
+                    args_misalignment{1} = ERRORMODEL.Magnet{k(i)}.Systematic{j};
+                end
+                if any(isfield(ERRORMODEL.Magnet{k(i)}.Systematic{j},{'PolynomA','PolynomB'}))
+                    args_field{1} = ERRORMODEL.Magnet{k(i)}.Systematic{j};
+                end
+            end
+        end
+        if isfield(ERRORMODEL.Magnet{k(i)},'Random')
+            for j = 1:numel(ERRORMODEL.Magnet{k(i)}.Random)
+                if any(isfield(ERRORMODEL.Magnet{k(i)}.Random{j},{'Heave','Sway','Surge','Pitch','Yaw','Roll'}))
+                    args_misalignment{2} = ERRORMODEL.Magnet{k(i)}.Random{j};
+                end
+                if any(isfield(ERRORMODEL.Magnet{k(i)}.Random{j},{'PolynomA','PolynomB'}))
+                    args_field{2} = ERRORMODEL.Magnet{k(i)}.Random{j};
+                end
+            end
+        end
+
+        if MisalignmentFlag && ~all(isempty(args_misalignment))
+            move_mag(index_magnetslices{n},args_misalignment{:});
+        end
+
+        if FieldErrorFlag && ~all(isempty(args_field))
+            applyfielderror(index_magnetslices{n},args_field{:},atclass);
+        end
+
+        %         % Check whether this error is a misalignment
+        %         if (isfield(ERRORMODEL.Magnet{k(i)},'Systematic') && any(isfield(ERRORMODEL.Magnet{k(i)}.Systematic,{'Heave','Sway','Surge','Pitch','Yaw','Roll'}))) ...
+        %                 || (isfield(ERRORMODEL.Magnet{k(i)},'Random') && any(isfield(ERRORMODEL.Magnet{k(i)}.Random,{'Heave','Sway','Surge','Pitch','Yaw','Roll'})))
+        %             move_mag(index_magnetslices{n},ERRORMODEL.Magnet{k(i)});
+        %         end
+        %
+        %
+        %         % Check whether this error is in a field
+        %         if (isfield(ERRORMODEL.Magnet{k(i)},'Systematic') && any(isfield(ERRORMODEL.Magnet{k(i)}.Systematic,{'PolynomA','PolynomB'}))) ...
+        %                 || (isfield(ERRORMODEL.Magnet{k(i)},'Random') && any(isfield(ERRORMODEL.Magnet{k(i)}.Random,{'PolynomA','PolynomB'})))
+        %             chgrad_mag(index_magnetslices{n},ERRORMODEL.Magnet{k(i)},atclass);
+        %         end
+    end
 end
 
 
@@ -251,14 +314,23 @@ end
 % Further work is likely needed here, as atsetshift and atsettilt function
 % calls also leads to a significant amount of copying.
 
-    function move_grd(Gi, eG)
-        % entryP = Gi(1); exitP = Gi(end);
+    function move_grd(Gi, eGR, eGS)
+        % Input checks
+        if ~isfield(eGR,'Sway'), eGR.Sway = 0; end
+        if ~isfield(eGS,'Sway'), eGS.Sway = 0; end
+        if ~isfield(eGR,'Yaw'), eGR.Yaw = 0; end
+        if ~isfield(eGS,'Yaw'), eGS.Yaw = 0; end
+        if ~isfield(eGR,'Pitch'), eGR.Pitch = 0; end
+        if ~isfield(eGS,'Pitch'), eGS.Pitch = 0; end
+        if ~isfield(eGR,'Heave'), eGR.Heave = 0; end
+        if ~isfield(eGS,'Heave'), eGS.Heave = 0; end
+        if ~isfield(eGR,'Roll'), eGR.Roll = 0; end
+        if ~isfield(eGS,'Roll'), eGS.Roll = 0; end
 
         % -------------------------------------
         % define coordinates of girder elements
         % and pivotal point for yaw/pitch moves
         % -------------------------------------
-        %         ss     = findspos(RING,Gi);
         s1     = spos(Gi(1));
         s2     = spos(Gi(end));
         sm     = (s1+s2)/2; % pivotal centre
@@ -266,24 +338,21 @@ end
         % --------------------------
         % horizontal plane: sway/yaw
         % --------------------------
-        sway   = eG(1)* randn();
-        yaw    = eG(3)* randn();
+        sway   = eGS.Sway + eGR.Sway * randn();
+        yaw    = eGS.Yaw + eGR.Yaw * randn();
         dx     = sway + yaw*(spos(Gi)-sm);
 
         % ---------------------------
         % vertical plane: heave/pitch
         % ---------------------------
-        heave  = eG(2)* randn();
-        pitch  = eG(4)* randn();
+        heave  = eGS.Heave + eGR.Heave * randn();
+        pitch  = eGS.Pitch + eGR.Pitch * randn();
         dy     = heave + pitch*(spos(Gi)-sm);
 
         % -------------------------------
         % move in (x,y), apply roll (phi)
         % -------------------------------
-        dphi   = eG(5)* randn();
-
-        %         RING = atsetshift(RING, Gi, dx, dy,'RelativeShift');
-        %         RING = atsettilt(RING, Gi, dphi,'RelativeTilt');
+        dphi   = eGS.Roll + eGR.Roll * randn();
 
         % For speed, call atshiftelem and attiltelem functions directly
         % rather than calling atsetshift and atsettilt. This avoids the
@@ -297,39 +366,81 @@ end
 
     end
 
-% ----------------------------------
-% change gradient individual magnets
-% ----------------------------------
 
-    function chgrad_mag(mi, me)
-        % -------------------------------------------
-        % Affects all field components; the assumption is that they are
-        % defined by the iron.
-        % -------------------------------------------
-  
-        scalingError = me(1)*trunc_randn(1,2);
 
+    function applyfielderror(mi, Es, Er, class)
+
+        % The input checks are likely better placed in the error model
+        %         if ~isfield(EM,'Systematic'), EM.Systematic = struct('PolynomA',[],'PolynomB',[]); end
+        %         if ~isfield(EM.Systematic,'PolynomA'), EM.Systematic.PolynomA = zeros(1,4); end
+        %         if ~isfield(EM.Systematic,'PolynomB'), EM.Systematic.PolynomB = zeros(1,4); end
+        %
+        %         if ~isfield(EM,'Random'), EM.Random = struct('PolynomA',[],'PolynomB',[]); end
+        %         if ~isfield(EM.Random,'PolynomA'), EM.Random.PolynomA = zeros(1,4); end
+        %         if ~isfield(EM.Random,'PolynomB'), EM.Random.PolynomB = zeros(1,4); end
+        %
+
+        if isempty(Es.PolynomA) && isempty(Es.PolynomB) && isempty(Er.PolynomA) && isempty(Er.PolynomB) && Er.Scaling == 1 && Es.Scaling == 1, return; end
+        if isempty(Es), Es = zeros(1,4); end
+        if isempty(Er), Er = zeros(1,4); end
+
+        % Identify the main field component for higher multipole scaling
+        switch lower(class)
+            case 'quadrupole'
+                MainComponentField = 'PolynomB';
+                MainComponentIndex = 2;
+            case 'sextupole'
+                MainComponentField = 'PolynomB';
+                MainComponentIndex = 3;
+            case 'multipole'
+                MainComponentField = 'PolynomB';
+                MainComponentIndex = 4;
+            case 'corrector'
+                MainComponentField = 'PolynomB';
+                MainComponentIndex = 1;
+            case 'bend'
+                MainComponentField = 'BendingAngle';
+                MainComponentIndex = 1;
+        end
+
+        maxOrder = max([ numel(Er.PolynomB), numel(Er.PolynomA), numel(Es.PolynomB), numel(Es.PolynomA)]);
+
+        % Pad to the max order of error specified
+        Er.PolynomB = padZeros(Er.PolynomB,maxOrder);
+        Er.PolynomA = padZeros(Er.PolynomA,maxOrder);
+        Es.PolynomB = padZeros(Es.PolynomB,maxOrder);
+        Es.PolynomA = padZeros(Es.PolynomA,maxOrder);
+
+        function y = padZeros(x,N)
+            pad = zeros(1,N); pad(1:numel(x)) = x; y = pad;
+        end
+
+        % Generate the error for this magnet
+        Et.PolynomB = Es.PolynomB + Er.PolynomB .* trunc_randn(maxOrder,2)';
+        Et.PolynomA = Es.PolynomA + Er.PolynomA .* trunc_randn(maxOrder,2)';
+
+        % Apply error
         for ii = 1:numel(mi)
-            RING{mi(ii)}.PolynomB = (1 + scalingError)*RING{mi(ii)}.PolynomB;
-            RING{mi(ii)}.PolynomA = (1 + scalingError)*RING{mi(ii)}.PolynomA;
-         end
+            RING{mi(ii)}.PolynomB = padZeros(RING{mi(ii)}.PolynomB,maxOrder) + RING{mi(ii)}.(MainComponentField)(MainComponentIndex) * Et.PolynomB;
+            RING{mi(ii)}.PolynomA = padZeros(RING{mi(ii)}.PolynomA,maxOrder) + RING{mi(ii)}.(MainComponentField)(MainComponentIndex) * Et.PolynomA;
+            RING{mi(ii)}.MaxOrder = maxOrder - 1;
+        end
+
     end
+
 
 % -----------------------
 % move individual magnets
 % -----------------------
 
-    function move_mag(mi, me)
+    function move_mag(mi, Es, Er)
         % ------------------------------------------
         % input: mi, magnet index / me: magnet error
         % ------------------------------------------
         % Generate shifts and rolls for this single magnet
-        dx     = me(2) * trunc_randn(1,2);
-        dy     = me(3) * trunc_randn(1,2);
-        dphi   = me(4) * trunc_randn(1,2);
-
-        %         RING   = atsetshift(RING, mi, dx, dy,'RelativeShift');
-        %         RING   = atsettilt(RING, mi, dphi,'RelativeTilt');
+        dx     = Es.Sway + Er.Sway * trunc_randn(1,2);
+        dy     = Es.Heave + Er.Heave * trunc_randn(1,2);
+        dphi   = Es.Roll + Er.Roll * trunc_randn(1,2);
 
         % For speed, call atshiftelem and attiltelem functions directly
         % rather than calling atsetshift and atsettilt. This avoids the
@@ -368,7 +479,7 @@ if nargout > 4
     bpmi = atgetcells(RING,'FamName','BPM');
     Xbpm = -atgetfieldvalues(RING(bpmi),'T1',{1});
     Ybpm = -atgetfieldvalues(RING(bpmi),'T1',{3});
-    
+
     varargout{5} = Xbpm;
 end
 
@@ -394,10 +505,10 @@ if DisplayFlag == 1
     % magnet spatial mis-alignments
     % -----------------------------
     % Extract errors from the lattice
-%     for i= 1:length(RING)
-%         ddx(i)  = -RING{i}.T1(1); ddy(i) = -RING{i}.T1(3);
-%         ddphi(i) = -asin(RING{i}.R1(1,3)); 
-%     end
+    %     for i= 1:length(RING)
+    %         ddx(i)  = -RING{i}.T1(1); ddy(i) = -RING{i}.T1(3);
+    %         ddphi(i) = -asin(RING{i}.R1(1,3));
+    %     end
 
     ddx     = -atgetfieldvalues(RING,'T1',{1});
     ddy     = -atgetfieldvalues(RING,'T1',{3});
@@ -423,7 +534,7 @@ if DisplayFlag == 1
     plot(spos(si),ddx(si),'o','color',scol,'MarkerFaceColor',scol)
     plot(spos(oi),ddx(oi),'o','color',ocol,'MarkerFaceColor',ocol)
     plot(spos(bpmi),ddx(bpmi),'sq','color','k','MarkerFaceColor','k')
-    
+
 
     title('horizontal plane - sway/yaw'); xlabel('S (m)'); ylabel('DX (m)')
     axis([0 528/5 -400e-6 400e-6])
