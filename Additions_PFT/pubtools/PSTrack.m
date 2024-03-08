@@ -1,8 +1,7 @@
 function [Rout, loss] = PSTrack(varargin)
 % Tracks n particles over a number of turns in a given lattice
 %
-%% Inputs
-% Mandatory input arguments
+%% Mandatory input arguments
 % LAT : AT2.0 lattice cell array
 % Rin : 6xN matrix: input coordinates of N particles: default=[0 0 0 0 0 0]'
 %                   AT 2.0 units . [m rad m rad 1 m]

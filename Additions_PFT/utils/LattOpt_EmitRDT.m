@@ -49,7 +49,7 @@ try
               k=k+1;
            end
            try
-                RDTs = computeRDT_MS(ACHRO,1);
+                RDTs = computeRDT(ACHRO,1);
                 f(2) = RDT_Penalty(RDTs);
                 for i=1:nsext_fams
                     SS = ACHRO{Iss(i)}.PolynomB(3)^2;

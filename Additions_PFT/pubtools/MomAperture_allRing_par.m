@@ -1,6 +1,27 @@
-function [map_l,map_h]=MomAperture_allRing_par(THERING,points,varargin)
-% all Ring momentum aperture
-% points=1:10:length(THERING);
+function [map_l,map_h]=MomAperture_allRing_par(RING,points,varargin)
+% Parallel computation of local momentum aperture over a lattice
+%% Usage example
+% [map_l,map_h] = MomAperture_allRing_par(RING,Ipos,'nturns',500)
+%
+%% Mandatory input arguments
+% RING : AT  lattice array
+% Ipos: array of lattice positions at which LMA is to be calculated
+% 
+%% Optional input parameters
+%
+% deltalimit: maximum momentum deviation to be searched. Used to establish the rf bucket height.
+% initcoord: initial coordinates [x0 x0p y0 x0p delta z0]'
+% delta: initial guess for momentum aperture 
+% deltastepsize: step size for LMA sereach;
+% splits : number of iterations of step division
+% split_step_divisor: factor to reduce step size at each iteration
+% nturns: number of turns. If nan then number of turns is chosen as 1.2/Qs
+%                         this is handled by the momentum_aperture_at
+%                         function
+%% Output parameters
+% map_l : negative LMA
+% map_h : positive LMA
+
 map_h=zeros(length(points),1);
 map_l=zeros(length(points),1);
 
@@ -8,28 +29,36 @@ map_l=zeros(length(points),1);
 
 deltalimit    = getoption(varargin,'deltalimit',0.1);
 initcoord     = getoption(varargin,'initcoord',[1E-6 1E-6]);
-delta         = getoption(varargin,'delta',0.0);
-precdelta     = getoption(varargin,'precdelta',0.0);
-deltastepsize = getoption(varargin,'deltastepsize',0.005);
+delta         = getoption(varargin,'delta',0.1);
+deltastepsize = getoption(varargin,'deltastepsize',0.001);
 splits        = getoption(varargin,'splits',2);
 split_step_divisor = getoption(varargin,'split_step_divisor',10);
-nturns        = getoption(varargin,'nturns',100);
+nturns        = getoption(varargin,'nturns',500);
 
 %% Calculates Momentum Aperture
 parfor i=1:length(points)
-   % disp([i length(points) i/length(points)*100])
     %cycle ring
-     THERING_cycl=[THERING(points(i):end); THERING(1:points(i)-1)]';
+     RING_cycl=[RING(points(i):end); RING(1:points(i)-1)];
         try
-            map_h(i)=momentum_aperture_at(THERING_cycl,deltalimit,initcoord,...
-                delta,precdelta,deltastepsize,splits,split_step_divisor,nturns);
+            if (not(isnan(nturns)))
+                map_h(i)=momentum_aperture_at(RING_cycl,deltalimit,initcoord,...
+                    delta,0.0,deltastepsize,splits,split_step_divisor,nturns);
+            else
+                map_h(i)=momentum_aperture_at(RING_cycl,deltalimit,initcoord,...
+                    delta,0.0,deltastepsize,splits,split_step_divisor);
+            end
         catch
             map_h(i)=0;
         end
         
         try
-            map_l(i)=momentum_aperture_at(THERING_cycl,-deltalimit,initcoord,...
-                delta,precdelta,-deltastepsize,splits,split_step_divisor,nturns);
+            if (not(isnan(nturns)))
+                map_l(i)=momentum_aperture_at(RING_cycl,-deltalimit,initcoord,...
+                -delta,0.0,-deltastepsize,splits,split_step_divisor,nturns);
+            else
+                map_l(i)=momentum_aperture_at(RING_cycl,-deltalimit,initcoord,...
+                -delta,0.0,-deltastepsize,splits,split_step_divisor);
+            end
         catch
             map_l(i)=0;
         end

@@ -55,7 +55,7 @@ try
 % Calculate RDTs
 % 
        try
-           RDTs = computeRDT_MS(ACHRO,1);
+           RDTs = computeRDT(ACHRO,1);
            f    = RDT_Penalty(RDTs); 
            for i=1:nsext_fams
                SS = ACHRO{Iss(i)}.PolynomB(3)^2;

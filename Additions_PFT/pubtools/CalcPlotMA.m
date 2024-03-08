@@ -1,8 +1,65 @@
 function [map_l,map_h, Spos, Ipos, PeriodDev] = CalcPlotMA(varargin)
-% Calculates and Plot MA
+% Calculates and Plots Local Momentum Acceptance
 % 
+%% Usage examples
+% [map_l,map_h, Spos, Ipos, PeriodDev] = CalcPlotMA(RING_a1,LatticeOptData,'nperiods',20,'S0min',0.0,'S0max',528,'checkperiodicity');
+%
+% [map_l,map_h, Spos, Ipos, ~] = CalcPlotMA(RING,LatticeOptData,'nperiods',20,'lmafams','all')
+%
+% [map_l,map_h, Spos, Ipos, ~] = CalcPlotMA(RING,[],'lmafams','all','nturns',nan);
+%
+%% Mandatory input arguments
+% RING : AT2 lattice array
+% LatticeOptData : Structure containing various default values. If input = [], hard-coded defaults are used.
+% 
+%% Optional input parameters
+%
+% nperiods: number of periods - used to determine the period length for
+%           periodicity checks. RING is assumed to contain the whole ring in this case
+% lmafams: cell array of strings with names of magnet families at which LMA
+%          is to be calculated. If = 'all' then all non-zero lenmgth
+%          elements are included
+% stepfam: specifies only one every stepfam elements are included
+% deltalimit: maximum momentum deviation to be searched. Used to establish the rf bucket height.
+% initcoord: initial coordinates [x0 x0p y0 x0p delta z0]'
+% delta: initial guess for momentum aperture 
+% deltastepsize: step size for LMA search;
+% splits : number of iterations of step division
+% split_step_divisor: factor to reduce step size at each iteration
+% nturns: numbr of turns. If nan then number of turns is chosen as 1.2/Qs
+%                         this is handled by the momentum:aperture_at
+%                         function
+% S0max: maximum longitudinal position at which to calculate LMA
+% S0min: minimum longitudinal position at which to calculate LMA
+%
+%% Option flags
+% plot : plots LMA
+% checkperiodicity: calcualtes deviation from perididicityt
+% verbose: produces verbose output
+%
+%% Output parameters
+% map_l : negative LMA
+% map_h : positive LMA
+% Spos  : longitudinal positions where LMA is calcualated [m]
+% PeriodDev : if periodicity check was requested, this contains the
+%            deviation from periodicity
+
 %% Input argument parsing
 [RING,LatticeOptData] = getargs(varargin,[],[]);
+if (isempty(LatticeOptData))
+    LatticeOptData.sext_fams='all';
+    LatticeOptData.stepfam_lma=1;
+    LatticeOptData.stepfam_lma=1;
+    LatticeOptData.deltalimit_lma=0.01;
+    LatticeOptData.initcoord_lma=[0.0 0.0 0.0 0.0 0.0 0.0]';
+    LatticeOptData.delta_lma=0.01;
+    LatticeOptData.deltastepsize_lma=0.001;
+    LatticeOptData.splits_lma=10;
+    LatticeOptData.split_step_divisor_lma=2;
+    LatticeOptData.nturns_lma=500;
+    LatticeOptData.S0max_lma=528/20;
+    LatticeOptData.S0min_lma=0.0;
+end
 plotf              = any(strcmpi(varargin,'plot'));
 checkperiodicityf  = any(strcmpi(varargin,'checkperiodicity'));
 verbosef           = any(strcmpi(varargin,'verbose'));
@@ -12,7 +69,6 @@ stepfam            = getoption(varargin,'stepfam',LatticeOptData.stepfam_lma);
 deltalimit         = getoption(varargin,'deltalimit',LatticeOptData.deltalimit_lma);
 initcoord          = getoption(varargin,'initcoord',LatticeOptData.initcoord_lma);
 delta              = getoption(varargin,'delta',LatticeOptData.delta_lma);
-precdelta          = getoption(varargin,'precdelta',LatticeOptData.precdelta_lma);
 deltastepsize      = getoption(varargin,'deltastepsize',LatticeOptData.deltastepsize_lma);
 splits             = getoption(varargin,'splits',LatticeOptData.splits_lma);
 split_step_divisor = getoption(varargin,'split_step_divisor',LatticeOptData.split_step_divisor_lma);
@@ -25,9 +81,9 @@ S0min              = getoption(varargin,'S0min', LatticeOptData.S0min_lma);
 if (strcmpi(lmafams,'all'))
     Ipos = (1:size(RING,1))'; %(first element is assumed to be RingPAram)
 else
-    Ipos = find(atgetcells(RING, 'FamName', lmafams{1}));
+    Ipos = find(atgetcells(RING,'FamName', lmafams{1}));
     for i=2:size(lmafams,1)
-        Ipos = cat(1,Ipos,find(atgetcells(RING, 'FamName', lmafams{i})));
+        Ipos = cat(1,Ipos,find(atgetcells(RING,'FamName',lmafams{i})));
     end
     Ipos = sort(Ipos);
 end
@@ -35,9 +91,9 @@ Ipos = Ipos(1:stepfam:size(Ipos,1));
 Spos = findspos(RING,Ipos);
 
 if(not(isnan(S0max))&&not(isnan(S0min)))
-    Ipos = intersect(find(Spos<=S0max)',find(Spos>=S0min)');
+    Ipos = Ipos(intersect(find(Spos<=S0max)',find(Spos>=S0min)'));
 end
-Ipos = find(atgetfieldvalues(RING, Ipos, 'Length')); % makes sure only non-zero length elements are included
+Ipos = Ipos(find(atgetfieldvalues(RING, Ipos, 'Length'))); % makes sure only non-zero length elements are included
 Spos = findspos(RING,Ipos);
 
 %% Calculate LMA
@@ -47,11 +103,14 @@ if (verbosef)
     tic;
 end
 
+if (isnan(nturns))
+    ats=atsummary(RING);
+    nturns = 1.2/ats.synctune;
+end
 [map_l,map_h]=MomAperture_allRing_par(RING,Ipos,...
                'deltalimit',deltalimit, ...
                'initcoord', initcoord,...
                'delta', delta,...
-               'precdelta',precdelta,...
                'deltastepsize',deltastepsize,...
                'splits',splits,...
                'split_step_divisor',split_step_divisor,...
