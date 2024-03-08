@@ -1,6 +1,6 @@
 function DA=CalcPlotDA(varargin)
 %
-% Calculates and plots (if plotf=1) DA for Lattice "RING"
+% Calculates and plots (if plotf=1) Dynamic Aperture for Lattice "RING"
 % Parameters for DA calculation are all specified in structure
 % LatticeOptDat.DAoptions
 % Usage: DA=CalcPlotDA(RING,DAoptions,plotf)
@@ -50,7 +50,7 @@ DAmode = DAoptions.DAmode;
 if (strcmp(DAmode,'grid'))
 %
 %% Recalculates X0da and Y0da in case the data in DAoptions 
-% is not consistent (e.g. is not the same as ina previous MOGA run)
+% is not consistent (e.g. is not the same as in a previous MOGA run)
 %
     npdax      = DAoptions.npdax;   % number of grid points in x direction is 2*npdax+1
     npday      = DAoptions.npday;   % number of grid points in y direction is  npday+1

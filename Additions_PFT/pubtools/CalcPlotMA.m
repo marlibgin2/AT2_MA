@@ -44,6 +44,7 @@ function [map_l,map_h, Spos, Ipos, PeriodDev] = CalcPlotMA(varargin)
 % PeriodDev : if periodicity check was requested, this contains the
 %            deviation from periodicity
 
+% PFT, 2024/03/08
 %% Input argument parsing
 [RING,LatticeOptData] = getargs(varargin,[],[]);
 if (isempty(LatticeOptData))
