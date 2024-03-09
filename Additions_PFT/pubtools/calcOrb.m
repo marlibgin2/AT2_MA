@@ -1,4 +1,4 @@
-function [orb0, orb, RINGc] = CalcPlotOrb(varargin)
+function [orb0, orb, RINGc] = calcOrb(varargin)
 % Calculates, Plots and corrects the closed orbit
 % 
 RING           = getargs(varargin,[]);

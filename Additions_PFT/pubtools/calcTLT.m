@@ -1,4 +1,4 @@
-function TousLT = CalcTLT(varargin)
+function TousLT = calcTLT(varargin)
 % Wrapper for Touschek lifetime calculation
 % Calculates, if necessary linear optics parameters
 % expects a full ring as input, but may choose only

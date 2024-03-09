@@ -1,4 +1,4 @@
-function [map_l,map_h]=MomAperture_allRing_par(RING,points,varargin)
+function [map_l,map_h]=calcLMA_AllRing(RING,points,varargin)
 % Parallel computation of local momentum aperture over a lattice
 %% Usage example
 % [map_l,map_h] = MomAperture_allRing_par(RING,Ipos,'nturns',500)
@@ -8,7 +8,7 @@ function [map_l,map_h]=MomAperture_allRing_par(RING,points,varargin)
 % Ipos: array of lattice positions at which LMA is to be calculated
 % 
 %% Optional input parameters
-%
+% 
 % deltalimit: maximum momentum deviation to be searched. Used to establish the rf bucket height.
 % initcoord: initial coordinates [x0 x0p y0 x0p delta z0]'
 % delta: initial guess for momentum aperture 
