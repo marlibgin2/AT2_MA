@@ -66,7 +66,7 @@ end
 % Calculates dynamic aperture
 %
 try
-    [DA,~]=calcDA_fast(ACHRO,LatticeOptData.DAoptions,etax,betax,betay);
+    [DA,~]=calcDA_raw(ACHRO,LatticeOptData.DAoptions,etax,betax,betay);
     f=-DA;
 catch ME
     fprintf('Error in LattOpt_DynAp: Dynamic Aperture calculation \n');

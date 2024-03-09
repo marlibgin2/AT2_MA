@@ -1,27 +1,39 @@
-function DA = calcDA_grid(RING, X0, Y0, nturns, dp, z0, etax, xmax, xmin, ymax)
+function DAV = calcDA_grid(RING, X0, Y0, nturns, dp, z0, etax, xmax, xmin, ymax)
 %
-% Evalutes the Dynamic Aperture by tracking
-% required arguments
-% RING: the lattice to be evaluated
-% X0: a vector of initial horizontal coordinates
-% Y0: a vector of initial vertical coordinates
-% X0 and Y0 are nx1 column vectors
-% initial momenta are assumed to be zero TBC
+% Calculates Dynamic Aperture by tracking particles on a 2D grid of points.
+% Tracking can be 6d or 4d as defined by the input lattice. 
+% This is a low level function called by calcDA_raw, which in turn is
+% called by the higher level wrapper function "calcDA" or by
+% optimzation functions used in MOGA/SOGA
 %
-% nturns: Numbers of turns to track    ~ 64
-% dp:     Energy deviation             ~ 0.0%
-% z0:     LOngitudinal position [m]
-% Returns the Dynamic aperture in a nx1 vector :
-% 1 if particle is not lost in nturns
-% 0 iof particle is lost in n turns
+%% Usage example
+% DAV    = calcDA_grid(RING,[0.005 0.0]', [0.0 0.0]', 100, 0.0, 0.0, 0.0, 0.015, -0.015, 0.005);
 %
+%% Mandatory input arguments
+% X0: (nx1) vector of initial horizontal coordinates [m]
+% Y0: (nx1) vector of initial vertical coordinates [m]
 %
-% 2023/11/06 Written by Pedro F. Tavares
+% nturns: Numbers of turns to track   
+% dp: initial momentum or fixed momentum (if tracking is 4d)
+% z0: initial longitudinal position [m]
+% etax: dispersion function at the tracking point [m]
+% xmax: limits of the region where to look for the DA [m]
+% xmin: limits of the region where to look for the DA [m]
+% ymax: limits of the region where to look for the DA [m]
 %
+%% Output parameters
+% DAV: (nx1) vector containing 
+%                   1 if particle is not lost in nturns
+%                   0 if particle is lost in n turns
 %
 
+%% History
+% 2023/11/06 Written by Pedro F. Tavares
+% 2024/02/09 general updates, documetnation and standardization of names
+
+%% Calculates Dynamic Aperture
 np   = size(X0,1);
-DA   = zeros(np,1);
+DAV   = zeros(np,1);
 % Evaluate the Chromatic orbit
 % twiss=  gettwiss(THERING, 0.0);
 
@@ -31,7 +43,7 @@ x = etax*dp;
 [~, loss]=ringpass(RING,[x 0.0 0 0.0 dp z0]',nturns);
 if (loss)
     disp('The chromatic closed orbit is not stable. No DA found');
-    DA =[];
+    DAV =[];
 else
     parfor i=1:np
         x = X0(i);
@@ -41,6 +53,6 @@ else
         else
             [~, loss]=ringpass(RING,[x 0.0 y 0.0 dp z0]',nturns);
         end
-        DA(i)=not(loss); %
+        DAV(i)=not(loss); %
     end
 end

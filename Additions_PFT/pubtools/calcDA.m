@@ -1,11 +1,12 @@
 function [DA,DAoptions]=calcDA(varargin)
 %
 % Calculates and plots Dynamic Aperture. Tracking can be 6d or 4d
-% as defined by the input lattice
+% as defined by the input lattice. This is a higherlevl wrapper function
+% that in turn calls the lower level function "calcDA_raw"
 % 
 %% Usage examples
-% [DA,~] = CalcPlotDA(RING,DAoptions,'plot');
-% [DA, DAoptions] = CalcPlotDA(RING,[],'nturns',1024,'DAmode','grid');
+% [DA,~] = calcDA(RING,DAoptions,'plot');
+% [DA, DAoptions] = calcDA(RING,[],'nturns',1024,'DAmode','grid');
 %
 %% Mandatory input arguments
 % RING : AT2 lattice array
@@ -48,6 +49,7 @@ function [DA,DAoptions]=calcDA(varargin)
 % DA: Dynamic aperture [mm**2]
 % DAoptions: Structure with options used in the calculation
 
+%% History
 % PFT 2024/03/09
 %
 %% Input argument parsing
@@ -63,9 +65,20 @@ if (isempty(DAoptions))
     DAoptions.xmindas =-0.0150;
     DAoptions.ymaxdas = 0.006;
     DAoptions.XmaxDA = 0.015;
-    DAoptions.XmaxDA = 0.007;
+    DAoptions.YmaxDA = 0.007;
     DAoptions.npdax = 64;
     DAoptions.npday = 64;
+    DAoptions.r0 = 0.020;
+    DAoptions.nang = 20;
+    DAoptions.res = 5E-4; 
+    DAoptions.alpha = 1.1;
+    DAoptions.dx=nan;
+    DAoptions.dy=nan;
+    DAoptions.dxdy=nan;
+    DAoptions.npDA = (2*DAoptions.npdax+1)*(DAoptions.npday+1); %total number of grid points
+    DAoptions.X0da = zeros(DAoptions.npDA,1);  % horizontal coordinates of grid points [m]
+    DAoptions.Y0da = zeros(DAoptions.npDA,1);  % vertical coordinates of grid points [m]
+    
 end
 
 plotf            = any(strcmpi(varargin,'plot'));
@@ -97,7 +110,6 @@ DAoptions.XmaxDA=XmaxDA;
 DAoptions.YmaxDA=YmaxDA;
 DAoptions.npdax=npdax;
 DAoptions.npday=npday;
-
 
 % Parameters for dynamic aperture calculation
 %
@@ -176,7 +188,7 @@ try
        end
        DAoptions.z0=z0;
    end
-   [DA,DAV] = calcDA_fast(RING,DAoptions,etax,rpara.beta0(1),rpara.beta0(2));
+   [DA,DAV] = calcDA_raw(RING,DAoptions,etax,rpara.beta0(1),rpara.beta0(2));
    if (plotf)
      switch DAmode
        case 'border'
@@ -205,7 +217,7 @@ try
      end
    end
 catch ME
-     fprintf('Error calculating Dynamic Aperture \n');
+     fprintf('%s Error in calcDA \n', datetime);
      fprintf('Error message was:%s \n',ME.message);
      DA=NaN;
 end

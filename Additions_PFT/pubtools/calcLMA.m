@@ -1,13 +1,15 @@
 function [map_l,map_h, Spos, Ipos, PeriodDev, MAoptions] = calcLMA(varargin)
 % Calculates and Plots Local Momentum Acceptance. Tracking can be 6d or 4d
-% as defined by the input lattice
-% 
+% as defined by the input lattice. This is intended as a higher level 
+% wrapper function that in turn calls the lower level function
+% "calcLMA_raw"
+%
 %% Usage examples
-% [map_l,map_h, Spos, Ipos, PeriodDev, ~] = CalcPlotMA(RING_a1,MAoptions,'nperiods',20,'S0min',0.0,'S0max',528,'checkperiodicity');
+% [map_l,map_h, Spos, Ipos, PeriodDev, ~] = calcLMA(RING_a1,MAoptions,'nperiods',20,'S0min',0.0,'S0max',528,'checkperiodicity');
 %
-% [map_l,map_h, Spos, Ipos, ~, ~] = CalcPlotMA(RING,MAoptions,'nperiods',20,'lmafams','all')
+% [map_l,map_h, Spos, Ipos, ~, ~] = calcLMA(RING,MAoptions,'nperiods',20,'lmafams','all')
 %
-% [map_l,map_h, Spos, Ipos, ~, MAoptions] = CalcPlotMA(RING,[],'lmafams','all','nturns',nan);
+% [map_l,map_h, Spos, Ipos, ~, MAoptions] = calcLMA(RING,[],'lmafams','all','nturns',nan);
 %
 %% Mandatory input arguments
 % RING : AT2 lattice array
@@ -64,7 +66,8 @@ function [map_l,map_h, Spos, Ipos, PeriodDev, MAoptions] = calcLMA(varargin)
 %            deviation from periodicity
 % MAoptions: parameters used for the calculation
 
-% PFT, 2024/03/08
+% PFT on 2024/03/08. 
+%
 %% Input argument parsing
 [RING,MAoptions] = getargs(varargin,[],[]);
 if (isempty(MAoptions))

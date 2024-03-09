@@ -125,7 +125,7 @@ index_girderelements = getMagGroupsFromGirderIndex(RING);
 % ----------------------------------------
 %      grad(frac)   dx(um)    dy(um)
 gradZero  = 0;  % 1 turn off/on the gradient errors
-shiftZero = 1;  % 1 turn off/on the displacement errors
+shiftZero = 1.0; % 1 turn off/on the displacement errors
 rollZero  = 0;  % 1 turn off/on the roll errors
 eQ = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 100e-6*rollZero ]; % quadrupole
 eR = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 100e-6*rollZero ]; % reverse-bends
