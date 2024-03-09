@@ -78,7 +78,6 @@ if (isempty(DAoptions))
     DAoptions.npDA = (2*DAoptions.npdax+1)*(DAoptions.npday+1); %total number of grid points
     DAoptions.X0da = zeros(DAoptions.npDA,1);  % horizontal coordinates of grid points [m]
     DAoptions.Y0da = zeros(DAoptions.npDA,1);  % vertical coordinates of grid points [m]
-    
 end
 
 plotf            = any(strcmpi(varargin,'plot'));
