@@ -1,0 +1,215 @@
+function [DA,DAoptions]=calcDA(varargin)
+%
+% Calculates and plots Dynamic Aperture. Tracking can be 6d or 4d
+% as defined by the input lattice
+% 
+%% Usage examples
+% [DA,~] = CalcPlotDA(RING,DAoptions,'plot');
+% [DA, DAoptions] = CalcPlotDA(RING,[],'nturns',1024,'DAmode','grid');
+%
+%% Mandatory input arguments
+% RING : AT2 lattice array
+% DAoptions :Structure containing the following fields:
+%               DAmode   = 'grid' or 'border'
+%               nturns   : number of turns
+%               betax0   : horizontal beta for normalization - if NaN, no normalization is done
+%               betay0   : vertical beta for normalization - if NaN no normalization is done
+%               xmaxdas  : limits of the range in which the DA border is searched
+%               xmindas  : limits of the range in which the DA border is searched
+%               ymaxdas  : limits of the range in which the DA border is searched
+%
+% Parameters for "border" DA calculation mode
+%               r0      : initial guess [m]
+%               nang    : number of angular steps
+%               dp      : initial dp/p (6d tracking) or fixed dp/p (4d tracking)
+%               z0      : initial longitudinal coordinate (6d tracking). Nan uses synchrnous phase
+%               res     : resolution [m]
+%               alpha   : da enlargement factor for border search
+%
+% Parameters for "grid" DA calculation mode
+%               XmaxDA  : Horizontal range is -Xmax to Xmax [m]
+%               YmaxDA  : Vertical range is 0 to Ymax [m]
+%               npdax   : number of grid points in x direction is 2*npdax+1
+%               npday   : number of grid points in y direction is  npday+
+%
+%
+%            If DAoptions = [], hard-coded defaults are used.
+%            Values of DAoptions fields are overridden if given explicitly 
+%            as input in the form ('parameter', value)
+%
+%% Optional input parameters
+% all fields in DAoptions listed above
+%
+%% Optional flags
+% plot : plots DA;
+% verbose: produces verbose output
+%
+%% Output parameters
+% DA: Dynamic aperture [mm**2]
+% DAoptions: Structure with options used in the calculation
+
+% PFT 2024/03/09
+%
+%% Input argument parsing
+[RING,DAoptions] = getargs(varargin,[],[]);
+if (isempty(DAoptions))
+    DAoptions.dp=0.0;
+    DAoptions.z0=nan;
+    DAoptions.DAmode='grid';
+    DAoptions.nturns=1024;
+    DAoptions.betax0=nan;
+    DAoptions.betay0=nan;
+    DAoptions.xmaxdas=0.007;
+    DAoptions.xmindas =-0.0150;
+    DAoptions.ymaxdas = 0.006;
+    DAoptions.XmaxDA = 0.015;
+    DAoptions.XmaxDA = 0.007;
+    DAoptions.npdax = 64;
+    DAoptions.npday = 64;
+end
+
+plotf            = any(strcmpi(varargin,'plot'));
+verbosef         = any(strcmpi(varargin,'verbose'));
+dp               = getoption(varargin,'dp',DAoptions.dp);
+z0               = getoption(varargin,'z0',DAoptions.z0);
+DAmode           = getoption(varargin,'DAmode',DAoptions.DAmode);
+nturns           = getoption(varargin,'nturns',DAoptions.nturns);
+betax0           = getoption(varargin,'betax0',DAoptions.betax0);
+betay0           = getoption(varargin,'betay0',DAoptions.betay0);
+xmaxdas          = getoption(varargin,'xmaxdas',DAoptions.xmaxdas);
+xmindas          = getoption(varargin,'xmindas',DAoptions.xmindas);
+ymaxdas          = getoption(varargin,'ymaxdas',DAoptions.ymaxdas);
+XmaxDA           = getoption(varargin,'XmaxDA',DAoptions.XmaxDA);
+YmaxDA           = getoption(varargin,'YmaxDA',DAoptions.YmaxDA);
+npdax            = getoption(varargin,'npdax',DAoptions.npdax);
+npday            = getoption(varargin,'npday',DAoptions.npday);
+
+DAoptions.dp=dp;
+DAoptions.z0=z0;
+DAoptions.DAmode=DAmode;
+DAoptions.nturns=nturns;
+DAoptions.betax0=betax0;
+DAoptions.betay0=betay0;
+DAoptions.xmaxas=xmaxdas;
+DAoptions.xmindas=xmindas;
+DAoptions.ymaxas=ymaxdas;
+DAoptions.XmaxDA=XmaxDA;
+DAoptions.YmaxDA=YmaxDA;
+DAoptions.npdax=npdax;
+DAoptions.npday=npday;
+
+
+% Parameters for dynamic aperture calculation
+%
+
+%% Checks backward compatibilty
+if (~isfield(DAoptions,'xmaxdas'))
+    DAoptions.xmaxdas = 0.007;
+end
+
+if (~isfield(DAoptions,'xmindas'))
+    DAoptions.xmindas = -0.015;
+end
+
+if (~isfield(DAoptions,'ymaxdas'))
+    DAoptions.ymaxdas = 0.003;
+end
+   
+if(~(isfield(DAoptions,'XmaxDA')))
+    DAoptions.XmaxDA = 0.015;
+end
+
+if(~(isfield(DAoptions,'YmaxDA')))
+    DAoptions.YmaxDA     = 0.004;
+end
+
+XmaxDA = DAoptions.XmaxDA;
+YmaxDA = DAoptions.YmaxDA;
+
+if(~(isfield(DAoptions,'DAmode')))
+    DAoptions.DAmode = 'border';
+end
+DAmode = DAoptions.DAmode;
+
+if (strcmp(DAmode,'grid'))
+%
+%% Recalculates X0da and Y0da in case the data in DAoptions 
+% is not consistent (e.g. is not the same as in a previous MOGA run)
+%
+    npdax      = DAoptions.npdax;   % number of grid points in x direction is 2*npdax+1
+    npday      = DAoptions.npday;   % number of grid points in y direction is  npday+1
+    npDA       = DAoptions.npDA;    % total numbr of grid points
+    dx = XmaxDA/npdax; % grid stepsize in x [m]
+    dy = YmaxDA/npday; % grid stepsize in y [m]
+    dxdy = dx*dy;
+    X0da = zeros(npDA,1);  % horizontal coordinates of grid points [m]
+    Y0da = zeros(npDA,1);  % vertical coordinates of grid points [m]
+    k= 1;
+    for i=0:npday 
+        for j=0:2*npdax
+        X0da(k) = -XmaxDA+dx*j;
+        Y0da(k) =  dy*i;
+        k=k+1;
+        end
+    end
+    DAoptions.X0da=X0da;
+    DAoptions.Y0da=Y0da;
+    DAoptions.dxdy=dxdy;
+end
+PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
+PhysConst = PC.PC;      %Load physical constants
+
+%% Calculates and plots DA
+if (verbosef)
+    tic;
+    fprintf('*** \n');
+    fprintf('%s Starting DA calculation \n', datetime);
+end
+try
+   rpara = atsummary(RING);
+   etax = rpara.etax;
+   if (isnan(z0))
+       if (check_6d(RING))
+        z0 = PhysConst.c*(rpara.syncphase-pi)/(2*pi*rpara.revFreq*rpara.harmon); %if z0 not given choose the synchronous phase
+       else
+        z0=0.0;
+       end
+       DAoptions.z0=z0;
+   end
+   [DA,DAV] = calcDA_fast(RING,DAoptions,etax,rpara.beta0(1),rpara.beta0(2));
+   if (plotf)
+     switch DAmode
+       case 'border'
+           figure;plot(DAV(:,1)*1000,DAV(:,2)*1000,'-ob');
+           xlabel('X [mm]'); ylabel('Y [mm]');grid;
+           xlim([-XmaxDA XmaxDA]*1000);ylim([0 YmaxDA]*1000);
+
+         case 'grid'
+           DAM = zeros(npday+1,2*npdax+1);
+           k= 1;
+           for i=0:npday
+              for j= 1:2*npdax+1
+                DAM(npday+1-i,j)=DAV(k);
+                k=k+1;
+               end
+            end
+            DAM=DAM*255;
+            map=[0 0.75 0; 1 1 1];
+            figure;image([-XmaxDA*1000,XmaxDA*1000],[YmaxDA*1000,0],DAM);
+            ax=gca;
+            ax.YDir='normal';
+            colormap(map);
+            xlabel('X[mm]');
+            ylabel('Y[mm]');    
+            xlim([-XmaxDA XmaxDA]*1000);ylim([0 YmaxDA]*1000);grid;  
+     end
+   end
+catch ME
+     fprintf('Error calculating Dynamic Aperture \n');
+     fprintf('Error message was:%s \n',ME.message);
+     DA=NaN;
+end
+if(verbosef)
+    fprintf('DA calculation complete \n');
+    toc;
+end

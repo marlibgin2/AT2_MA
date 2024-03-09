@@ -1,8 +1,7 @@
 function [DynAp,DAV] = calcDA_fast(LAT,DAoptions,etax,betax,betay)
 % Calculates Dynamic Aperture by tracking of lattice "LAT"
-% input paramtes are defined in the DAoptions structure.
+% input parameters are defined in the DAoptions structure.
 % 
-%
 % Parameters for dynamic aperture calculation
 %
 betax0     = DAoptions.betax0;  % hor beta for normalization - if NaN no normalizatinis done
@@ -40,7 +39,7 @@ Y0da       = DAoptions.Y0da;    % vertical coordinates of grid points [m]
 try
   switch DAmode
      case 'border'
-       DAV = modelDA_sim_par(LAT, r0, nangs, nturns, dp, z0, etax, res, DAalpha, xmaxdas, xmindas, ymaxdas);
+       DAV = calcDA_border(LAT, r0, nangs, nturns, dp, z0, etax, res, DAalpha, xmaxdas, xmindas, ymaxdas);
        if (not(isnan(betax0))&&not(isnan(betay0))&&not(isnan(betax))&&not(isnan(betay))) 
            DAVN(:,1)=DAV(:,1)*sqrt(betax0/betax);
            DAVN(:,2)=DAV(:,2)*sqrt(betay0/betay);

@@ -1,23 +1,40 @@
-function [map_l,map_h, Spos, Ipos, PeriodDev] = CalcPlotMA(varargin)
-% Calculates and Plots Local Momentum Acceptance
+function [map_l,map_h, Spos, Ipos, PeriodDev, MAoptions] = CalcPlotMA(varargin)
+% Calculates and Plots Local Momentum Acceptance. Tracking can be 6d or 4d
+% as defined by the input lattice
 % 
 %% Usage examples
-% [map_l,map_h, Spos, Ipos, PeriodDev] = CalcPlotMA(RING_a1,LatticeOptData,'nperiods',20,'S0min',0.0,'S0max',528,'checkperiodicity');
+% [map_l,map_h, Spos, Ipos, PeriodDev, ~] = CalcPlotMA(RING_a1,MAoptions,'nperiods',20,'S0min',0.0,'S0max',528,'checkperiodicity');
 %
-% [map_l,map_h, Spos, Ipos, ~] = CalcPlotMA(RING,LatticeOptData,'nperiods',20,'lmafams','all')
+% [map_l,map_h, Spos, Ipos, ~, ~] = CalcPlotMA(RING,MAoptions,'nperiods',20,'lmafams','all')
 %
-% [map_l,map_h, Spos, Ipos, ~] = CalcPlotMA(RING,[],'lmafams','all','nturns',nan);
+% [map_l,map_h, Spos, Ipos, ~, MAoptions] = CalcPlotMA(RING,[],'lmafams','all','nturns',nan);
 %
 %% Mandatory input arguments
 % RING : AT2 lattice array
-% LatticeOptData : Structure containing various default values. If input = [], hard-coded defaults are used.
+% MAoptions :Structure containing the following fields:
+%            lmafams: cell array of strings with names of magnet families at which LMA
+%                     is to be calculated. If = 'all' then all non-zero length elements are included
+%            stepfam: specifies only one every stepfam elements are included
+%            deltalimit: maximum momentum deviation to be searched. Used to establish the rf bucket height.
+%            initcoord: initial coordinates [x0 x0p y0 x0p delta z0]'
+%            delta: initial guess for momentum aperture 
+%            deltastepsize: step size for LMA search;
+%            splits : number of iterations of step division
+%            split_step_divisor: factor to reduce step size at each iteration
+%            nturns: numbr of turns. If nan then number of turns is chosen as 1.2/Qs           
+%            S0max: maximum longitudinal position at which to calculate LMA
+%            S0min: minimum longitudinal position at which to calculate LMA
+%  
+%            If MAoptions = [], hard-coded defaults are used.
+%            Values of MAoptions fields are overridden if given explicitly 
+%            as input in the form ('parameter', value)
 % 
 %% Optional input parameters
 %
 % nperiods: number of periods - used to determine the period length for
 %           periodicity checks. RING is assumed to contain the whole ring in this case
 % lmafams: cell array of strings with names of magnet families at which LMA
-%          is to be calculated. If = 'all' then all non-zero lenmgth
+%          is to be calculated. If = 'all' then all non-zero length
 %          elements are included
 % stepfam: specifies only one every stepfam elements are included
 % deltalimit: maximum momentum deviation to be searched. Used to establish the rf bucket height.
@@ -34,7 +51,9 @@ function [map_l,map_h, Spos, Ipos, PeriodDev] = CalcPlotMA(varargin)
 %
 %% Option flags
 % plot : plots LMA
-% checkperiodicity: calcualtes deviation from perididicityt
+% checkperiodicity: calculates deviation from perididicity i.e,
+%                   max(abs(LMA(s+L*i)-LMA(s)) where L is the period length
+%                   and i varies from 1 to the number of periods
 % verbose: produces verbose output
 %
 %% Output parameters
@@ -43,40 +62,40 @@ function [map_l,map_h, Spos, Ipos, PeriodDev] = CalcPlotMA(varargin)
 % Spos  : longitudinal positions where LMA is calcualated [m]
 % PeriodDev : if periodicity check was requested, this contains the
 %            deviation from periodicity
+% MAoptions: parameters used for the calculation
 
 % PFT, 2024/03/08
 %% Input argument parsing
-[RING,LatticeOptData] = getargs(varargin,[],[]);
-if (isempty(LatticeOptData))
-    LatticeOptData.sext_fams='all';
-    LatticeOptData.stepfam_lma=1;
-    LatticeOptData.stepfam_lma=1;
-    LatticeOptData.deltalimit_lma=0.01;
-    LatticeOptData.initcoord_lma=[0.0 0.0 0.0 0.0 0.0 0.0]';
-    LatticeOptData.delta_lma=0.01;
-    LatticeOptData.deltastepsize_lma=0.001;
-    LatticeOptData.splits_lma=10;
-    LatticeOptData.split_step_divisor_lma=2;
-    LatticeOptData.nturns_lma=500;
-    LatticeOptData.S0max_lma=528/20;
-    LatticeOptData.S0min_lma=0.0;
+[RING,MAoptions] = getargs(varargin,[],[]);
+if (isempty(MAoptions))
+    MAoptions.sext_fams='all';
+    MAoptions.stepfam_lma=1;
+    MAoptions.stepfam_lma=1;
+    MAoptions.deltalimit_lma=0.01;
+    MAoptions.initcoord_lma=[0.0 0.0 0.0 0.0 0.0 0.0]';
+    MAoptions.delta_lma=0.01;
+    MAoptions.deltastepsize_lma=0.001;
+    MAoptions.splits_lma=10;
+    MAoptions.split_step_divisor_lma=2;
+    MAoptions.nturns_lma=500;
+    MAoptions.S0max_lma=528/20;
+    MAoptions.S0min_lma=0.0;
 end
 plotf              = any(strcmpi(varargin,'plot'));
 checkperiodicityf  = any(strcmpi(varargin,'checkperiodicity'));
 verbosef           = any(strcmpi(varargin,'verbose'));
 nperiods           = getoption(varargin,'nperiods',20);
-lmafams            = getoption(varargin,'lmafams',LatticeOptData.sext_fams);
-stepfam            = getoption(varargin,'stepfam',LatticeOptData.stepfam_lma);
-deltalimit         = getoption(varargin,'deltalimit',LatticeOptData.deltalimit_lma);
-initcoord          = getoption(varargin,'initcoord',LatticeOptData.initcoord_lma);
-delta              = getoption(varargin,'delta',LatticeOptData.delta_lma);
-deltastepsize      = getoption(varargin,'deltastepsize',LatticeOptData.deltastepsize_lma);
-splits             = getoption(varargin,'splits',LatticeOptData.splits_lma);
-split_step_divisor = getoption(varargin,'split_step_divisor',LatticeOptData.split_step_divisor_lma);
-nturns             = getoption(varargin,'nturns',LatticeOptData.nturns_lma);
-S0max              = getoption(varargin,'S0max', LatticeOptData.S0max_lma);
-S0min              = getoption(varargin,'S0min', LatticeOptData.S0min_lma);
-
+lmafams            = getoption(varargin,'lmafams',MAoptions.lmafams);
+stepfam            = getoption(varargin,'stepfam',MAoptions.stepfam);
+deltalimit         = getoption(varargin,'deltalimit',MAoptions.deltalimit);
+initcoord          = getoption(varargin,'initcoord',MAoptions.initcoord);
+delta              = getoption(varargin,'delta',MAoptions.delta);
+deltastepsize      = getoption(varargin,'deltastepsize',MAoptions.deltastepsize);
+splits             = getoption(varargin,'splits',MAoptions.splits);
+split_step_divisor = getoption(varargin,'split_step_divisor',MAoptions.split_step_divisor);
+nturns             = getoption(varargin,'nturns',MAoptions.nturns);
+S0max              = getoption(varargin,'S0max', MAoptions.S0max);
+S0min              = getoption(varargin,'S0min', MAoptions.S0min);
 
 %% Locate points at which LMA is to be calculated
 if (strcmpi(lmafams,'all'))
