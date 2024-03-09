@@ -74,7 +74,7 @@ if (isempty(MAoptions))
     MAoptions.lmafams='all';
     MAoptions.stepfam=1;
     MAoptions.stepfam=1;
-    MAoptions.deltalimit=0.01;
+    MAoptions.deltalimit=0.1;
     MAoptions.initcoord=[0.0 0.0 0.0 0.0 0.0 0.0]';
     MAoptions.delta=0.01;
     MAoptions.deltastepsize=0.001;
