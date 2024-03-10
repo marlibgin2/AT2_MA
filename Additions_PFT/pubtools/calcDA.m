@@ -4,10 +4,6 @@ function [DA,DAoptions]=calcDA(varargin)
 % as defined by the input lattice. This is a higherlevl wrapper function
 % that in turn calls the lower level function "calcDA_raw"
 % 
-%% Usage examples
-% [DA,~] = calcDA(RING,DAoptions,'plot');
-% [DA, DAoptions] = calcDA(RING,[],'nturns',1024,'DAmode','grid');
-%
 %% Mandatory input arguments
 % RING : AT2 lattice array
 % DAoptions :Structure containing the following fields:
@@ -48,6 +44,11 @@ function [DA,DAoptions]=calcDA(varargin)
 %% Output parameters
 % DA: Dynamic aperture [mm**2]
 % DAoptions: Structure with options used in the calculation
+%
+%% Usage examples
+% [DA,~] = calcDA(RING,DAoptions,'plot');
+% [DA, DAoptions] = calcDA(RING,[],'nturns',1024,'DAmode','grid');
+% calcDA(RING,[],'nturns',1024,'DAmode','grid');
 
 %% History
 % PFT 2024/03/09

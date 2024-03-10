@@ -23,6 +23,10 @@ function f = RINGOpt_EmitDynAp(x, LatticeOptData)
 %
 %% Parameters for dynamic aperture calculation
 %
+PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
+PhysConst = PC.PC;      %Load physical constants
+%
+ErrorModel = LatticeOptData.ErrorModel;
 DAoptions  = LatticeOptData.DAoptions;
 chroms0    = DAoptions.chroms0; % Target chromaticity for the whole ring
 TolChrom   = DAoptions.TolChrom;% Chromaticity tolerances
@@ -60,12 +64,18 @@ try
 %
        XAll=getAllfams(2,ACHRO,LatticeOptData);
        RINGGRD = setAllfams(6,RINGGRD,LatticeOptData,XAll);
-       RINGGRD = spoil_the_lattice_AT2(RINGGRD);
+       if (isstruct(ErrorModel))
+        RINGGRD = applyErrorModel(RINGGRD,ErrorModel);
+        RINGGRD = calcOrb(RINGGRD,'correct');
+       end
        if(strcmpi(TRmode,'4d'))
            RINGGRD=atdisable_6d(RINGGRD);
+       else
+            ats=atsummary(RINGGRD);
+            DAoptions.z0 = PhysConst.c*(ats.syncphase-pi)/(2*pi*ats.revFreq*ats.harmon); % choose the synchronous phase
        end
        try
-            [DA,~]=calcDA_fast(RINGGRD,LatticeOptData.DAoptions,etax,betax,betay);
+            [DA,~]=calcDA_raw(RINGGRD,DAoptions,etax,betax,betay);
             f(2)=-DA;
        catch ME
             fprintf('Error in LattOpt_EmitDynAp: Dynamic Aperture calculation \n');

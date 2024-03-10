@@ -1,11 +1,8 @@
-function [orb0,varargout] = calcOrb(varargin)
+function [RINGc,orb0,orb] = calcOrb(varargin)
 % Calculates, plots and corrects the closed orbit
 % 
 % This is a higher level wrapper function
 % 
-%% Usage examples
-% [orb0, orb, RINGc] = calcOrb(RING,'plot');
-%
 %% Mandatory input arguments
 % RING : AT2 lattice array
 %
@@ -18,15 +15,21 @@ function [orb0,varargout] = calcOrb(varargin)
 % verbose: produces verbose output
 %
 %% Output parameters
-% orb0: (nx2) array: (X,Y) Initial orbit  [m] DAoptions: Structure with options used in the calculation
-% RINGc: corrected ring (only if correction is asked for)
-% orb: (nx2) array: (X,Y) Corrected orbit [m] (only if correction is asked
+% RINGc: corrected ring (if correction is not asked for, this is the same as the input lattice)
+% orb0: (nx2) array: (X,Y) Initial orbit  [m] 
+% orb: (nx2) array: (X,Y) Corrected orbit [m] (only if correction is done)
 % 
+%% Usage examples
+% [RINGc, orb0, orb] = calcOrb(RING,'plot','correct');
+% [~, orb0, orb]     = calcOrb(RING,'plot');
+% RINGc = calcOrb(RING,'plot','correct');
+% calcOrb(RING,'plot');
 
 %% History
 % PFT 2024/03/02
+% 2024/03/10: Bug fix to get the correct output lattice
 %
-%% input argument parsing
+%% Input argument parsing
 RING           = getargs(varargin,[]);
 plotf          = any(strcmpi(varargin,'plot'));
 correctf       = any(strcmpi(varargin,'correct'));
@@ -36,11 +39,11 @@ verbosef       = any(strcmpi(varargin,'verbose'));
 % View the orbit, including BPM errors
 setoption('WarningDp6D',false); % avoids warning messages
 iBPM = findcells(RING,'FamName','BPM');
+RINGc = RING;
 if (isempty(iBPM))
     fprintf('%s Error in calcOrb; no BPMs in Lattice to plot orbit, aborting... \n', datetime);
     orb0=nan;
-    varargout{1}=nan;
-    varargout{2}=nan;
+    orb=nan;
     return
 end
 sBPM = findspos(RING,iBPM);
@@ -57,19 +60,14 @@ if (correctf)
 %    RINGc = atcorrectorbit(RING,[],[],[],[],[140 120; 160 140; 180 160; ...
 %                           ones(10,1)*[200 180]],[true true],0.75,...
 %                           [],[],[0.38, 0.38]*1e-3,verbosef);
-    RINGc = atcorrectorbit(RING,[],[],[],[],[],[true true],0.75,...
+     RINGc = atcorrectorbit(RING,[],[],[],[],[],[true true],0.75,...
                            [],[],[0.38, 0.38]*1e-3,verbosef);
-    varargout{1}=RINGc;
     % Calculate the new orbit and plot in the former figure
     orb = findorbit6Err(RINGc,iBPM);
-    varargout{2}=orb;
     if (plotf)
         figure;plot(sBPM,1e6*orb([1 3],:));xlim([0 528]); 
                xlabel('s [m]'); ylabel('x,y [µm]');grid;legend('X','Y');
-    end
-else
-    varargout{1}=nan;
-    varargout{2}=nan;
+    end   
 end
 
 

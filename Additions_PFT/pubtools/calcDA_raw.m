@@ -4,11 +4,6 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 % that can be called by the higher level wrapper function "calcDA"  
 % or by optimization functions in MOGA/SOGA.
 %
-%% Usage examples
-% [DA,~]    = calcDA_raw(RING,DAoptions,0.0,9.0,2.0);
-% [DA, DAV] = calcDA_raw(RING,DAoptions,0.0,9.0,2.0);
-% [DA, DAV] = calcDA_raw(RING,DAoptions,0.0,nan,nan);
-%
 %% Mandatory input arguments
 % RING: AT2 lattice array
 % DAoptions :Structure containing the following fields:
@@ -45,6 +40,11 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 % DA: Dynamic aperture [mm**2]
 % DAV : vector of dynamic aperture border coordinates (if 'border' mode) 
 %       or vector of booleans indicating particle loss (if 'grid' mode)
+%
+%% Usage examples
+% [DA,~]    = calcDA_raw(RING,DAoptions,0.0,9.0,2.0);
+% [DA, DAV] = calcDA_raw(RING,DAoptions,0.0,9.0,2.0);
+% [DA, DAV] = calcDA_raw(RING,DAoptions,0.0,nan,nan);
 
 %% History 
 % PFT 2024/03/09 
