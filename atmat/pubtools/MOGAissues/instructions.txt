@@ -1,0 +1,10 @@
+to check a solution one can run, where '3' here is solution n.3
+Rout = ExploreMOGASolution_m4U('MOGA_12032024_163407.mat', 3);
+
+one can also open a solution as
+load 'MOGA_12032024_163407.mat', variable 'X' will have all the decision variables or parameters for a determined solution
+
+to start a run from a predefined set of X decision variables (aka magnet handles)
+[X,fval,exitflag,output,MOGAResults] = MOGA_m4U_b_emix_DA(X(3,:))
+
+[X,fval,exitflag,output,MOGAResults] = MOGA_m4U_b_emix_DA()
