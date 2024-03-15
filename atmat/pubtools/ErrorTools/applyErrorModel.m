@@ -41,7 +41,6 @@ function varargout = applyErrorModel(varargin)%, OrbitCorrectionFlag)
 % See also markSlicedMagnets, getmagnetslices, getMagGroupsFromGirderIndex,
 % atguessclass
 
-%T = load('ModelRM.mat'); ModelRM = T.ModelRM; clear T
 
 %% Default settings
 DisplayFlag = false; % plot final results
@@ -139,62 +138,6 @@ index_girderelements = getMagGroupsFromGirderIndex(RING);
 
 
 
-%% DEFINE ERRORS
-% Should be given as an input to the function instead. Struct definition?
-%
-% % ----------------------------------------
-% % single magnet error table (RMS) --> MAGe
-% % ----------------------------------------
-% %      grad(frac)   dx(um)    dy(um)
-% gradZero  = 1;  % 1 turn off/on the gradient errors
-% shiftZero = 1;  % 1 turn off/on the displacement errors
-% rollZero  = 1;  % 1 turn off/on the roll errors
-% eQ = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % quadrupole
-% eR = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % reverse-bends
-% eS = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % sextupole
-% eO = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % octupole
-% eD = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % dipole
-% MAGe.eQ = eQ; MAGe.eR = eR; MAGe.eS = eS; MAGe.eO = eO; MAGe.eD = eD;
-%
-%
-% % -------------------------------
-% % girder random error table (RMS)
-% % -------------------------------
-% % <MSj> Given the girder shape, i.e. it's longer than it's wide, the
-% % expectation is that roll will be harder to correctly determine. I
-% % therefore swapped the yaw/pitch and roll values.
-%
-% %        sway(um) heave(um) yaw(urad) pitch(urad) roll(urad)
-% grdZero = 0.5;
-% eGr{1}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% eGr{2}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% eGr{3}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% eGr{4}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% eGr{5}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% eGr{6}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% eGr{7}  = [100      100       10        10          25] * 1e-6  *grdZero;
-%
-% % --------------------------------------
-% % girder test error table - fixed values
-% % --------------------------------------
-% %        sway(um) heave(um) yaw(urad) pitch(urad) roll(urad)
-% egt{1}  = [  0        0        0         0          0] * 1e-6;
-% egt{2}  = [300        0      100         0          0] * 1e-6;
-% egt{3}  = [123        0     -100         0          0] * 1e-6;
-% egt{4}  = [  0        0        0         0          0] * 1e-6;
-% egt{5}  = [  0     -123        0        50          0] * 1e-6;
-% egt{6}  = [  0     -300        0       -50          0] * 1e-6;
-% egt{7}  = [  0        0        0         0          0] * 1e-6;
-%
-% girder_move_type = 'nomove'; % 'fixed' / 'nomove' / 'random'
-% GIRe.type = girder_move_type;
-% if strcmpi(girder_move_type,'random')
-%     GIRe.gir = eGr;
-% elseif strcmpi(girder_move_type,'fixed')
-%     GIRe.gir = egt;
-% else
-%     GIRe.gir = [];
-% end
 
 
 %% Deploy girder errors
@@ -636,16 +579,3 @@ end
 end
 
 
-
-
-% % % % %     neigeny = 110; neigenx = 160;
-% % % % %     [OCS, OCS0, V, S, ErrorFlagx]  = setorbitMA({GoalOrbitX}, {getx('physics','struct',BPMdevlist)},{getsp('HCM','physics','struct')},2,neigenx,'CorrectorGain', 0.85);
-% % % % %     [OCS, OCS0, V, S, ErrorFlagy]  = setorbitMA({GoalOrbitY}, {gety('physics','struct',BPMdevlist)},{getsp('VCM','physics','struct')},2,neigeny,'CorrectorGain', 0.85);
-% % % % % function v = randn_t(a,b, trunc)
-% % % % % outlier = ones(a,1);
-% % % % % v = randn(a,b);
-% % % % % while sum(outlier)>0;
-% % % % %     v(find(outlier>0)) = randn(length(find(outlier>0)),b);
-% % % % %     outlier = abs(v)>trunc; % trunc-sigma truncation
-% % % % % end
-% % % % % end

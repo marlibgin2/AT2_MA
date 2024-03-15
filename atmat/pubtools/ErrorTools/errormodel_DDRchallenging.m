@@ -1,74 +1,6 @@
 function EM = errormodel_DDRchallenging
 
 
-% %% DEFINE ERRORS
-% % Should be given as an input to the function instead. Struct definition?
-% 
-% % ----------------------------------------
-% % single magnet error table (RMS) --> MAGe
-% % ----------------------------------------
-% %      grad(frac)   dx(um)    dy(um)
-% gradZero  = 1;  % 1 turn off/on the gradient errors
-% shiftZero = 1;  % 1 turn off/on the displacement errors
-% rollZero  = 1;  % 1 turn off/on the roll errors
-% eQ = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % quadrupole
-% eR = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % reverse-bends
-% eS = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % sextupole
-% eO = [ 1e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % octupole
-% eD = [ 1.2e-3*gradZero       20e-6*shiftZero   20e-6*shiftZero 20e-6*rollZero ]; % dipole
-% MAGe.eQ = eQ; MAGe.eR = eR; MAGe.eS = eS; MAGe.eO = eO; MAGe.eD = eD;
-% 
-% % errors.Quadrupole =
-% % errors.ReverseBend =
-% % errors.Sextupole =
-% % errors.Octupole =
-% % errors.Bend = [ 0.07 0.16  1.2e-3];
-% % errors.
-% 
-% % -------------------------------
-% % girder random error table (RMS)
-% % -------------------------------
-% % <MSj> Given the girder shape, i.e. it's longer than it's wide, the
-% % expectation is that roll will be harder to correctly determine. I
-% % therefore swapped the yaw/pitch and roll values.
-% 
-% Girder.Pitch = [0 0 0 0 0 0 0];
-% Girder.Yaw = [0 0 0 0 0 0 0];
-% Girder.Roll = ones(1,7)*100e-6;
-% Girder.Sway = ones(1,7)*50e-6;
-% Girder.Heave = ones(1,7)*50e-6;
-% Girder.Surge = zeros(1,7);
-% 
-% Magnet.Pitch = 0;
-% Magnet.Yaw = 0;
-% Magnet.Roll = 100e-6;
-% Magnet.Sway = 25e-6;
-% Magnet.Heave = 25e-6;
-% Magnet.Surge = 0;
-% 
-% 
-% Girder.Name
-% Girder.Systematic
-% Girder.Random
-% 
-% Magnet.Systematic
-% Magnet.Random
-% 
-% What -- Filter -- Error class  -- Systematic/Random
-% Girder  FamName   Field
-% Magnet  Type      Alignment
-% 
-% 
-% %        sway(um) heave(um) yaw(urad) pitch(urad) roll(urad)
-% grdZero = 0.5;
-% eGr{1}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% eGr{2}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% eGr{3}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% eGr{4}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% eGr{5}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% eGr{6}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% eGr{7}  = [100      100       10        10          25] * 1e-6  *grdZero;
-% 
 
 %% Girder error definitions
 % Error model used is first based on girder name, which will be a
@@ -77,13 +9,15 @@ function EM = errormodel_DDRchallenging
 % Generic girder errors
 Girder{1}.ID = 'Baseline';
 
-Girder{1}.Systematic{1} = struct('Pitch', 0, ...
+Girder{1}.Systematic{1} = struct( ...
+    'Pitch', 0, ...
     'Yaw', 0, ...
     'Roll', 0, ...
     'Sway', 0, ...
     'Heave', 0, ...
     'Surge', 0);
-Girder{1}.Random{1} =     struct('Pitch', 0e-6, ...
+Girder{1}.Random{1} =     struct( ...
+    'Pitch', 0e-6, ...
     'Yaw', 0e-6, ...
     'Roll', 0.1e-3, ...
     'Sway', 50e-6, ...
@@ -100,14 +34,14 @@ Girder{1}.Random{1} =     struct('Pitch', 0e-6, ...
 % fields. Use systematics and PolynomB of Nx4 size where N=nbr of slices)
 
 % BASELINE MAGNET ALIGNMENT
-DDR_ChallengingMachiningTolerances.Systematic = struct(...
+DDR_ChallengingMachiningTolerances.Systematic = struct( ...
     'Pitch', 0, ...
     'Yaw', 0, ...
     'Roll', 0, ...
     'Sway', 0, ...
     'Heave', 0, ...
     'Surge', 0);
-DDR_ChallengingMachiningTolerances.Random = struct(...
+DDR_ChallengingMachiningTolerances.Random = struct( ...
     'Pitch', 0, ...
     'Yaw', 0, ...
     'Roll', 0.1e-3, ...
