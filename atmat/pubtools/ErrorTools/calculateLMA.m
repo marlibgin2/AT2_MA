@@ -57,6 +57,9 @@ map_l=zeros(length(points),1);
 
 %% Input argument parsing
 
+% Ensure the lattice is a column vector
+RING = RING(:);
+
 % For the amount of turns to track, use an amount equivalent to 1.2
 % synchrotron periods.
 % NB! This is the default in momentum_aperture_at, but it's a common
