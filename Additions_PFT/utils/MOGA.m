@@ -3,24 +3,14 @@ function MOGAResults = MOGA(varargin)
 % algorithm
 %
 %% inputs:
-% mandatory arguments:
+%% Mandatory arguments:
 %         LatticeOptData : structure withOptimzation configiurationinfo
 %         optfnct : function to be minimized
 %              LattOpt_EmitCHRO  : Emittance and squared sum of chromaticities 
 %              LattOpt_EmitDynap : Emittance and on-momentum Dynamic Aperture
 %              LattOpt_EmitRDT   : Emittance and Resonant Driving Terms
 %
-% optional arguments (if present the option is activated)
-%
-%         save  : if present saves out structure onto a file in folder
-%                "\MOGA_Scans" and automatically generated file name.
-%         cont  : if present assumes this is a continuation run and uses the
-%                final population of a previus run (selected from a dialog box) as
-%                the initial population for this run. Otherwise the initial population is generated acording
-%                to the choice indicated below in "options"
-%         comp  : if present, collects additional ParetoFront data
-%
-% Optional arguments input with syntax ('ParameterName', parameter value)
+%% Optional arguments input with syntax ('ParameterName', parameter value)
 %
 %         X0: initial guess - if = [], the lower an upper bounds given by
 %             the lb and ub input parameters are passed on to the genetic
@@ -36,10 +26,25 @@ function MOGAResults = MOGA(varargin)
 %         X0_Lin : Linear lattice decision variables - only relevant for
 %                  "SEXT" (legacy) or "NonLinear" optmization mode.
 % 
-% NOTE 1: Various options of the minimization algorithm can be chosen 
-% by modifying the calls to optimoptions below.
+%% Optional flags (if present the option is activated)
+%
+%         save  : if present saves out structure onto a file in folder
+%                "\MOGA_Scans" and automatically generated file name.
+%         cont  : if present assumes this is a continuation run and uses the
+%                final population of a previus run (selected from a dialog box) as
+%                the initial population for this run. Otherwise the initial population is generated acording
+%                to the choice indicated below in "options"
+%         comp  : if present, collects additional ParetoFront data
+%
+%% Outputs
+% MOGAResults structure with fields:
 %
 %
+%% Usage examples
+% MOGAResults=MOGA()
+% MOGAResults=MOGA(LatticeOptData,'RINGOpt_EmitDynAp','X0',X0_b3,'dx',20, 'PopSize',1000,'MaxGens',50,'comp','save','cont');
+% MOGAResults=MOGA(LatticeOptData,'RINGOpt_EmitDynAp','X0',X0_b3,'dx',20, 'PopSize',1000,'MaxGens',50,'comp');
+
 %% Input Argument Parsing
 [LatticeOptData, optfnct]=getargs(varargin,[],'LattOpt_EmitDynAp');
 X0             = getoption(varargin,'X0',[]);
@@ -283,14 +288,14 @@ if (compf)
         else
             rpar=ExMOGA(MOGAResults,-i);
         end 
-        MOGAResults.ParetoFront(i,nvars+nfitvars+1)=rpar.tunesuc0(1);
-        MOGAResults.ParetoFront(i,nvars+nfitvars+2)=rpar.tunesuc0(2);
-        MOGAResults.ParetoFront(i,nvars+nfitvars+3)=rpar.beta0(1);
-        MOGAResults.ParetoFront(i,nvars+nfitvars+4)=rpar.beta0(2);
-        MOGAResults.ParetoFront(i,nvars+nfitvars+5)=rpar.etax;
-        MOGAResults.ParetoFront(i,nvars+nfitvars+6)=rpar.damping(1);
-        MOGAResults.ParetoFront(i,nvars+nfitvars+7)=rpar.Sc1;
-        MOGAResults.ParetoFront(i,nvars+nfitvars+8)=rpar.Sc2;
+        MOGAResults.ParetoFront(i,nvars+nfitvars+1)=rpar.outputs.tunesuc0(1);
+        MOGAResults.ParetoFront(i,nvars+nfitvars+2)=rpar.outputs.tunesuc0(2);
+        MOGAResults.ParetoFront(i,nvars+nfitvars+3)=rpar.outputs.atsummary.beta0(1);
+        MOGAResults.ParetoFront(i,nvars+nfitvars+4)=rpar.outputs.atsummary.beta0(2);
+        MOGAResults.ParetoFront(i,nvars+nfitvars+5)=rpar.outputs.atsummary.etax;
+        MOGAResults.ParetoFront(i,nvars+nfitvars+6)=rpar.outputs.atsummary.damping(1);
+        MOGAResults.ParetoFront(i,nvars+nfitvars+7)=rpar.outputs.Sc1;
+        MOGAResults.ParetoFront(i,nvars+nfitvars+8)=rpar.outputs.Sc2;
         MOGAResults.ParetoFront(i,nvars+nfitvars+9)=i;
        catch ME
           fprintf('Error getting linear optics for individual n. %4d \n', i);

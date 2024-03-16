@@ -1,4 +1,4 @@
-function rpara=ExMOGA(varargin)
+function rp=ExMOGA(varargin)
 % 
 % Examines result of MOGA Scan:
 % Produces optics function plots,
@@ -9,14 +9,28 @@ function rpara=ExMOGA(varargin)
 %
 %% Inputs:
 % Mandatory arguments:
-%           MOGAResults: structure containing MOGA results (see MOGA.m
+%           MOGAResults: structure containing MOGA results (see MOGA.m)
 %           index     : index of line in "Values" in MOGAResults structure from which 
 %                       data will be retrieved. If negative the line number
 %                       is used directly. Convenient to keep track of an
 %                       individual regardless of the order of sorting of the
 %                       ParetoFront array.
 %
-% Optional arguments: presence in the argument list activates the option
+% Optional arguments input with syntax ('ParameterName', parameter value)
+%           betas0    : 1x2 matrix of desired long straight hor/vert beta
+%                       functions.
+%           tunesuc   : 1x2 matrix of desired unit cell fractional tunes. (isolated cell)    
+%           tunes     : 1x2 matrix of desired full ring (20 achromats) tunes.
+%           tunerange : [Qxmin Qxmax Qymin Qymax]
+%           Nptunscan : [Npx Npy]
+%           LatticeOptData: structures with fields that set various tolerances 
+%                           for fits. If not given uses
+%                           MOGAResults.LatticeOptData
+%           DAoptions : alternative set of parameters for DA calculation.
+%                        if not given , takes the values from the 
+%                        MOGAResults.LatticeOptData.DAoptions structure
+%
+% Optional flags: presence in the argument list activates the option
 %           plot     : plots lattice functions for the extracted lattice
 %                       as well for the descendent version with dispersion and tune fits
 %           fituc    : fits the unit cell tunes to specified values
@@ -37,19 +51,29 @@ function rpara=ExMOGA(varargin)
 %                       standard lattice.
 %           verbose  : controls level of diagnostic printout
 %
-% Optional arguments input with syntax ('ParameterName', parameter value)
-%           betas0    : 1x2 matrix of desired long straight hor/vert beta
-%                       functions.
-%           tunesuc   : 1x2 matrix of desired unit cell fractional tunes. (isolated cell)    
-%           tunes     : 1x2 matrix of desired full ring (20 achromats) tunes.
-%           tunerange : [Qxmin Qxmax Qymin Qymax]
-%           Nptunscan : [Npx Npy]
-%           DAoptions : alternative set of parameters for DA calcualtion.
-%                        if not given , takes the values from the
-%                        MOGAResults structure
 %% Outputs:
-%          rpara: structure containing lattice properties as produced by
-%                 function atsummary_fast.m and a number of other outputs
+%          rp: structure containing two substructures (inputs and outputs).
+%          rp.inputs documents all inputs when running ExMOGA
+%
+%          rp.outputs
+%          rp.outputs.atsummary=structure obtained from atsummary_fast on
+%                               the final latice for one achromat
+%          rp.outputs.K0 : inital gradient as given from MOGA  
+%          rp.outputs.Knew = final gradoents as given by linear lattice
+%                             fits done by ExMOGA
+%          rp.outputs.tunesuc0: initial unit cell tunes
+%          rp.outputs.tunesuc1: final uniot cell tunes
+%          rp.outputs.index=iindex;
+%          rp.outputs.DAoptions = DAoptions
+%          rp.outputs.Sc1=strength of first chromaticty correction sextupole family
+%          rp.outputs.Sc2=strength of second chromaticty correction sextupole family
+%          rp.outputs.DA=dynamic aperte (rd calc)
+%
+%% Usage Examples
+% rp=ExMOGA(MOGAResults,12,'plot','fitchrom','plotda','verbose');
+% rp=ExMOGA(MOGAResults,12,'plot','fitchrom','fitdisp','plotda','verbose');
+% rp=ExMOGA(MOGAResults,12,'plot','fitchrom','fitdisp','fittune','tunes',[55.13658 16.20460]);
+
 %% Input argument parsing
 [MOGAResults,index]=getargs(varargin,[],1);
 plotf          = any(strcmpi(varargin,'plot'));
@@ -70,14 +94,13 @@ tunes          = getoption(varargin,'tunes',[46.20 16.28]);
 Qrange         = getoption(varargin,'IQrange',[46 47 15 18]);
 qrange         = getoption(varargin,'qrange',[0.1 0.4 0.1 0.4]);
 Npq            = getoption(varargin,'Npq',[10 10]);
+LatticeOptData = getoption(varargin,'LatticeOptData',MOGAResults.LatticeOptData);
 DAoptions      = getoption(varargin,'DAoptions',MOGAResults.LatticeOptData.DAoptions);
 
 %% Preamble
 if (verbose||tunescanf)
     tic;
 end
-
-LatticeOptData = MOGAResults.LatticeOptData;
 
 isdipole    = LatticeOptData.isdipole;
 nvars       = LatticeOptData.nvars;
@@ -242,7 +265,9 @@ if (isfield(LatticeOptData,'TolDisp'))
 else
     TolDisp = 1E-8;
 end
-
+if (isfield(LatticeOptData,'RINGGRD'))
+    RINGGRD=LatticeOptData.RINGGRD;
+end
 
 %% Parameters for dynamic aperture calculation
 % note that these may be different from the parameters at the time
@@ -409,7 +434,7 @@ if (plotf)
 end
 
 try
-    rpara=atsummary_fast(LAT,isdipole);
+    rpar=atsummary_fast(LAT,isdipole);
 catch ME
     fprintf('Error in ExMOGA: atsummary full period from MOGA \n');
     fprintf('Error message was:%s \n',ME.message);
@@ -492,7 +517,7 @@ if(fitucf&&not(isnan(tunesuc0(1)))&&not(isnan(tunesuc0(2))))
     % Checks lattice of the full period with the  updated unit cell
     %
     try
-        rpara=atsummary_fast(LAT_UC,isdipole);
+        rpar=atsummary_fast(LAT_UC,isdipole);
     catch ME
         fprintf('Error in atsummary of full period after unit cell fit \n');
         fprintf('Error message was:%s \n',ME.message);
@@ -564,7 +589,7 @@ if (fitdispf)
     end
 
     try
-        rpara=atsummary_fast(LAT_md,isdipole);
+        rpar=atsummary_fast(LAT_md,isdipole);
     catch ME
         fprintf('Error in atsummary of full period after dispersion fit \n');
         fprintf('Error message was:%s \n',ME.message);
@@ -619,7 +644,7 @@ if(fitbeta0f)
     end
     
     try
-        rpara=atsummary_fast(LAT_bet,isdipole);
+        rpar=atsummary_fast(LAT_bet,isdipole);
     catch ME
         fprintf('Error in atsummary of full period after beta function fit \n');
         fprintf('Error message was: %s \n',ME.message);
@@ -648,7 +673,7 @@ if(fittunef)
      qyfit = tunes(2)/Nper;
      if (verbose)
         fprintf('Fitting period tunes from [ %5.3f %5.3f ] to [ %5.3f %5.3f ] \n',...
-              rpara.Qx_ring/Nper, rpara.Qy_ring/Nper,qxfit,qyfit );
+              rpar.Qx_ring/Nper, rpar.Qy_ring/Nper,qxfit,qyfit );
      end
     
 %     LAT_tune = atfittune(LAT_md,  [qxfit qyfit], 'qfend_sim', 'qdend_sim', 'UseIntegerPart');
@@ -678,9 +703,9 @@ if(fittunef)
     end
    
     try
-        rpara=atsummary_fast(LAT_tune,isdipole);
+        rpar=atsummary_fast(LAT_tune,isdipole);
         if (verbose)
-            fprintf('Final ring tunes = [ %8.5f %8.5f ] \n', rpara.Qx_ring, rpara.Qy_ring);
+            fprintf('Final ring tunes = [ %8.5f %8.5f ] \n', rpar.Qx_ring, rpar.Qy_ring);
         end
     
      catch ME
@@ -743,7 +768,7 @@ if(fitchromf&&~isempty(chrom_fams))
      end
      LAT_tune=LAT_C;
      try
-        rpara=atsummary_fast(LAT_tune,isdipole);
+        rpar=atsummary_fast(LAT_tune,isdipole);
      catch ME
         fprintf('Error in atsummary of full period after chromaticity fit \n');
         fprintf('Error message was: %s \n',ME.message);
@@ -758,7 +783,7 @@ end
 %% Calculates and Plots the Dynamic Aperture
 %
 if (plotdaf)
-    DA=CalcPlotDA(LAT_tune,DAoptions,'plot');
+    DA=calcDA(LAT_tune,DAoptions,'plot','4d');
     fprintf('Dynamic Aperture = %4.2f mm**2 \n',DA);
 else
     DA=NaN;
@@ -928,49 +953,69 @@ if (tunescanf)
         end
     end 
     delete(fb);
-    rpara.qxscan=qxscan;
-    rpara.qyscan=qyscan;
-    rpara.DAScan=DAScan;
-    rpara.EmitScan=EmitScan*1e12;
-    rpara.BetaX0Scan = BetaX0Scan;
-    rpara.BetaY0Scan = BetaY0Scan;
-    rpara.JxScan = JxScan;
+    rp.outputs.qxscan=qxscan;
+    rp.outputs.qyscan=qyscan;
+    rp.outputs.DAScan=DAScan;
+    rp.outputs.EmitScan=EmitScan*1e12;
+    rp.outputs.BetaX0Scan = BetaX0Scan;
+    rp.outputs.BetaY0Scan = BetaY0Scan;
+    rp.JxScan = JxScan;
     if (strcmp(plottunescanf,'Y'))
-        PlotEMTuneScan(rpara);
+        PlotEMTuneScan(rp);
     end
     [mdaj,jmaxda] = max(DAScan');[maxda,imaxda] = max(mdaj);
-    rpara.DAmax = maxda;
-    rpara.qxmaxDA = qxscan(imaxda);
-    rpara.qymaxDA = qyscan(jmaxda(imaxda));
+    rp.outputs.DAmax = maxda;
+    rp.outputs.qxmaxDA = qxscan(imaxda);
+    rp.outputs.qymaxDA = qyscan(jmaxda(imaxda));
 end
 
 %% Adds info to output structure
 %
-rpara.Knew = Knew;
-rpara.K0   = Ks;
-rpara.tunesuc0=tunesuc0;
-rpara.tunesuc1=tunesuc1;
-rpara.index=iindex;
-rpara.LatticeOptData = LatticeOptData;
-rpara.DAoptions = DAoptions;
-rpara.MOGARunNumber = RunNumber;
-rpara.MOGAIndex=index;
-rpara.Sc1=Sc1;
-rpara.Sc2=Sc2;
-rpara.DA=DA;
-rpara.fitucf    = fitucf; 
-rpara.fitdispf  = fitdispf; 
-rpara.fitbeta0f = fitbeta0f; 
-rpara.fittunef  = fittunef;
-rpara.fitchromf = fitchromf;
+% "inputs" field documents input parameters to ExMOGA
+% "outputs" field documents output parameters 
+%
+
+rp.inputs.MOGAResults=MOGAResults;
+rp.inputs.MOGAIndex=index;
+rp.inputs.fitucf= fitucf; 
+rp.inputs.fitdispf  = fitdispf; 
+rp.inputs.fitbeta0f = fitbeta0f; 
+rp.inputs.fittunef  = fittunef;
+rp.inputs.fitchromf = fitchromf;
+rp.inputs.tunescanf = tunescanf;
+rp.inputs.saveOPAf  = saveOPAf;
+rp.inputs.tunesuc = tunesuc;
+rp.inputs.betas0=betas0;
+rp.inputs.tunes=tunes;
+rp.inputs.Qrange=Qrange;
+rp.inputs.qrange=qrange;
+rp.inputs.Npq=Npq;
+rp.inputs.DAoptions=DAoptions;
+
+rp.outputs.atsummary=rpar;
+rp.outputs.K0   = Ks;
+rp.outputs.Knew = Knew;
+rp.outputs.tunesuc0=tunesuc0;
+rp.outputs.tunesuc1=tunesuc1;
+rp.outputs.index=iindex;
+rp.outputs.DAoptions = DAoptions;
+rp.outputs.LatticeOptData = LatticeOptData;
+rp.outputs.Sc1=Sc1;
+rp.outputs.Sc2=Sc2;
+rp.outputs.DA=DA;
+
 
 if(strcmp(optMode,'SEXT')||strcmp(optMode,'NonLinear'))
-    rpara.DVLins = DVLins;
+    rp.outputs.DVLins = DVLins;
 end
 if(isfield(LatticeOptData,'All_fams'))
-    rpara.Kall = Kall_new;
+    rp.outputs.Kall = Kall_new;
 end
-rpara.ACHRO = LAT_tune;
+rp.outputs.ACHRO = LAT_tune;
+
+if (isfield(LatticeOptData,'RINGGRD'))
+    rp.outputs.RINGGRD=setAllfams(6,RINGGRD,LatticeOptData,Kall_new);
+end
 
 %
 %% Saves OPA file

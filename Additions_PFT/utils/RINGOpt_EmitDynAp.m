@@ -5,7 +5,7 @@ function f = RINGOpt_EmitDynAp(x, LatticeOptData)
 %                        list of decision and objective variables
 %
 %        LatticeOptData.RINGGRD is the input lattice. This contains the
-%        full ring, possibly with errors
+%        full ring, possibly with errors.
 %
 %% output: row vector of fitness functions to be minimized.
 % f(1) = Emittance
@@ -16,6 +16,11 @@ function f = RINGOpt_EmitDynAp(x, LatticeOptData)
 % Chromaticity is corrected to chosen target values with two
 % chose sextupole sextupole families. These are chosen when running
 % the scripts max4_UpgradeStudies/m4U and are recorded in LattOptData.
+% A full ring is used as the lattice.
+% In case the number of error seeds is set at >0,various lattices
+% corresponding with different error seeds are used and the average dynamic
+% aperture is returned. Orbit is corrected for each error seed.
+% If number of error seeds is set to zero, no errors are applied.
 %
 %% Comments relevant for optmization configured with m4U.m
 %     This can used for MOGA runs with optimization modes 'Linear' or 'Full'.
@@ -26,7 +31,8 @@ function f = RINGOpt_EmitDynAp(x, LatticeOptData)
 PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
 PhysConst = PC.PC;      %Load physical constants
 %
-ErrorModel = LatticeOptData.ErrorModel;
+ErrorModel = LatticeOptData.ErrorModel; % error model (see applyErrorModel function). If =[], no errors are applied
+nseeds     = LatticeOptData.nseeds; %numenbr of seeds. if = 0, no errors are applied
 DAoptions  = LatticeOptData.DAoptions;
 chroms0    = DAoptions.chroms0; % Target chromaticity for the whole ring
 TolChrom   = DAoptions.TolChrom;% Chromaticity tolerances
@@ -64,26 +70,37 @@ try
 %
        XAll=getAllfams(2,ACHRO,LatticeOptData);
        RINGGRD = setAllfams(6,RINGGRD,LatticeOptData,XAll);
-       if (isstruct(ErrorModel))
-        RINGGRD = applyErrorModel(RINGGRD,ErrorModel);
-        RINGGRD = calcOrb(RINGGRD,'correct');
-       end
        if(strcmpi(TRmode,'4d'))
            RINGGRD=atdisable_6d(RINGGRD);
        else
             ats=atsummary(RINGGRD);
             DAoptions.z0 = PhysConst.c*(ats.syncphase-pi)/(2*pi*ats.revFreq*ats.harmon); % choose the synchronous phase
        end
-       try
-            [DA,~]=calcDA_raw(RINGGRD,DAoptions,etax,betax,betay);
-            f(2)=-DA;
-       catch ME
-            fprintf('Error in LattOpt_EmitDynAp: Dynamic Aperture calculation \n');
-            fprintf('Error message was: %s \n',ME.message);    
+       if ((nseeds>0)&&isstruct(ErrorModel))
+           DAs=nan(1,nseeds);
+           for i=1:nseeds   
+              RINGGRDe = applyErrorModel(RINGGRD,ErrorModel);
+              RINGGRDc = calcOrb(RINGGRDe,'correct');
+              try
+                 [DAs(i),~]=calcDA_raw(RINGGRDc,DAoptions,etax,betax,betay); 
+              catch ME
+                 fprintf('Error in LattOpt_EmitDynAp: Dynamic Aperture calculation \n');
+                 fprintf('Error message was: %s \n',ME.message);    
+              end
+           end
+           DA=mean(DAs);
+       else
+           try
+              [DA,~]=calcDA_raw(RINGGRD,DAoptions,etax,betax,betay); 
+           catch ME
+              fprintf('Error in LattOpt_EmitDynAp: Dynamic Aperture calculation \n');
+              fprintf('Error message was: %s \n',ME.message);    
+           end 
        end
+       f(2)=-DA;    
     else
        f(1)=Inf;
-       f(2)=0;
+       f(2)=0.0;
     end
 catch
     f(1)=Inf;

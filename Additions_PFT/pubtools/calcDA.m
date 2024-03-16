@@ -1,7 +1,7 @@
-function [DA,DAoptions]=calcDA(varargin)
+function [DA,DAV,DAoptions]=calcDA(varargin)
 %
 % Calculates and plots Dynamic Aperture. Tracking can be 6d or 4d
-% as defined by the input lattice. This is a higherlevl wrapper function
+% as defined by the input lattice. This is a higherlevel wrapper function
 % that in turn calls the lower level function "calcDA_raw"
 % 
 %% Mandatory input arguments
@@ -35,7 +35,7 @@ function [DA,DAoptions]=calcDA(varargin)
 %            as input in the form ('parameter', value)
 %
 %% Optional input parameters
-% all fields in DAoptions listed above
+% all fields in DAoptions listed above. If given
 %
 %% Optional flags
 % plot : plots DA;
@@ -96,6 +96,10 @@ XmaxDA           = getoption(varargin,'XmaxDA',DAoptions.XmaxDA);
 YmaxDA           = getoption(varargin,'YmaxDA',DAoptions.YmaxDA);
 npdax            = getoption(varargin,'npdax',DAoptions.npdax);
 npday            = getoption(varargin,'npday',DAoptions.npday);
+r0               = getoption(varargin,'r0', DAoptions.r0);
+nang             = getoption(varargin,'nang',DAoptions.nang);
+res              = getoption(varargin,'res',DAoptions.res); 
+alpha            = getoption(varargin,'alpha',DAoptions.alpha);
 
 DAoptions.dp=dp;
 DAoptions.z0=z0;
@@ -110,6 +114,10 @@ DAoptions.XmaxDA=XmaxDA;
 DAoptions.YmaxDA=YmaxDA;
 DAoptions.npdax=npdax;
 DAoptions.npday=npday;
+DAoptions.r0=r0;
+DAoptions.nang=nang;
+DAoptions.res=res;
+DAoptions.alpha=alpha;
 
 % Parameters for dynamic aperture calculation
 %
