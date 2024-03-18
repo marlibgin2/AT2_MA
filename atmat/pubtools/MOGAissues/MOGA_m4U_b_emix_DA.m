@@ -6,6 +6,7 @@ if nargin<1
     X0 = [];
 end
 
+MOGAdir = '/home/magsjo/ControlRoom/at/atmat/pubtools/MOGAissues';
 %persistent ri; 
 
 ri = m4U_240114_b01_02_03_02__grd_segmented;
@@ -28,7 +29,7 @@ dx     = [2.00, 2.00, 2.00, 2.00, 2.00, 2.00, ... % QUAD
           100.00, 100.00, 100.00]*2.5e-3;         % OCT  
 nvars  = length(dx);
 sizPop   = 27; % 400;  % 5000
-MaxGen   = 2; %15; % 20
+MaxGen   = 15; %15; % 20
 FuncTol  = 1e-3;
 ConstTol = 1e-1;
 
@@ -39,9 +40,10 @@ if (size(X0,2)==nvars)
     %fprintf('upper bounds reset to \r\n');
 end
 
-if 1==0 %old way
+if 0==0 %old way
     iniPop = 2*(rand(sizPop,nvars)-0.5).*dx+X0;
 else % a la Pedro
+    cd(MOGAdir);
     [MOGAfilename MOGAdir]=uigetfile('../MOGA_*.mat');
     if (ischar(MOGAfilename))
         load([MOGAdir MOGAfilename],'MOGAResults');
@@ -77,7 +79,7 @@ end
 % iniPop = [iniPop; X0]; 
 
 %iniPop = X0; 
-controlgcp = 1; 
+controlgcp = 0; 
 usepar = false;
 if controlgcp==1
    c = parcluster;
@@ -109,29 +111,34 @@ end
 %
 % start with the initial options
 %
-options = optimoptions('gamultiobj');
+% options = optimoptions('gamultiobj');
+options = optimoptions('gamultiobj','InitialPopulationRange',[lb;ub]);
 
 %% Modify options setting
 % options = optimoptions(options,'CreationFcn', @gacreationnonlinearfeasible);
 % options = optimoptions(options,'MutationFcn', @mutationadaptfeasible);
 % options = optimoptions(options,'CrossoverFcn',@crossoverintermediate);
 
-options = optimoptions(options,'PlotFcn',@gaplotpareto);
+% options = optimoptions(options,'PlotFcn',@gaplotpareto);
 options = optimoptions(options,'PlotInterval',1);
 %options = optimoptions(options,'display', 'iter');
 options = optimoptions(options,'PopulationSize',sizPop);
 options = optimoptions(options,'InitialPopulation',iniPop);
 %options = optimoptions(options,'InitialPopulationMatrix',iniPop);
-%options = optimoptions(options,'InitialPop',iniPop);
+% options = optimoptions(options,'InitialPop',iniPop);
 options = optimoptions(options,'UseParallel',usepar);
 options = optimoptions(options,'UseVectorized', false);
 options = optimoptions(options,'OutputFcns', @MOGAoutputfcn);
 options = optimoptions(options,'FunctionTolerance',FuncTol);%1e-3);
 options = optimoptions(options,'MaxGenerations',MaxGen);%40
-options = optimoptions(options,'ConstraintTolerance',ConstTol);%1e-1);
+options = optimoptions(options,'ConstraintTolerance',100);   %ConstTol);%1e-1);
+options = optimoptions(options,'PlotFcn',{@gaplotpareto,@gaplotrankhist});
 
-myobj      = @(X)OBJfcn_m4U(X, ri); % object function
-mycon      = @(X)CONfcn_m4U(X, ri); % constraint function
+
+% myobj      = @(X)OBJfcn_m4U(X, ri); % object function
+% mycon      = @(X)CONfcn_m4U(X, ri); % constraint function
+myobj      = @(x) OBJfcn_m4U(x,ri); % object function
+mycon      = @(x) CONfcn_m4U(x,ri); % constraint function
 nvars      = length(X0);
 %[X,fval,exitflag,output,population,score] = gamultiobj(myobj,nvars,[],[],[],[],[], [], mycon, options);
 [X,fval,exitflag,output,population,score] = gamultiobj(myobj,nvars,[],[],[],[],lb, ub, mycon, options);
