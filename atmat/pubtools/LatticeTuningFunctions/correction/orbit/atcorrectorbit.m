@@ -304,8 +304,10 @@ end
 % get current orbit
     if use6d
         o=findorbit6Err(rcor,indBPM,inCOD);
+        dpp = o(5,1);
     else
         o=findorbit4Err(rcor,0,indBPM,inCOD);
+        dpp = 0;
     end
 oxc=o(1,:);
 oyc=o(3,:);
@@ -328,5 +330,5 @@ if printouttext
     disp(['    ' 'min' '    ' 'mean' '    ' 'max'])
     disp(['hs:'  num2str([min(hsL) mean(hsL) max(hsL)]*1e3,' %2.2f ') ' mrad'])
     disp(['vs:'  num2str([min(vsL) mean(vsL) max(vsL)]*1e3,' %2.2f ') ' mrad'])
-    disp(['dpp: ' num2str(inCOD(5))])
+    disp(['dpp @ s=0: ' num2str(dpp)])
 end
