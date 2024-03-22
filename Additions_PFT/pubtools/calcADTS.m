@@ -9,6 +9,7 @@ function [Qxx,Qyx, Qxy, Qyy, amplx, amply]=calcADTS(varargin)
 %% Optional input parameters
 % plane: 'X', 'Y', or 'XY': default is 'X'
 % xmax: max horizontal amplitude [m], default = 0.005 
+% xmin: min
 % npx: number of points along horizontal axis, default = 10
 % ymax: max horizontal amplitude [m], default =0.004
 % npy: number of points along horizontal axis, default = 10
