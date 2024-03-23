@@ -23,6 +23,9 @@ function varargout=atnuampl(ring,ampl,xz,varargin)
 %               3: Windowing + interpolation (default)
 %               4: NAFF
 %   Other options are transmitted to the plot function
+%
+% 2024/03/23 PFT - added capability of dealing with negative horizontal
+%                  amplitudes
 
 
 lab={'x^2','p_x^2','z^2','p_z^2'};
@@ -52,8 +55,10 @@ tune0=nbper*lindata(end).mu/2/pi;
 offs=[nbper -nbper];
 siza=size(ampl);
 nampl=prod(siza);
-p0=repmat(0.00003*[1;0;1;0;0;0], 1,nampl); % 30 microns minimum amplitude
-p0(xz,:)=max(p0(xz,:),ampl(:)');
+p0=repmat(0.00003*[1;0;1;0;0;0],1,nampl); % 30 microns minimum amplitude
+%p0(xz,:)=max(p0(xz,:),ampl(:)');
+ampl(ampl==0)=0.00003;
+p0(xz,:)=ampl;
 p0=p0+orbit(:,ones(1,nampl));
 p1=ringpass(ring,p0,nturns)-orbit(:,ones(1,nampl*nturns));
 tunetrack=[findtune(reshape(p1(1,:),nampl,nturns)',method);...
