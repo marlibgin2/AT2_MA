@@ -54,8 +54,8 @@ function [DAav, DAstd, DAoptions] = calcDAdist(varargin)
 %
 %% Usage examples
 % [DAav,DAstd, ~] = calcDAdist(RING,ErrorModel,DAoptions,'plot');
-% [DAav, DAstd, DAoptions] = calcDAdist(RING,[],'nturns',1024);
-% calcDAdist(RING,[],'nturns',1024,'plot');
+% [DAav, DAstd, DAoptions] = calcDAdist(RING, ErrorModel,[],'nturns',1024);
+% calcDAdist(RING,ErrorModel,[],'nturns',1024,'plot');
 
 %% History
 % PFT 2024/03/12
