@@ -12,18 +12,19 @@ function plotADTS(adts,varargin)
 %                   tunes.
 % plane: 'X', 'Y', 'XY', 'td' (td draws a tune diagram - fractional part only)
 % resorder: resonance order for tune diagram, default = 5
-% zoomx   : zoom factor for horizontal direction in tune diagram
-% zoomy   : zoom factor for horizontal direction in tune diagram
+% qxrange=[qxmin qymin]: horizontal plot range in tune diagram,  default =[0 1]
+% qyrange=[qymin qymax]: vertical plot range in tune diagram, default= [0 1]
 %
 %% Usage examples
 % plotADTS(adts,'plane','x','plotmode','rel');
+% plotADTS(adts,'plane','td','qxrange',[0.2 0.3],'resorder',3);
 
 %% Input argument parsing
 plotmode = getoption(varargin,'plotmode',adts.inputs.plotmode);
 plane    = getoption(varargin,'plane',adts.inputs.plane);
 resorder = getoption(varargin,'resorder',5);
-zoomx    = getoption(varargin,'zoomx',0.0);
-zoomy    = getoption(varargin,'zoomy',0.0);
+qxrange  = getoption(varargin,'qxrange',[0.0 1.0]);
+qyrange  = getoption(varargin,'qyrange',[0.0 1.0]);
 
 xmin  = adts.inputs.xmin;
 xmax  = adts.inputs.xmax;
@@ -142,14 +143,14 @@ switch plane
         Qxyfrac=adts.outputs.Qxyfrac;
         Qyyfrac=adts.outputs.Qyyfrac;
 
-        figure;plot(Qxxfrac,Qyxfrac,'ob');hold;
+        figure;plot(Qxxfrac,Qyxfrac,'ok');hold;
         plot(Qxyfrac,Qyyfrac,'or');
-        plot_net(resorder,min(min(Qxxfrac),min(Qxyfrac))*(1-zoomx),...
-                          max(max(Qxxfrac),max(Qxyfrac))*(1+zoomx),...
-                          min(min(Qyxfrac),min(Qyyfrac))*(1-zoomy),...
-                          min(max(Qyxfrac),max(Qyyfrac))*(1+zoomy));
+        plot_net(resorder,qxrange(1),qxrange(2),...
+                          qyrange(1),qyrange(2));
+                          
         xlabel('qx');ylabel('qy');
         grid;
+        title(strcat('Res order = ',num2str(resorder)));
 
     otherwise
         fprintf('%s Error in plotADTS: unknown plane: %s \n',datetime,plane);       

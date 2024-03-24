@@ -113,7 +113,7 @@ fprintf('\r\n');
 
 options = optimoptions('ga');
 
-%% Modify options setting
+%% Modifies options setting
 
 % creation options
 options = optimoptions(options,'CreationFcn', @gacreationuniform);
@@ -221,7 +221,7 @@ else
 end
 
 %
-%% sets fixed linear lattice parameters in case of pure sextupole
+%% Sets fixed linear lattice parameters in case of pure sextupole
 % optimization case 
 %
 if (strcmp(optMode,'NonLinear'))
@@ -299,6 +299,8 @@ SOGAResults.lb=lb;
 SOGAResults.ub=ub;
 SOGAResults.optDVs = x;
 
+%% Saves OPA file
+%
 filename = strcat('SOGA_',datestr(now,30));
 SOGAResults.RunNumber = filename;
 
@@ -308,7 +310,7 @@ end
 
 if(savef)
     fprintf('Saving file %s \n', filename);
-    filename=strcat('SOGA_Scans/',filename); %needs changing for windows path conventions
+    filename=strcat('/home/pedtav/Documents/Max4U/SOGA_Scans/',filename);
     save(filename,'SOGAResults');
 end
 

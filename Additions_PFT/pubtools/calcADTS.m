@@ -1,6 +1,6 @@
 function adts=calcADTS(varargin)
 % Calculates and plots ADTS. This is a high level wrapper to
-% the AT2.0 function atnuampl. Tracking is 4d or 6d as defined
+% the AT2.0 function "atnuampl.m". Tracking is 4d or 6d as defined
 % by the input lattice
 %   
 %% Mandatory input arguments
@@ -11,14 +11,16 @@ function adts=calcADTS(varargin)
 %  'x' calculates only tunes vs horizontal position
 %  'y' calculates only tunes vs vertical position
 %  'xy' or 'td' calculates both but plots (if requested) are different
-%  'xy' will bloot both tujes vs x and y whereas 'td' will plot a tune
-%       diagram.
+%               'xy' will plot both tunes vs x and y 
+%               whereas 'td' will plot a tune diagram.
 % xmax: max horizontal amplitude [m], default = 0.005 
 % xmin: min horizontal amplitude [m], default = 0.0 
 %       (note: the function atnuampl replaces zero amplitudes with
 %        +30 micrometers)
-% np: number of points at which to calculate ADTS default = 10
-% ymax: max vertical amplitude [m], default =0.004
+% ymax: max vertical amplitude [m], default = 0.004
+% ymin: min vertical amplitude [m], default = 0.0
+% npx: number of points along horizontal direction; default = 11
+% npy: number of points along vertical direction: default = 11
 % nturns : number of turns, default = 128
 % method 1: Highest peak in fft
 %        2: Interpolation on fft results
@@ -55,7 +57,8 @@ function adts=calcADTS(varargin)
 %% Usage examples
 % adts = calcADTS(RING,'plot');
 % calcADTS(RING,'nturns',1024,'plot');
-% adts = calcADTS(RING,'plot','xmax',0.0095839,'plane','x','np',128);
+% adts = calcADTS(RING,'plot','xmax',0.007,'plane','x','npx',128);
+% adts = calcADTS(RING,'plot','xmin',-0.007,'xmax',0.004,'plane','x');
 
 %% History
 % 2024/03/17: first version PFT.
@@ -72,7 +75,9 @@ plane            = getoption(varargin,'plane','x');
 xmax             = getoption(varargin,'xmax',0.005);
 xmin             = getoption(varargin,'xmin',0.0);
 ymax             = getoption(varargin,'ymax',0.004);
-np               = getoption(varargin,'np',10);
+ymin             = getoption(varargin,'ymin',0.000);
+npx              = getoption(varargin,'npx',11);
+npy              = getoption(varargin,'npy',11);
 method           = getoption(varargin,'method',3);
 plotmode         = getoption(varargin,'plotmode','abs');
 
@@ -83,7 +88,7 @@ if (verbosef)
 end
 switch plane
     case {'x';'X'}
-        amplx     = linspace(xmin,xmax,np);
+        amplx     = linspace(xmin,xmax,npx);
         [~,x0pos] = min(abs(amplx));
         [Qxx,Qyx] = atnuampl(RING,amplx,1,'nturns',nturns,'method',method);
         dQxx = Qxx - Qxx(x0pos);
@@ -99,8 +104,8 @@ switch plane
         amply=[];
 
     case {'y';'Y'}
-        amply = linspace(0,ymax,np);
-        y0pos = 1;
+        amply = linspace(ymin,ymax,npy);
+        [~,y0pos] = min(abs(amply));
         [Qxy,Qyy] = atnuampl(RING,amply,3,'nturns',nturns,'method',method);
         dQxy = Qxy - Qxy(y0pos);
         dQyy = Qyy - Qyy(y0pos);
@@ -115,10 +120,10 @@ switch plane
         amplx=[];
 
     case {'xy';'XY';'xY';'Xy';'td'}
-        amplx     = linspace(xmin,xmax,np);
+        amplx     = linspace(xmin,xmax,npx);
         [~,x0pos] = min(abs(amplx));
-        amply     = linspace(0,ymax,np);
-        y0pos     = 1;
+        amply     = linspace(ymin,ymax,npy);
+        [~,y0pos] = min(abs(amply));
         [Qxx,Qyx] = atnuampl(RING,amplx,1,'nturns',nturns,'method',method);
         dQxx = Qxx - Qxx(x0pos);
         dQyx = Qyx - Qyx(x0pos); 
@@ -141,8 +146,10 @@ end
 adts.inputs.plane=plane;
 adts.inputs.xmin=xmin;
 adts.inputs.xmax=xmax;
+adts.inputs.ymin=ymin;
 adts.inputs.ymax=ymax;
-adts.inputs.np=np;
+adts.inputs.npx=npx;
+adts.inputs.npy=npy;
 adts.inputs.nturns=nturns; 
 adts.inputs.method=method;
 adts.inputs.plotmode=plotmode;

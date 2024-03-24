@@ -73,6 +73,7 @@ function rp=ExMOGA(varargin)
 % rp=ExMOGA(MOGAResults,12,'plot','fitchrom','plotda','verbose');
 % rp=ExMOGA(MOGAResults,12,'plot','fitchrom','fitdisp','plotda','verbose');
 % rp=ExMOGA(MOGAResults,12,'plot','fitchrom','fitdisp','fittune','tunes',[55.13658 16.20460]);
+% rp=ExMOGA(MOGAResults,12,'plot','fitchrom','fitdisp','verbose','saveOPA');
 
 %% Input argument parsing
 [MOGAResults,index]=getargs(varargin,[],1);

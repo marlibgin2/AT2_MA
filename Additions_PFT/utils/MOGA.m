@@ -304,9 +304,12 @@ if (compf)
    end
    toc;
 end
+%
+%% Saves results file
+
 if(savef)
     fprintf('Saving file %s \n', filename);
-    filename=strcat('MOGA_Scans/',filename);
+    filename=strcat('/home/pedtav/Documents/Max4U/MOGA_Scans/',filename);
     try
         save(filename,'MOGAResults');
     catch
