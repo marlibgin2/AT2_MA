@@ -23,6 +23,8 @@ function varargout=atnuampl(ring,ampl,xz,varargin)
 %               3: Windowing + interpolation (default)
 %               4: NAFF
 %   Other options are transmitted to the plot function
+%
+% See also findtune, calcnaff
 
 
 lab={'x^2','p_x^2','z^2','p_z^2'};
@@ -30,6 +32,11 @@ if nargin < 3, xz=1; end
 [nturns,varargs]=getoption(varargin,'nturns',256);
 [method,varargs]=getoption(varargs,'method',3);
 [orbit,varargs]=getoption(varargs,'orbit',[]);
+
+if method == 4    % Turn adjustment, recommended for NAFF
+    nturns = 2^(log2(nturns));
+    nturns = nturns + 6-mod(nturns,6);
+end
 
 if ~isempty(varargs) && isnumeric(varargs{1})	% ATNUAMPL(RING,AMPLITUDE,XZ,ORBIT)
     orbit = varargs{1};
@@ -56,8 +63,20 @@ p0=repmat(0.00003*[1;0;1;0;0;0], 1,nampl); % 30 microns minimum amplitude
 p0(xz,:)=max(p0(xz,:),ampl(:)');
 p0=p0+orbit(:,ones(1,nampl));
 p1=ringpass(ring,p0,nturns)-orbit(:,ones(1,nampl*nturns));
-tunetrack=[findtune(reshape(p1(1,:),nampl,nturns)',method);...
-    findtune(reshape(p1(3,:),nampl,nturns)',method)]';
+if method == 4
+    [nux, amplx, ~] = calcnaff(p1(1,:),p1(2,:));
+    [~, i] = max(amplx);        % Identify the dominant frequency peak
+    nux = abs(nux(i))/(2*pi);   % Re-normalize to get the tune. Note the sign is ignored.
+
+    [nuy, amply, ~] = calcnaff(p1(3,:),p1(4,:));
+    [~, i] = max(amply);
+    nuy = abs(nuy(i))/(2*pi);
+
+    tunetrack=[ nux; nuy]';
+else
+    tunetrack=[findtune(reshape(p1(1,:),nampl,nturns)',method);...
+        findtune(reshape(p1(3,:),nampl,nturns)',method)]';
+end
 [~,k]=min([fractune0-tunetrack(1,:); 1-fractune0-tunetrack(1,:)]);
 np=offs(k);
 offset=round(tune0-np.*tunetrack(1,:));
