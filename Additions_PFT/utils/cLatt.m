@@ -17,7 +17,10 @@ function LattStruct = cLatt(ACHRO,lattname,desc,LatticeOptData)
 % lattMode : Lattice mode = 'a1,b1,b2,b3,c1' (from LatticeOptData)
 % Trb  = reverse bend angle [mrad]
 % All_fams = cell array of string wiht names of all families
-% XAll = strengths of all families
+% All_famsO = cell array of string wiht names of all families including
+%             octupoles
+% XAll = strengths of all families (not including octupoles)
+% XAllO = strengths of all families (not including octupoles)
 %
 %% Usage example
 % m4U_240316_b03_01_03_01=cLatt(ACHRO,'m4U_20240316_b03_01_03_01',...
@@ -34,6 +37,14 @@ LattStruct.atsummary = atsummary(LattStruct.RINGGRD);
 LattStruct.lattMode = LatticeOptData.lattMode;
 LattStruct.Trb  = LatticeOptData.Trb;
 LattStruct.All_fams = LatticeOptData.All_fams;
-LattStruct.XAll = getAllfams(2,ACHRO,LatticeOptData);
+LattStruct.All_famsO = LatticeOptData.All_famsO;
+LattStruct.XAll  = getAllfams(2,ACHRO,LatticeOptData);
+try
+    LattStruct.XAllO = getAllfams(7,ACHRO,LatticeOptData);
+catch
+    fprintf('%s Error extracting octupole strengths - Lattice may not contain octupoles \n',datetime);
+    LattStruct.XAllO=[];
+end
+
 
 end

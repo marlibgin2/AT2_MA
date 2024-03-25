@@ -23,7 +23,8 @@ function f = RINGOpt_EmitDynAp(x, LatticeOptData)
 % If number of error seeds is set to zero, no errors are applied.
 %
 %% Comments relevant for optmization configured with m4U.m
-%     This can used for MOGA runs with optimization modes 'Linear' or 'Full'.
+%     This can used for MOGA runs with optimization modes 'Linear','Full'
+%     and 'FullOct'
 %     Optimization mode "Non-linear" intended for SOGA 
 %
 %% Parameters for dynamic aperture calculation
@@ -41,12 +42,12 @@ TRmode     = DAoptions.TRmode; % tracking mode is 4d or 6d
 
 chrom_fams = LatticeOptData.chrom_fams; % list of sextupole families to be used for chromaticity correction
 
-ACHRO           = LatticeOptData.ACHRO;
-isdipole        = LatticeOptData.isdipole;
+ACHRO           = LatticeOptData.ACHROGRD;
+isdipole        = LatticeOptData.isdipoleACHROGRD;
 RINGGRD         = LatticeOptData.RINGGRD;
 %isdipoleRINGGRD = LatticeOptData.isdipoleRINGGRD;
 
-ACHRO   = setDVs(2, ACHRO,LatticeOptData, x);
+ACHRO   = setDVs(7,ACHRO,LatticeOptData, x);
 
 %% Calculates Objective functions
 %
@@ -68,8 +69,8 @@ try
 %
 % Calculates dynamic aperture
 %
-       XAll=getAllfams(2,ACHRO,LatticeOptData);
-       RINGGRD = setAllfams(6,RINGGRD,LatticeOptData,XAll);
+       XAll=getAllfamsO(7,ACHRO,LatticeOptData);
+       RINGGRD = setAllfamsO(6,RINGGRD,LatticeOptData,XAll);
        if(strcmpi(TRmode,'4d'))
            RINGGRD=atdisable_6d(RINGGRD);
        else

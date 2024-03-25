@@ -9,6 +9,7 @@ function NewLAT = setLins(nLAT,LAT,LatticeOptData,DVs)
 %          4 if DVs are to be taken from LAT with same structure as IMC1 in LatticeOptData
 %          5 if DVs are to be taken from LAT with same structure as RING in LatticeOptData
 %          6 if DVS are to be taken from LAT with same structure as RINGGRD in LatticeOptData
+%          7 if DVS are to be taken from LAT with same structure as ACHROGRD in LatticeOptData
 %
 % Note : the calling routine must check that the choice of nLAT and LAT are
 % compatible with each other.
@@ -68,6 +69,10 @@ if (isfield(LatticeOptData,'RINGGRD'))
     RINGGRD = LatticeOptData.RINGGRD;
 end
 
+if (isfield(LatticeOptData,'ACHROGRD'))
+    ACHROGRD = LatticeOptData.ACHROGRD;
+end
+
 switch nLAT
     case 1
         Ifams  = LatticeOptData.IfamsHlin;
@@ -75,7 +80,8 @@ switch nLAT
             fprintf('Warning: Incompatible input to setLins for nLAt = %2d \n',nLAT);
             NewLAT = LAT;    
             return
-        end
+         end
+
     case 2
         Ifams  = LatticeOptData.IfamsFlin;
         if (length(LAT)~=length(ACHRO))
@@ -83,6 +89,7 @@ switch nLAT
             NewLAT = LAT;    
             return
         end
+
     case 3
         Ifams  = LatticeOptData.IfamsUClin;
         if (length(LAT)~=length(UC))
@@ -90,6 +97,7 @@ switch nLAT
             NewLAT = LAT;    
             return
         end
+
         
     case 4
         Ifams  = LatticeOptData.IfamsIMC1lin;
@@ -108,12 +116,23 @@ switch nLAT
         end
 
      case 6
-        Ifams  = LatticeOptData.IfamsAllRINGGRD;
+        Ifams  = LatticeOptData.IfamsRINGGRDlin;
         if (length(LAT)~=length(RINGGRD))
             fprintf('Warning: Incompatible input to setLins for nLAt = %2d \n',nLAT);
             NewLAT = LAT;    
             return
         end
+
+     case 7
+        Ifams  = LatticeOptData.IfamsACHROGRDlin;
+        if (length(LAT)~=length(ACHROGRD))
+            fprintf('Warning: Incompatible input to getLins for nLAt = %2d \n',nLAT);
+            NewLAT = LAT;     
+            return
+        end
+
+    otherwise
+        fprintf('%s Warning: Error in setLins, unknow lattice type nLAt = %2d \n',datetime, nLAT);
 end
 
 NewLAT = LAT;
@@ -124,8 +143,8 @@ for i=1:length(stdfamlist)
                 case 1
                     NewLAT{Ifams{stdfamlist(i)}(l)}.PolynomB(1,2) = DVs(stdfamlist(i));
                     NewLAT{Ifams{stdfamlist(i)}(l)}.K = DVs(stdfamlist(i));
-                case 2
-                    NewLAT{Ifams{stdfamlist(i)}(l)}.PolynomB(1,3) = DVs(stdfamlist(i));
+                case {2,3}
+                    NewLAT{Ifams{stdfamlist(i)}(l)}.PolynomB(1,famtype(stdfamlist(i))) = DVs(stdfamlist(i));
             end
          end
      end

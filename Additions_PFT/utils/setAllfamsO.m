@@ -1,4 +1,4 @@
-function NewLAT = setAllfams(nLAT,LAT,LatticeOptData,DVs)
+function NewLAT = setAllfamsO(nLAT,LAT,LatticeOptData,DVs)
 %Sets decision variables to lattice LAT and returns a new lattice structure
 %
 % nLAT is :
@@ -13,6 +13,14 @@ function NewLAT = setAllfams(nLAT,LAT,LatticeOptData,DVs)
 % Note : the calling routine must check that the choice of nLAT and LAT are
 % compatible with each other.
 %   
+if (isfield(LatticeOptData,'All_fams0'))
+    All_famsO = LatticeOptData.All_famsO;
+    nallfamsO = LatticeOptData.nallfamsO;
+
+    stdfamlistO  = LatticeOptData.All_stdfamlistO; 
+    nstdfamlistO = LatticeOptData.All_nstdfamlistO; 
+    famtypeO     = LatticeOptData.All_famtypeO;
+end
 
 nallfams        = LatticeOptData.nallfams;
 stdfamlist      = LatticeOptData.All_stdfamlist;
@@ -31,9 +39,8 @@ if (isfield(LatticeOptData,'RINGGRD'))
 end
 
 if (isfield(LatticeOptData,'ACHROGRD'))
-    RINGGRD = LatticeOptData.ACHROGRD;
+    ACHROGRD = LatticeOptData.ACHROGRD;
 end
-
 
 switch nLAT
     case 1
@@ -42,8 +49,7 @@ switch nLAT
             fprintf('Warning: Incompatible input to setAllfams for nLAt = %2d \n',nLAT);
             NewLAT = LAT;    
             return
-         end
-
+        end
     case 2
         Ifams  = LatticeOptData.IfamsAllF;
         if (length(LAT)~=length(ACHRO))
@@ -51,7 +57,6 @@ switch nLAT
             NewLAT = LAT;    
             return
         end
-
     case 3
         Ifams  = LatticeOptData.IfamsAllUC;
         if (length(LAT)~=length(UC))
@@ -85,12 +90,19 @@ switch nLAT
         end
 
     case 7
-        Ifams  = LatticeOptData.IfamsAllACHROGRD;
+        Ifams  = LatticeOptData.IfamsAllACHROGRDO;
+        stdfamlist  = stdfamlistO; 
+        nstdfamlist = nstdfamlistO;
+        famtype     = famtypeO;
         if (length(LAT)~=length(ACHROGRD))
             fprintf('Warning: Incompatible input to setAllfams for nLAt = %2d \n',nLAT);
-            NewLAT = LAT;    
+            NewLAT=LAT;   
             return
         end
+
+    otherwise
+        fprintf('%s Warning: Error in setAllfamsO, unknow lattice type nLAt = %2d \n',datetime, nLAT);
+
 end
 
 NewLAT = LAT;
@@ -101,8 +113,8 @@ for i=1:length(stdfamlist)
                 case 1
                     NewLAT{Ifams{stdfamlist(i)}(l)}.PolynomB(1,2) = DVs(stdfamlist(i));
                     NewLAT{Ifams{stdfamlist(i)}(l)}.K = DVs(stdfamlist(i));
-                case 2
-                    NewLAT{Ifams{stdfamlist(i)}(l)}.PolynomB(1,3) = DVs(stdfamlist(i));
+                case {2;3}
+                    NewLAT{Ifams{stdfamlist(i)}(l)}.PolynomB(1,famtype(stdfamlist(i))+1) = DVs(stdfamlist(i));
             end
          end
      end

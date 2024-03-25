@@ -96,7 +96,7 @@ switch optMode
            MOGAResults=[];
            return
        end
-    case {'NonLinear','Full'}
+    case {'NonLinear','Full','FullOct'}
       if (strcmp(optfnct,'LattOpt_EmitChro'))
            fprintf('Incompatible optimization function %s \n', optfnct);
            fprintf('for optimization mode %s \n', optMode);

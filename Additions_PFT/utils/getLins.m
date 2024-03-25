@@ -10,6 +10,7 @@ function DVs = getLins(nLAT, LAT, LatticeOptData)
 %          4 if DVs are to be taken from LAT with same structure as IMC1 in LatticeOptData
 %          5 if DVs are to be taken from LAT with same structure as RING in LatticeOptData
 %          6 if DVS are to be taken from LAT with same structure as RINGGRD in LatticeOptData
+%          7 if DVS are to be taken from LAT with same structure as ACHROGRD in LatticeOptData
 %
 % Note : the calling routine must check that the choice of nLAT and LAT are
 % compatible with each other.
@@ -53,6 +54,7 @@ else
     famtype=ones(1,nvars);
 end
 
+
 UC          = LatticeOptData.UC;
 ACHRO       = LatticeOptData.ACHRO;
 HACHRO      = LatticeOptData.HACHRO;
@@ -66,6 +68,10 @@ if (isfield(LatticeOptData,'RINGGRD'))
     RINGGRD = LatticeOptData.RINGGRD;
 end
 
+if (isfield(LatticeOptData,'ACHROGRD'))
+    ACHROGRD = LatticeOptData.ACHROGRD;
+end
+
 DVs = NaN(1, nvars);
 
 switch nLAT
@@ -76,6 +82,7 @@ switch nLAT
             DVs=NaN(1,nvars);
             return
         end
+
     case 2
         Ifams  = LatticeOptData.IfamsFlin;
         if (length(LAT)~=length(ACHRO))
@@ -83,6 +90,7 @@ switch nLAT
             DVs=NaN(1,nvars);
             return
         end
+
     case 3
         Ifams  = LatticeOptData.IfamsUClin;
         if (length(LAT)~=length(UC))
@@ -90,6 +98,7 @@ switch nLAT
             DVs=NaN(1,nvars);
             return
         end
+
     case 4
         Ifams  = LatticeOptData.IfamsIMC1lin;
         if (length(LAT)~=length(IMC1))
@@ -97,6 +106,7 @@ switch nLAT
             DVs=NaN(1,nvars);
             return
         end
+
      case 5
         Ifams  = LatticeOptData.IfamsRINGlin;
         if (length(LAT)~=length(RING))
@@ -104,13 +114,25 @@ switch nLAT
             DVs=NaN(1,nvars);
             return
         end
+
     case 6
-        Ifams  = LatticeOptData.IfamsAllRINGGRD;
+        Ifams  = LatticeOptData.IfamsRINGGRDlin;
         if (length(LAT)~=length(RINGGRD))
             fprintf('Warning: Incompatible input to getLins for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nallfams);   
             return
         end
+
+    case 7
+        Ifams  = LatticeOptData.IfamsACHROGRDlin;
+        if (length(LAT)~=length(ACHROGRD))
+            fprintf('Warning: Incompatible input to getLins for nLAt = %2d \n',nLAT);
+            DVs=NaN(1,nvars);      
+            return
+        end
+
+    otherwise
+            fprintf('%s Warning: Error in getLins, unknow lattice type nLAt = %2d \n',datetime, nLAT);
          
 end
     

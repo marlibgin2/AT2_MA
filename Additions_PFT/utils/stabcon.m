@@ -23,7 +23,7 @@ function [c,ceq] = stabcon(x,LatticeOptData)
 %       are set to -1.
 %
 %   Note: for conditions 5 to 8 to be properly evaluated, BetXMAX and
-%   BetaYMax must not be nan, i.e. they must be evakuated also !
+%   BetaYMax must not be nan, i.e. they must be evaluated also !
 % 
 %
 
