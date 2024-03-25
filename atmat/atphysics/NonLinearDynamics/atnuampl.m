@@ -60,19 +60,24 @@ offs=[nbper -nbper];
 siza=size(ampl);
 nampl=prod(siza);
 p0=repmat(0.00003*[1;0;1;0;0;0], 1,nampl); % 30 microns minimum amplitude
-p0(xz,:)=max(p0(xz,:),ampl(:)');
+p0(xz,:)=sign(ampl(:))'.*max(p0(xz,:),abs(ampl(:))');
 p0=p0+orbit(:,ones(1,nampl));
 p1=ringpass(ring,p0,nturns)-orbit(:,ones(1,nampl*nturns));
 if method == 4
-    [nux, amplx, ~] = calcnaff(p1(1,:),p1(2,:));
-    [~, i] = max(amplx);        % Identify the dominant frequency peak
-    nux = abs(nux(i))/(2*pi);   % Re-normalize to get the tune. Note the sign is ignored.
+    tunetrack = nan(numel(ampl),2);
+    for n = 1:numel(ampl)
+        particleTurns = n:nampl:(numel(ampl)*nturns);
+        [nux, amplx, ~] = calcnaff(p1(1,particleTurns),p1(2,particleTurns));
+        [~, i] = max(amplx);        % Identify the dominant frequency peak
+        nux = abs(nux(i))/(2*pi);   % Re-normalize to get the tune. Note the sign is ignored.
 
-    [nuy, amply, ~] = calcnaff(p1(3,:),p1(4,:));
-    [~, i] = max(amply);
-    nuy = abs(nuy(i))/(2*pi);
-
-    tunetrack=[ nux; nuy]';
+        [nuy, amply, ~] = calcnaff(p1(3,particleTurns),p1(4,particleTurns));
+        [~, i] = max(amply);
+        nuy = abs(nuy(i))/(2*pi);
+    
+        tunetrack(n,1:2) = [nux,nuy];
+    end
+     
 else
     tunetrack=[findtune(reshape(p1(1,:),nampl,nturns)',method);...
         findtune(reshape(p1(3,:),nampl,nturns)',method)]';
