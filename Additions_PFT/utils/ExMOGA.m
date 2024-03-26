@@ -221,7 +221,11 @@ end
 %     end
      Idvs = zeros(LatticeOptData.nvars);
      for i=1:nvars
-         Idvs(i)=find(strcmp(All_fams,scan_fams{i}));
+         if (isfield(LatticeOptData,'All_famsO'))
+            Idvs(i) = find(strcmp(LatticeOptData.All_famsO,scan_fams{i}));
+         else
+            Idvs(i) = find(strcmp(All_fams,scan_fams{i})); 
+         end
      end
      Ilin = zeros(nlinfams);
      for i=1:nlinfams
@@ -491,6 +495,14 @@ if(fitucf&&not(isnan(tunesuc0(1)))&&not(isnan(tunesuc0(2))))
 %                Kall_new(Iuctune(i))=K_fam(1);
 %            end
         end
+        if (isfield(LatticeOptData,'All_famsO'))
+            Kall_new = getAllfamsO(2,LAT_UC,LatticeOptData);
+            LAT_UC   = setAllfamsO(2,LAT_UC,LatticeOptData,Kall_new);
+%            for i=1:size(LatticeOptData.uctune_fams,1)
+%                K_fam = atgetfieldvalues(LAT_UC, I_famsAllUC{Iuctune(i)}, 'PolynomB', {1,2});
+%                Kall_new(Iuctune(i))=K_fam(1);
+%            end
+        end
  %
  % Here Knew contains NaNs as  the unit cell does not have all families.
  % Below we fix this.
@@ -507,6 +519,9 @@ if(fitucf&&not(isnan(tunesuc0(1)))&&not(isnan(tunesuc0(2))))
                 tunesuc1=tunesuc0;
                 Knew = Kold;
                 if (isfield(LatticeOptData,'All_fams'))
+                    Kall_new=Kall_old;
+                end
+                if (isfield(LatticeOptData,'All_famsO'))
                     Kall_new=Kall_old;
                 end
             case 'No'
@@ -532,6 +547,9 @@ if(fitucf&&not(isnan(tunesuc0(1)))&&not(isnan(tunesuc0(2))))
                 if (isfield(LatticeOptData,'All_fams'))
                     Kall_new=Kall_old;
                 end
+                if (isfield(LatticeOptData,'All_famsO'))
+                    Kall_new=Kall_old;
+                end
                 fprintf('Lattice reverted \n');
             case 'No'
  
@@ -544,6 +562,9 @@ end
 %
 Kold=Knew;
 if (isfield(LatticeOptData,'All_fams'))
+    Kall_old=Kall_new;
+end
+if (isfield(LatticeOptData,'All_famsO'))
     Kall_old=Kall_new;
 end
 LAT_md = LAT_UC;
@@ -588,6 +609,10 @@ if (fitdispf)
         %    LAT_md = atsetfieldvalues(LAT_md, I_famsAllF{Idisp(i)}, 'K', K_fam); % makes sure K and PolynomB are the same
         %end
     end
+    if (isfield(LatticeOptData,'All_famsO'))
+        Kall_new = getAllfamsO(2,LAT_md,LatticeOptData);
+        LAT_md   = setAllfamsO(2,LAT_md,LatticeOptData,Kall_new);
+    end
 
     try
         rpar=atsummary_fast(LAT_md,isdipole);
@@ -600,6 +625,9 @@ if (fitdispf)
                 LAT_md = LAT_UC;
                 Knew = Kold;
                 if (isfield(LatticeOptData,'All_fams'))
+                    Kall_new=Kall_old;
+                end
+                if (isfield(LatticeOptData,'All_famsO'))
                     Kall_new=Kall_old;
                 end
                 fprintf('Lattice reverted \n');
@@ -643,6 +671,11 @@ if(fitbeta0f)
       %      LAT_bet = atsetfieldvalues(LAT_bet, I_famsAllF{Ibetaxy0(i)}, 'K', K_fam); % makes sure K and PolynomB are the same
       %  end
     end
+
+    if (isfield(LatticeOptData,'All_famsO'))
+        Kall_new = getAllfamsO(2,LAT_bet,LatticeOptData);
+        LAT_bet  = setAllfamsO(2,LATY_bet,LatticeOptData,Kall_new);
+    end
     
     try
         rpar=atsummary_fast(LAT_bet,isdipole);
@@ -655,6 +688,9 @@ if(fitbeta0f)
                 LAT_bet = LAT_md;
                 Knew = Kold;
                  if (isfield(LatticeOptData,'All_fams'))
+                    Kall_new=Kall_old;
+                 end
+                 if (isfield(LatticeOptData,'All_famsO'))
                     Kall_new=Kall_old;
                 end
                 fprintf('Lattice reverted \n');
@@ -702,6 +738,11 @@ if(fittunef)
         %    LAT_tune = atsetfieldvalues(LAT_tune, I_famsAllF{Iringtune(i)}, 'K', K_fam); % makes sure K and PolynomB are the same
         %end
     end
+
+    if (isfield(LatticeOptData,'All_famsO'))
+        Kall_new = getAllfamsO(2,LAT_tune,LatticeOptData);
+        LAT_tune = setAllfamsO(2,LAT_tune,LatticeOptData,Kall_new);
+    end
    
     try
         rpar=atsummary_fast(LAT_tune,isdipole);
@@ -718,6 +759,9 @@ if(fittunef)
                 LAT_tune = LAT_bet;
                 Knew = Kold;
                 if (isfield(LatticeOptData,'All_fams'))
+                    Kall_new=Kall_old;
+                end
+                if (isfield(LatticeOptData,'All_famsO'))
                     Kall_new=Kall_old;
                 end
                 fprintf('Lattice reverted \n');
@@ -761,6 +805,10 @@ if(fitchromf&&~isempty(chrom_fams))
             LAT_C    = setAllfams(2,LAT_C,LatticeOptData,Kall_new);
 %            Kall_new(Ichroms(1))=Sc1;
 %            Kall_new(Ichroms(2))=Sc2;
+        end
+        if (isfield(LatticeOptData,'All_famsO'))
+            Kall_new = getAllfamsO(2,LAT_C,LatticeOptData);
+            LAT_C    = setAllfamsO(2,LAT_C,LatticeOptData,Kall_new);
         end
      catch ME
         fprintf('Error in ExMOGA: chromaticity fit \n');
@@ -1015,7 +1063,11 @@ end
 rp.outputs.ACHRO = LAT_tune;
 
 if (isfield(LatticeOptData,'RINGGRD'))
-    rp.outputs.RINGGRD=setAllfams(6,RINGGRD,LatticeOptData,Kall_new);
+    if (isfield(LatticeOptData,'All_famsO'))
+        rp.outputs.RINGGRD=setAllfamsO(6,RINGGRD,LatticeOptData,Kall_new);
+    else
+        rp.outputs.RINGGRD=setAllfams(6,RINGGRD,LatticeOptData,Kall_new);
+    end
 end
 
 %

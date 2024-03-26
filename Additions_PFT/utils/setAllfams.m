@@ -31,7 +31,7 @@ if (isfield(LatticeOptData,'RINGGRD'))
 end
 
 if (isfield(LatticeOptData,'ACHROGRD'))
-    RINGGRD = LatticeOptData.ACHROGRD;
+    ACHROGRD = LatticeOptData.ACHROGRD;
 end
 
 

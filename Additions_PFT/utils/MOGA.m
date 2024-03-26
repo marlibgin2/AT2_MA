@@ -283,7 +283,7 @@ if (compf)
    tic;
    for i=1:pfsize
        try
-        if (strcmpi(optMode,'NonLinear')||strcmpi(optMode,'Full'))
+        if (strcmpi(optMode,'NonLinear')||strcmpi(optMode,'Full')||strcmpi(optMode,'FullOct'))
             rpar=ExMOGA(MOGAResults,-i,'fitchrom');
         else
             rpar=ExMOGA(MOGAResults,-i);
