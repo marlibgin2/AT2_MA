@@ -169,7 +169,20 @@ if(contf)
         return
     end
   
-    if(not(strcmp(OldoptMode,optMode))) 
+    switch optMode
+        case 'Linear' 
+            cancontinue = ismember(OldoptMode,['Linear']);
+
+        case 'NonLinear'
+            cancontinue = ismember(OldoptMode,['NonLinear']);
+
+        case 'Full'
+            cancontinue = ismember(OldoptMode,['Full']);
+
+        case 'FullOct'
+            cancontinue = ismember(OldoptMode,['Full' 'FullOct']);
+    end
+    if(not(cancontinue)) 
         fprintf('Inconsistent optmization modes (%s to %s ) in continuation run. Aborting...\n',...
               OldoptMode, optMode);
         return

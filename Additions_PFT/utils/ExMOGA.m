@@ -467,6 +467,10 @@ if (isfield(LatticeOptData,'All_fams'))
     Kall_old = Kall;
     Kall_new = Kall_old;
 end
+if (isfield(LatticeOptData,'All_famsO'))
+    Kall_old = Kall;
+    Kall_new = Kall_old;
+end
 %
 %
 if(fitucf&&not(isnan(tunesuc0(1)))&&not(isnan(tunesuc0(2))))
@@ -1057,9 +1061,15 @@ rp.outputs.DA=DA;
 if(strcmp(optMode,'SEXT')||strcmp(optMode,'NonLinear'))
     rp.outputs.DVLins = DVLins;
 end
+
 if(isfield(LatticeOptData,'All_fams'))
     rp.outputs.Kall = Kall_new;
 end
+
+if(isfield(LatticeOptData,'All_famsO'))
+    rp.outputs.Kall = Kall_new;
+end
+
 rp.outputs.ACHRO = LAT_tune;
 
 if (isfield(LatticeOptData,'RINGGRD'))
