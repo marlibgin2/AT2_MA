@@ -7,7 +7,7 @@ function rp=ExMOGA(varargin)
 % Performs a ring tune scan.
 % Saves OPA input file
 %
-%% Inputs:
+%% Inputs
 % Mandatory arguments:
 %           MOGAResults: structure containing MOGA results (see MOGA.m)
 %           index     : index of line in "Values" in MOGAResults structure from which 
@@ -51,18 +51,18 @@ function rp=ExMOGA(varargin)
 %                       standard lattice.
 %           verbose  : controls level of diagnostic printout
 %
-%% Outputs:
+%% Outputs
 %          rp: structure containing two substructures (inputs and outputs).
-%          rp.inputs documents all inputs when running ExMOGA
+%          rp.inputs documents all inputs to ExMOGA
 %
 %          rp.outputs
 %          rp.outputs.atsummary=structure obtained from atsummary_fast on
 %                               the final latice for one achromat
 %          rp.outputs.K0 : inital gradient as given from MOGA  
-%          rp.outputs.Knew = final gradoents as given by linear lattice
-%                             fits done by ExMOGA
+%          rp.outputs.Knew = final gradients as given by linear lattice
+%                            fits done by ExMOGA
 %          rp.outputs.tunesuc0: initial unit cell tunes
-%          rp.outputs.tunesuc1: final uniot cell tunes
+%          rp.outputs.tunesuc1: final unit cell tunes
 %          rp.outputs.index=iindex;
 %          rp.outputs.DAoptions = DAoptions
 %          rp.outputs.Sc1=strength of first chromaticty correction sextupole family

@@ -4,7 +4,8 @@ function [DA,DAV,DAoptions]=calcDA(varargin)
 % as defined by the input lattice. This is a higherlevel wrapper function
 % that in turn calls the lower level function "calcDA_raw"
 % 
-%% Mandatory input arguments
+%% Inputs
+% Mandatory arguments
 % RING : AT2 lattice array
 % DAoptions :Structure containing the following fields:
 %               DAmode   = 'grid' or 'border'
@@ -34,14 +35,14 @@ function [DA,DAV,DAoptions]=calcDA(varargin)
 %            Values of DAoptions fields are overridden if given explicitly 
 %            as input in the form ('parameter', value)
 %
-%% Optional input parameters
+% Optional arguments
 % all fields in DAoptions listed above. If given
 %
-%% Optional flags
+% Optional flags
 % plot : plots DA;
 % verbose: produces verbose output
 %
-%% Output parameters
+%% Outputs
 % DA: Dynamic aperture [mm**2]
 % DAoptions: Structure with options used in the calculation
 %

@@ -1,16 +1,16 @@
 function MOGAResults = MOGA(varargin)
-% Runs Multiobjective optimization of lattice parameters using genetic
+% Multiobjective optimization of lattice parameters using genetic
 % algorithm
 %
-%% inputs:
-%% Mandatory arguments:
+%% Inputs
+% Mandatory arguments:
 %         LatticeOptData : structure withOptimzation configiurationinfo
 %         optfnct : function to be minimized
 %              LattOpt_EmitCHRO  : Emittance and squared sum of chromaticities 
 %              LattOpt_EmitDynap : Emittance and on-momentum Dynamic Aperture
 %              LattOpt_EmitRDT   : Emittance and Resonant Driving Terms
 %
-%% Optional arguments input with syntax ('ParameterName', parameter value)
+% Optional arguments input with syntax ('ParameterName', parameter value)
 %
 %         X0: initial guess - if = [], the lower an upper bounds given by
 %             the lb and ub input parameters are passed on to the genetic
@@ -26,7 +26,7 @@ function MOGAResults = MOGA(varargin)
 %         X0_Lin : Linear lattice decision variables - only relevant for
 %                  "SEXT" (legacy) or "NonLinear" optmization mode.
 % 
-%% Optional flags (if present the option is activated)
+% Optional flags (if present the option is activated)
 %
 %         save  : if present saves out structure onto a file in folder
 %                "\MOGA_Scans" and automatically generated file name.
@@ -41,7 +41,6 @@ function MOGAResults = MOGA(varargin)
 %
 %
 %% Usage examples
-% MOGAResults=MOGA()
 % MOGAResults=MOGA(LatticeOptData,'RINGOpt_EmitDynAp','X0',X0_b3,'dx',20, 'PopSize',1000,'MaxGens',50,'comp','save','cont');
 % MOGAResults=MOGA(LatticeOptData,'RINGOpt_EmitDynAp','X0',X0_b3,'dx',20, 'PopSize',1000,'MaxGens',50,'comp');
 
