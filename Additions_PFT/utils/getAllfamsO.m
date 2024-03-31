@@ -46,7 +46,7 @@ if (isfield(LatticeOptData,'ACHROGRD'))
     ACHROGRD = LatticeOptData.ACHROGRD;
 end
 
-DVs = NaN(1, nallfams);
+DVs = NaN(1, nallfamsO);
 
 switch nLAT
     case 1

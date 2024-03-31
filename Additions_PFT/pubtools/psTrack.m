@@ -1,13 +1,16 @@
 function [Rout, loss, lossinfo] = psTrack(varargin)
 % Tracks n particles over a number of turns in a given lattice
 %
-%% Mandatory input arguments
+%% Inputs 
+% Mandatory arguments
+%
 % RING: AT2.0 lattice cell array
 % Rin : 6xN matrix: input coordinates of N particles: default=[0 0 0 0 0 0]'
 %                   AT 2.0 units . [m rad m rad 1 m]
 %
-%% Optional arguments
-% S0 : initial azimuthmal position to track from; default = 0.0
+% Optional arguments
+%
+% S0 : initial azimuthal position to track from; default = 0.0
 % S0Tol: tolerance for finding S0 [m]; default = 0.001
 % nturns : number of turns
 % if any of the two below is nan - no axis limits defined
@@ -21,7 +24,8 @@ function [Rout, loss, lossinfo] = psTrack(varargin)
 % zmin     : minimum longitudinal coodinate deviation [mm]; default = nan
 % zmax     : maximum longitudinal coodinate deviation [mm]; default = nan
 %
-%% Optional flags
+% Optional flags
+%
 % plotx : plots horizontal phase space
 % ploty : plots vertical phase space
 % plotE : plots vertical phase space
@@ -43,7 +47,7 @@ function [Rout, loss, lossinfo] = psTrack(varargin)
 %                                     LHIST elements before the loss
 % 
 %
-%% Usage example
+%% Usage examples
 % Rin = [0.001 0 0 0 0 0]';
 % [Rout, loss, lossinfo] = psTrack(RING,Rin, 'S0',528/2,'plotx','nturns',1024,'6d');
 % Rout=psTrack(RINGe,Rin,'nturns',500,'verbose','4d','plotE','plotx');
@@ -73,7 +77,7 @@ plotEf         = any(strcmpi(varargin,'plotE'));
 T6df           = any(strcmpi(varargin,'6d'));
 verbosef       = any(strcmpi(varargin,'verbose'));
 
-%% preamble
+%% Preamble
 if (verbosef)
     fprintf('**** \n');
     fprintf('%s Phase Space Tracking %3d  \n', datetime);
@@ -95,6 +99,8 @@ end
 
 npart = size(Rin,2);
 RING_cy = [RING(Ipos(1):end); RING(1:Ipos(1)-1)];
+
+%% Tracks particles
 if (verbosef)
     fprintf('%s Tracking... %3d \n', datetime);
     tic;
@@ -106,6 +112,8 @@ if (verbosef)
     toc;
 end
 
+%
+%% Plots tracked particles
 if(plotxf)
     figure;xlabel('X[mm]');ylabel('Xp[mrad]');
     if (not(isnan(Xmax))&&not(isnan(Xmaxp)))

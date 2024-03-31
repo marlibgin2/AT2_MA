@@ -13,7 +13,7 @@ function NewLAT = setAllfamsO(nLAT,LAT,LatticeOptData,DVs)
 % Note : the calling routine must check that the choice of nLAT and LAT are
 % compatible with each other.
 %   
-if (isfield(LatticeOptData,'All_fams0'))
+if (isfield(LatticeOptData,'All_famsO'))
     All_famsO = LatticeOptData.All_famsO;
     nallfamsO = LatticeOptData.nallfamsO;
 
@@ -46,21 +46,23 @@ switch nLAT
     case 1
         Ifams  = LatticeOptData.IfamsAllH;
          if (length(LAT)~=length(HACHRO))
-            fprintf('Warning: Incompatible input to setAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to setAllfamsO for nLAt = %2d \n',nLAT);
             NewLAT = LAT;    
             return
-        end
+         end
+
     case 2
         Ifams  = LatticeOptData.IfamsAllF;
         if (length(LAT)~=length(ACHRO))
-            fprintf('Warning: Incompatible input to setAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to setAllfamsO for nLAt = %2d \n',nLAT);
             NewLAT = LAT;    
             return
         end
+        
     case 3
         Ifams  = LatticeOptData.IfamsAllUC;
         if (length(LAT)~=length(UC))
-            fprintf('Warning: Incompatible input to setAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to setAllfamsO for nLAt = %2d \n',nLAT);
             NewLAT = LAT;    
             return
         end
@@ -68,7 +70,7 @@ switch nLAT
     case 4
         Ifams  = LatticeOptData.IfamsAllIMC1;
         if (length(LAT)~=length(IMC1))
-            fprintf('Warning: Incompatible input to setAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to setAllfamsO for nLAt = %2d \n',nLAT);
             NewLAT = LAT;    
             return
         end
@@ -76,15 +78,18 @@ switch nLAT
     case 5
         Ifams  = LatticeOptData.IfamsAllRING;
         if (length(LAT)~=length(RING))
-            fprintf('Warning: Incompatible input to setAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to setAllfamsO for nLAt = %2d \n',nLAT);
             NewLAT = LAT;    
             return
         end
 
     case 6
-        Ifams  = LatticeOptData.IfamsAllRINGGRD;
+        Ifams  = LatticeOptData.IfamsAllRINGGRDO;
+        stdfamlist  = stdfamlistO; 
+        nstdfamlist = nstdfamlistO;
+        famtype     = famtypeO;
         if (length(LAT)~=length(RINGGRD))
-            fprintf('Warning: Incompatible input to setAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to setAllfamsO for nLAt = %2d \n',nLAT);
             NewLAT = LAT;    
             return
         end

@@ -91,6 +91,9 @@ switch nLAT
             NewLAT = LAT;    
             return
         end
+
+    otherwise
+        fprintf('%s Warning: Error in setAllfams, unknow lattice type nLAt = %2d \n',datetime, nLAT);
 end
 
 NewLAT = LAT;

@@ -21,8 +21,9 @@ function rp=ExMOGA(varargin)
 %                       functions.
 %           tunesuc   : 1x2 matrix of desired unit cell fractional tunes. (isolated cell)    
 %           tunes     : 1x2 matrix of desired full ring (20 achromats) tunes.
-%           tunerange : [Qxmin Qxmax Qymin Qymax]
-%           Nptunscan : [Npx Npy]
+%           IQrange   : integer tune ranges [Qxmin Qxmax Qymin Qymax]=[46 47 15 18]
+%           qrange    : fractional tune range [qxmin qxmax qymin qymax]=[0.1 0.4 0.1 0.4]
+%           Npq          = getoption(varargin,'Npq',[10 10]);
 %           LatticeOptData: structures with fields that set various tolerances 
 %                           for fits. If not given uses
 %                           MOGAResults.LatticeOptData
@@ -219,7 +220,7 @@ end
 %     for i=1:size(ringtune_fams,1)
 %         Iringtune(i)=find(strcmp(All_fams,ringtune_fams{i}));
 %     end
-     Idvs = zeros(LatticeOptData.nvars);
+     Idvs = zeros(LatticeOptData.nvars,1);
      for i=1:nvars
          if (isfield(LatticeOptData,'All_famsO'))
             Idvs(i) = find(strcmp(LatticeOptData.All_famsO,scan_fams{i}));
@@ -272,6 +273,9 @@ else
 end
 if (isfield(LatticeOptData,'RINGGRD'))
     RINGGRD=LatticeOptData.RINGGRD;
+end
+if (isfield(LatticeOptData,'ACHROGRD'))
+    ACHROGRD=LatticeOptData.ACHROGRD;
 end
 
 %% Parameters for dynamic aperture calculation
@@ -392,12 +396,26 @@ if (isfield(LatticeOptData,'All_fams'))
             Kall(Ichroms(i))=MOGAResults.ParetoFront(i0,nvars+nfitvars+6+i);
         end
     end
-    
-    %I_famsAllF  = LatticeOptData.IfamsAllF;
-    %I_famsAllUC = LatticeOptData.IfamsAllUC;
 end
+
+if (isfield(LatticeOptData,'All_famsO'))
+    KallO = zeros(LatticeOptData.nallfamsO,1);
+    for i=1:LatticeOptData.nvars
+        KallO(Idvs(i))=Ks(i);
+    end
+    for i=1:nlinfams
+        KallO(Ilin(i))=MOGAResults.DVLins(i);
+    end
+    if (not(fitchromf))
+        for i=1:2
+            KallO(Ichroms(i))=MOGAResults.ParetoFront(i0,nvars+nfitvars+6+i);
+        end
+    end
+end
+
 Knew = Ks;
 Kall_new = Kall;
+KallO_new = KallO;
 
 if (strcmpi(verbose,'Y'))
     fprintf('**** \n');
@@ -410,6 +428,10 @@ end
 
 LAT  = setDVs(2, LAT,LatticeOptData, Ks);
 UC   = setDVs(3, UC, LatticeOptData, Ks);
+if (isfield(LatticeOptData,'ACHROGRD'))
+    ACHROGRD=setDVs(7,ACHROGRD,LatticeOptData, Ks);
+end
+
 %
 % Loads linear lattice parameters for optimization mode 'SEXT'
 %
@@ -417,20 +439,15 @@ if(strcmp(optMode,'SEXT')||strcmp(optMode,'NonLinear'))
   DVLins=MOGAResults.DVLins;
   LAT = setLins(2,LAT,LatticeOptData,DVLins);
   UC  = setLins(3,UC,LatticeOptData,DVLins);
+  if (isfield(LatticeOptData,'ACHROGRD'))
+    ACHROGRD=setLins(7,ACHROGRD,LatticeOptData, DVLins);
+  end
 end
 
 %% Lattice parameters/functions as derived from MOGA results directly
 %
 if (plotf)
-    %LAT_SP=LAT;
-    %if (splitn>1)
-    %   for i=1:splitn
-    %       LAT_SP=atinsertelems(LAT_SP,1:length(LAT_SP),0.5,[]);
-    %    end
-    %end
     try
-    %    lindata=atlinopt(LAT_SP,0.0,1:length(LAT_SP)+1);
-    %    PlotBetaDisp(lindata,'MOGA bare');
         figure;atplot(LAT);title('MOGA bare');
     catch ME
         fprintf('Error in atplot for MOGA lattice \n');
@@ -441,10 +458,10 @@ end
 try
     rpar=atsummary_fast(LAT,isdipole);
 catch ME
-    fprintf('Error in ExMOGA: atsummary full period from MOGA \n');
+    fprintf('%s Error in ExMOGA: atsummary full period from MOGA \n', datetime);
     fprintf('Error message was:%s \n',ME.message);
 end
-   
+
 %
 % Unit celll
 %
@@ -468,8 +485,8 @@ if (isfield(LatticeOptData,'All_fams'))
     Kall_new = Kall_old;
 end
 if (isfield(LatticeOptData,'All_famsO'))
-    Kall_old = Kall;
-    Kall_new = Kall_old;
+    KallO_old = KallO;
+    KallO_new = KallO_old;
 end
 %
 %
@@ -488,30 +505,22 @@ if(fitucf&&not(isnan(tunesuc0(1)))&&not(isnan(tunesuc0(2))))
              fprintf (' in %5d iterations and penalty = %8.2e \n', ...
                  its, penaltyuctune );
         end
-        Knew    = getDVs(3, UC_tune, LatticeOptData); 
-        UC_tune = setDVs(3, UC_tune, LatticeOptData,Knew); 
-        LAT_UC  = setDVs(2, LAT, LatticeOptData, Knew);
+        Knew     = getDVs(3, UC_tune, LatticeOptData); 
+        LAT_UC   = setDVs(2, LAT, LatticeOptData, Knew);
+ %
+ % Here Knew contains NaNs as  the unit cell does not have all families
+ % that are Decision variables. 
+ %
+        Knew    = getDVs(2, LAT_UC, LatticeOptData);
         if (isfield(LatticeOptData,'All_fams'))
             Kall_new = getAllfams(2,LAT_UC,LatticeOptData);
             LAT_UC   = setAllfams(2,LAT_UC,LatticeOptData,Kall_new);
-%            for i=1:size(LatticeOptData.uctune_fams,1)
-%                K_fam = atgetfieldvalues(LAT_UC, I_famsAllUC{Iuctune(i)}, 'PolynomB', {1,2});
-%                Kall_new(Iuctune(i))=K_fam(1);
-%            end
         end
-        if (isfield(LatticeOptData,'All_famsO'))
-            Kall_new = getAllfamsO(2,LAT_UC,LatticeOptData);
-            LAT_UC   = setAllfamsO(2,LAT_UC,LatticeOptData,Kall_new);
-%            for i=1:size(LatticeOptData.uctune_fams,1)
-%                K_fam = atgetfieldvalues(LAT_UC, I_famsAllUC{Iuctune(i)}, 'PolynomB', {1,2});
-%                Kall_new(Iuctune(i))=K_fam(1);
-%            end
+        if isfield(LatticeOptData.ACHROGRD)
+            ACHROGRD  = setDVs(7,ACHROGRD, LatticeOptData, Knew);
+            KallO_new = getAllfamsO(7,ACHROGRD,LatticeOptData);
         end
- %
- % Here Knew contains NaNs as  the unit cell does not have all families.
- % Below we fix this.
-        Knew    = getDVs(2, LAT_UC, LatticeOptData);
-                    
+ 
     catch ME
         fprintf('Error in ExMOGA:atsummary of unit cell after unit cell fit \n');
         fprintf('Error message was:%s \n',ME.message);
@@ -526,13 +535,12 @@ if(fitucf&&not(isnan(tunesuc0(1)))&&not(isnan(tunesuc0(2))))
                     Kall_new=Kall_old;
                 end
                 if (isfield(LatticeOptData,'All_famsO'))
-                    Kall_new=Kall_old;
+                    KallO_new = KallO_old;
+                    ACHROGRD  = setAllfamsO(7,ACHROGRD,LatticeOptData,Kall_new);
                 end
-            case 'No'
-                
-        end % switch
+            case 'No'  
+        end
     end
- 
     %
     % Checks lattice of the full period with the  updated unit cell
     %
@@ -552,12 +560,12 @@ if(fitucf&&not(isnan(tunesuc0(1)))&&not(isnan(tunesuc0(2))))
                     Kall_new=Kall_old;
                 end
                 if (isfield(LatticeOptData,'All_famsO'))
-                    Kall_new=Kall_old;
+                    KallO_new=KallO_old;
+                    ACHROGRD=setAllfamsO(7,ACHROGRD,LatticeOptData,Kall_new);
                 end
                 fprintf('Lattice reverted \n');
             case 'No'
- 
-        end % switch    
+        end 
     end
 end
 
@@ -565,11 +573,12 @@ end
 %% Matches dispersion
 %
 Kold=Knew;
+
 if (isfield(LatticeOptData,'All_fams'))
     Kall_old=Kall_new;
 end
 if (isfield(LatticeOptData,'All_famsO'))
-    Kall_old=Kall_new;
+    KallO_old=KallO_new;
 end
 LAT_md = LAT_UC;
    
@@ -581,7 +590,6 @@ if (fitdispf)
                disp_fams{1},...
                {'PolynomB',{1,2}}); %TBC - add limits based on limits given to MOGA
 %                lb(6),ub(6));
- 
 %    Variab2 = atVariableBuilder(LAT_UC,...
 %               'reversebendmc2_sim',...
 %               {'PolynomB',{1,2}},...
@@ -607,15 +615,11 @@ if (fitdispf)
     if (isfield(LatticeOptData,'All_fams'))
         Kall_new = getAllfams(2,LAT_md,LatticeOptData);
         LAT_md   = setAllfams(2,LAT_md,LatticeOptData,Kall_new);
-        %for i=1:size(LatticeOptData.disp_fams,1)    
-        %    K_fam = atgetfieldvalues(LAT_md, I_famsAllF{Idisp(i)}, 'PolynomB', {1,2});
-        %    Kall_new(Idisp(i))=K_fam(1);
-        %    LAT_md = atsetfieldvalues(LAT_md, I_famsAllF{Idisp(i)}, 'K', K_fam); % makes sure K and PolynomB are the same
-        %end
     end
     if (isfield(LatticeOptData,'All_famsO'))
-        Kall_new = getAllfamsO(2,LAT_md,LatticeOptData);
-        LAT_md   = setAllfamsO(2,LAT_md,LatticeOptData,Kall_new);
+        KallO_new = getAllfamsO(2,LAT_md,LatticeOptData);
+        ACHROGRD  = setAllfamsO(7,ACHROGRD,LatticeOptData,KallO_new);
+        KallO_new = getAllfamsO(7,ACHROGRD,LatticeOptData);
     end
 
     try
@@ -633,18 +637,24 @@ if (fitdispf)
                 end
                 if (isfield(LatticeOptData,'All_famsO'))
                     Kall_new=Kall_old;
+                    ACHROGRD  = setAllfamsO(7,ACHROGRD,LatticeOptData,KallO_new);
                 end
                 fprintf('Lattice reverted \n');
                 
             case 'No'
-
-        end % switch 
+        end
     end
 end
 
 %% Matches beta functions at the centre of the long straight
 %
 Kold = Knew;
+if (isfield(LatticeOptData,'All_fams'))
+    Kall_old=Kall_new;
+end
+if (isfield(LatticeOptData,'All_famsO'))
+    KallO_old=KallO_new;
+end
 LAT_bet = LAT_md;
 
 if(fitbeta0f)
@@ -668,17 +678,13 @@ if(fitbeta0f)
 
     if (isfield(LatticeOptData,'All_fams'))
         Kall_new = getAllfams(2,LAT_bet,LatticeOptData);
-        LAT_bet  = setAllfams(2,LATY_bet,LatticeOptData,Kall_new);
-      %  for i=1:size(LatticeOptData.betax0_fams,1)
-      %      K_fam = atgetfieldvalues(LAT_bet, I_famsAllF{Ibetaxy0(i)}, 'PolynomB', {1,2});
-      %      Kall_new(Ibetaxy0(i))=K_fam(1);
-      %      LAT_bet = atsetfieldvalues(LAT_bet, I_famsAllF{Ibetaxy0(i)}, 'K', K_fam); % makes sure K and PolynomB are the same
-      %  end
+        LAT_bet  = setAllfams(2,LAT_bet,LatticeOptData,Kall_new);
     end
 
     if (isfield(LatticeOptData,'All_famsO'))
-        Kall_new = getAllfamsO(2,LAT_bet,LatticeOptData);
-        LAT_bet  = setAllfamsO(2,LATY_bet,LatticeOptData,Kall_new);
+        KallO_new = getAllfamsO(2,LAT_bet,LatticeOptData);
+        ACHROGRD  = setAllfamsO(7,ACHROGRD,LatticeOptData,KallO_new);
+        KallO_new = getAllfamsO(7,ACHROGRD,LatticeOptData);
     end
     
     try
@@ -695,18 +701,25 @@ if(fitbeta0f)
                     Kall_new=Kall_old;
                  end
                  if (isfield(LatticeOptData,'All_famsO'))
-                    Kall_new=Kall_old;
+                    KallO_new=KallO_old;
+                    ACHROGRD  = setAllfamsO(7,ACHROGRD,LatticeOptData,KallO_new);
+                    KallO_new = getAllfamsO(7,ACHROGRD,LatticeOptData);
                 end
                 fprintf('Lattice reverted \n');
-            case 'No'
-                
-        end % switch 
+            case 'No'    
+        end  
     end    
 end
 %
 %% Matches tunes of the complete ring
 %
 Kold = Knew;
+if (isfield(LatticeOptData,'All_fams'))
+    Kall_old=Kall_new;
+end
+if (isfield(LatticeOptData,'All_famsO'))
+    KallO_old=KallO_new;
+end
 LAT_tune = LAT_bet;
 
 if(fittunef)
@@ -717,15 +730,9 @@ if(fittunef)
               rpar.Qx_ring/Nper, rpar.Qy_ring/Nper,qxfit,qyfit );
      end
     
-%     LAT_tune = atfittune(LAT_md,  [qxfit qyfit], 'qfend_sim', 'qdend_sim', 'UseIntegerPart');
-%     LAT_tune = atfittune(LAT_tune,[qxfit qyfit] ,'qfend_sim', 'qdend_sim', 'UseIntegerPart');
-
-     %lb = MOGAResults.lb(1:2);
-     %ub = MOGAResults.ub(1:2);       
- %   [LAT_tune, penalty_tune] = fitfullTune(LAT_bet, 'qfend_sim',
- %   'qdend_sim', lb, ub, [qxfit qyfit]);
-     [LAT_tune, its, penalty_tune]= fittuneRS(LAT_bet, [qxfit qyfit],...
-         ringtune_fams{1}, ringtune_fams{2}, 1000, 1E-7,'Y');
+    [LAT_tune, its, penalty_tune]= fittuneRS(LAT_bet, [qxfit qyfit],...
+         ringtune_fams{1}, ringtune_fams{2}, LatticeOptData.nittune, ...
+         LatticeOptData.TolTune,'Y');
     if (verbose)
         fprintf('Period Tune fit complete with penalty = %6.2e after %5d iterations \n', penalty_tune, its);
     end
@@ -736,16 +743,12 @@ if(fittunef)
     if (isfield(LatticeOptData,'All_fams'))
         Kall_new = getAllfams(2,LAT_tune,LatticeOptData);
         LAT_tune = setAllfams(2,LAT_tune,LatticeOptData,Kall_new);
-        %for i=1:size(LatticeOptData.ringtune_fams,1)
-        %    K_fam = atgetfieldvalues(LAT_tune, I_famsAllF{Iringtune(i)}, 'PolynomB', {1,2});
-        %    Kall_new(Iringtune(i))=K_fam(1);
-        %    LAT_tune = atsetfieldvalues(LAT_tune, I_famsAllF{Iringtune(i)}, 'K', K_fam); % makes sure K and PolynomB are the same
-        %end
     end
 
     if (isfield(LatticeOptData,'All_famsO'))
-        Kall_new = getAllfamsO(2,LAT_tune,LatticeOptData);
-        LAT_tune = setAllfamsO(2,LAT_tune,LatticeOptData,Kall_new);
+        KallO_new = getAllfamsO(2,LAT_tune,LatticeOptData);
+        ACHROGRD  = setAllfamsO(7,ACHROGRD,LatticeOptData,KallO_new);
+        KallO_new = getAllfamsO(7,ACHROGRD,LatticeOptData);
     end
    
     try
@@ -767,12 +770,12 @@ if(fittunef)
                 end
                 if (isfield(LatticeOptData,'All_famsO'))
                     Kall_new=Kall_old;
+                    ACHROGRD  = setAllfamsO(7,ACHROGRD,LatticeOptData,KallO_new);
                 end
                 fprintf('Lattice reverted \n');
                 
             case 'No'
-
-        end % switch 
+        end 
     end    
 end
 
@@ -789,6 +792,13 @@ end
 %
 %% Matches chromaticity 
 %
+if (isfield(LatticeOptData,'All_fams'))
+    Kall_old=Kall_new;
+end
+if (isfield(LatticeOptData,'All_famsO'))
+    KallO_old=KallO_new;
+end
+
 if(fitchromf&&~isempty(chrom_fams))
      if (verbose) 
       fprintf('Fitting Chromaticity... \n'); 
@@ -807,17 +817,17 @@ if(fitchromf&&~isempty(chrom_fams))
         if (isfield(LatticeOptData,'All_fams'))
             Kall_new = getAllfams(2,LAT_C,LatticeOptData);
             LAT_C    = setAllfams(2,LAT_C,LatticeOptData,Kall_new);
-%            Kall_new(Ichroms(1))=Sc1;
-%            Kall_new(Ichroms(2))=Sc2;
         end
         if (isfield(LatticeOptData,'All_famsO'))
-            Kall_new = getAllfamsO(2,LAT_C,LatticeOptData);
-            LAT_C    = setAllfamsO(2,LAT_C,LatticeOptData,Kall_new);
+            KallO_new = getAllfamsO(2,LAT_C,LatticeOptData);
+            ACHROGRD  = setAllfamsO(7,ACHROGRD,LatticeOptData,KallO_new);
+            KallO_new = getAllfamsO(7,ACHROGRD,LatticeOptData);
         end
      catch ME
         fprintf('Error in ExMOGA: chromaticity fit \n');
         fprintf('Error message was: %s \n',ME.message);
         LAT_C = LAT_tune;
+        ACHROGRD  = setAllfamsO(7,ACHROGRD,LatticeOptData,KallO_old);
      end
      LAT_tune=LAT_C;
      try
@@ -836,14 +846,14 @@ end
 %% Calculates and Plots the Dynamic Aperture
 %
 if (plotdaf)
-    DA=calcDA(LAT_tune,DAoptions,'plot','4d');
+    DA=calcDA(ACHROGRD,DAoptions,'plot','4d');
     fprintf('Dynamic Aperture = %4.2f mm**2 \n',DA);
 else
     DA=NaN;
 end
 
 %
-%% Full ring tune scan
+%% Full ring tune scan - done on the lattice without octupoles
 % 
 if (tunescanf)
     LAT_scan=LAT_tune;
@@ -881,7 +891,6 @@ if (tunescanf)
     qxscan     = zeros(1,nx);
     qyscan     = zeros(1,ny);
 
-    
     k=1;
     for i=Qxmin:Qxmax
         for j=1:Npqx
@@ -910,7 +919,9 @@ if (tunescanf)
             qyfit=Qyfit/Nper;
             try
                 [LAT_scan, its, penalty_tune]= fittuneRS(LAT_scan, [qxfit qyfit],...
-                                        ringtune_fams{1}, ringtune_fams{2}, 1000, 1E-7,'Y');
+                                        ringtune_fams{1}, ringtune_fams{2},...
+                                        LatticeOptData.nittune,...
+                                        LatticeOptData.TolTune,'Y');
                 if (verbose)
                     fprintf('Ring Tunes fit to [ %4.2f , %4.2f ] with penalty = %6.2e after %5d iterations \n', Qxfit, Qyfit, penalty_tune, its);
                 end
@@ -982,7 +993,7 @@ if (tunescanf)
             end
               
             if (not(isnan(Sc1)&&not(isnan(Sc2))))
-                DA=CalcPlotDA(LAT_scan,DAoptions);
+                [DA,~]=calcDA(LAT_scan,DAoptions);
             else
                 DA=NaN;
             end
@@ -1012,7 +1023,7 @@ if (tunescanf)
     rp.outputs.EmitScan=EmitScan*1e12;
     rp.outputs.BetaX0Scan = BetaX0Scan;
     rp.outputs.BetaY0Scan = BetaY0Scan;
-    rp.JxScan = JxScan;
+    rp.outputs.JxScan = JxScan;
     if (strcmp(plottunescanf,'Y'))
         PlotEMTuneScan(rp);
     end
@@ -1057,7 +1068,6 @@ rp.outputs.Sc1=Sc1;
 rp.outputs.Sc2=Sc2;
 rp.outputs.DA=DA;
 
-
 if(strcmp(optMode,'SEXT')||strcmp(optMode,'NonLinear'))
     rp.outputs.DVLins = DVLins;
 end
@@ -1067,16 +1077,24 @@ if(isfield(LatticeOptData,'All_fams'))
 end
 
 if(isfield(LatticeOptData,'All_famsO'))
-    rp.outputs.Kall = Kall_new;
+    rp.outputs.KallO = KallO_new;
 end
 
 rp.outputs.ACHRO = LAT_tune;
 
 if (isfield(LatticeOptData,'RINGGRD'))
     if (isfield(LatticeOptData,'All_famsO'))
-        rp.outputs.RINGGRD=setAllfamsO(6,RINGGRD,LatticeOptData,Kall_new);
+        rp.outputs.RINGGRD=setAllfamsO(6,RINGGRD,LatticeOptData,KallO_new);
     else
         rp.outputs.RINGGRD=setAllfams(6,RINGGRD,LatticeOptData,Kall_new);
+    end
+end
+
+if (isfield(LatticeOptData,'ACHROGRD'))
+    if (isfield(LatticeOptData,'All_famsO'))
+        rp.outputs.ACHROGRD = setAllfamsO(7,ACHROGRD,LatticeOptData,KallO_new);
+    else
+        rp.outputs.ACHROGRD = setAllfams(7,ACHROGRD,LatticeOptData,Kall_new);
     end
 end
 
@@ -1084,10 +1102,14 @@ end
 %% Saves OPA file
 %
 if(saveOPAf)
-    if (isfield(LatticeOptData,'All_fams'))
-        saveOPA(Kall_new,[],[],LatticeOptData,RunNumber);
+    if (isfield(LatticeOptData,'All_famsO'))
+        saveOPA(KallO_new,[],[],LatticeOptData,RunNumber,'oct');
     else
-        saveOPA([],Knew,[Sc1 Sc2], LatticeOptData,RunNumber);
+        if (isfield(LatticeOptData,'All_fams'))
+            saveOPA(Kall_new,[],[],LatticeOptData,RunNumber);
+        else
+            saveOPA([],Knew,[Sc1 Sc2],LatticeOptData,RunNumber);
+        end
     end
 end
 

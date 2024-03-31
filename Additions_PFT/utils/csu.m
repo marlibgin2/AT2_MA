@@ -1,5 +1,5 @@
 function c=csu
-% Startand configure cluster object
+% Start and configure cluster object
 %configCluster; This is only needed once.
 c=parcluster;
 % In Aurora (to which accdev-0 is directly connected), choose Aurora
@@ -17,5 +17,5 @@ c.AdditionalProperties.QueueName ='all';
 
 % parpool(c,16*n) % This is to be run on the command line everytime the
 % parpool needs to be started
-% delete(gcp('nocreate')) - used to stopthe parpool.
+% delete(gcp('nocreate')) - used to stop the parpool.
 end
