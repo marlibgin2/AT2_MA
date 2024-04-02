@@ -49,6 +49,7 @@ RelativeFlag = true;
 MisalignmentFlag = true;
 FieldErrorFlag = true;
 GirderFlag = true;
+ScalingFlag = true;
 
 %% Input handling
 if nargin < 2
@@ -85,6 +86,8 @@ for n = nargin:-1:1
                 FieldErrorFlag = false;
             case {'nogirdererrors','nogirdererror'}
                 GirderFlag = false;
+            case {'noscaling'}
+                ScalingFlag = false;
         end
     elseif isstruct(varargin{n})
         % Check whether it's an error model...
@@ -177,23 +180,41 @@ ERRORMODEL.Magnet = ERRORMODEL.Magnet(k);
 EM_classIDs = getcellstruct(ERRORMODEL.Magnet,'ID',k);
 
 for n = 1:numel(index_magnetslices)
-    % Get class
-    % NB! May be better to base the guess on integrated strengths, which
-    % means a new function.
-    atclass = atguessclass(RING{index_magnetslices{n}(1)});
+    % Get family name
+    atfamname = RING{index_magnetslices{n}(1)}.FamName;
+    
+    % Check if there are family-specific errors defined
+    for p = 1:numel(EM_classIDs)
+        foundFlag = any(strcmpi(atfamname,EM_classIDs{p}));
+        if foundFlag
+            k = p;
+            atclass = atguessclass(RING{index_magnetslices{n}(1)});     % Still need to identify the class to know the main field component
+            break; 
+        end
+    end
 
-    % Check which errors are applicable
-    k = find(strcmpi(atclass,EM_classIDs));
+
+    if ~foundFlag %isempty(k)
+        % If no errors are defined for the specific family, then check if
+        % there are any class errors instead.
+        % NB! May be better to base the guess on integrated strengths, which
+        % means a new function.
+        atclass = atguessclass(RING{index_magnetslices{n}(1)});
+
+        % Check which class errors are applicable
+        k = find(strcmpi(atclass,EM_classIDs));
+    end
 
     % Deploy all applicable errors via nested functions to speed up the execution (no need
     % to pass the RING variable to the functions)
-    % NB! Possible speed improvement by removing a loop (strcmpi does on
+    % NB! Possible speed improvement by removing a loop (strcmpi does one
     % internally)
     for i = 1:numel(ERRORMODEL.Magnet(k))
 
         % For each applicable error
         args_misalignment = cell(1,2);
         args_field = cell(1,2);
+        args_scaling = cell(1,2);
 
         if isfield(ERRORMODEL.Magnet{k(i)},'Systematic')
             for j = 1:numel(ERRORMODEL.Magnet{k(i)}.Systematic)
@@ -202,6 +223,9 @@ for n = 1:numel(index_magnetslices)
                 end
                 if any(isfield(ERRORMODEL.Magnet{k(i)}.Systematic{j},{'PolynomA','PolynomB'}))
                     args_field{1} = ERRORMODEL.Magnet{k(i)}.Systematic{j};
+                end
+                if any(isfield(ERRORMODEL.Magnet{k(i)}.Systematic{j},{'Scaling'}))
+                    args_scaling{1} = ERRORMODEL.Magnet{k(i)}.Systematic{j};
                 end
             end
         end
@@ -213,17 +237,23 @@ for n = 1:numel(index_magnetslices)
                 if any(isfield(ERRORMODEL.Magnet{k(i)}.Random{j},{'PolynomA','PolynomB'}))
                     args_field{2} = ERRORMODEL.Magnet{k(i)}.Random{j};
                 end
+                if any(isfield(ERRORMODEL.Magnet{k(i)}.Random{j},{'Scaling'}))
+                    args_scaling{2} = ERRORMODEL.Magnet{k(i)}.Random{j};
+                end
             end
         end
 
-        if MisalignmentFlag && ~all(isempty(args_misalignment))
+        if MisalignmentFlag && ~all(cellfun(@isempty,args_misalignment))
             move_mag(index_magnetslices{n},args_misalignment{:});
         end
 
-        if FieldErrorFlag && ~all(isempty(args_field))
+        if FieldErrorFlag && ~all(cellfun(@isempty,args_field))
             applyfielderror(index_magnetslices{n},args_field{:},atclass);
         end
 
+        if ScalingFlag && ~all(cellfun(@isempty,args_scaling))
+            applyScalingError(index_magnetslices{n},args_scaling{:});
+        end
         %         % Check whether this error is a misalignment
         %         if (isfield(ERRORMODEL.Magnet{k(i)},'Systematic') && any(isfield(ERRORMODEL.Magnet{k(i)}.Systematic,{'Heave','Sway','Surge','Pitch','Yaw','Roll'}))) ...
         %                 || (isfield(ERRORMODEL.Magnet{k(i)},'Random') && any(isfield(ERRORMODEL.Magnet{k(i)}.Random,{'Heave','Sway','Surge','Pitch','Yaw','Roll'})))
@@ -372,6 +402,21 @@ end
     end
 
 
+    function applyScalingError(mi, Es, Er)
+
+        if isempty(Es), Es.Scaling = 1; end
+        if isempty(Er), Er.Scaling = 1; end
+
+        % Generate the error for this set of magnet elements (usually a circuit)
+        Scaling = Es.Scaling + abs(Er.Scaling - 1) .* trunc_randn(1,2)';
+        
+        for ii = 1:numel(mi)
+            RING{mi(ii)}.PolynomB = RING{mi(ii)}.PolynomB .* Scaling;
+            RING{mi(ii)}.PolynomA = RING{mi(ii)}.PolynomA .* Scaling;
+        end
+    end
+
+
 % -----------------------
 % move individual magnets
 % -----------------------
@@ -380,6 +425,12 @@ end
         % ------------------------------------------
         % input: mi, magnet index / me: magnet error
         % ------------------------------------------
+
+        if isempty(Es), Es.Sway = 0; Es.Heave = 0; Es.Surge = 0; ...
+                Es.Pitch = 0; Es.Yaw = 0; Es.Roll = 0; end
+        if isempty(Er), Er.Sway = 0; Er.Heave = 0; Er.Surge = 0; ...
+                Er.Pitch = 0; Er.Yaw = 0; Er.Roll = 0; end
+
         % Generate shifts and rolls for this single magnet
         dx     = Es.Sway + Er.Sway * trunc_randn(1,2);
         dy     = Es.Heave + Er.Heave * trunc_randn(1,2);
