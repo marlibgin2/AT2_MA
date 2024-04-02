@@ -1,4 +1,6 @@
 function EM = errormodel_example
+% ERRORMODEL_EXAMPLE contains an example (unrealistic) demonstration error model 
+%
 % NOTES
 % 1. Intended usage is with applyErrorModel, which will deploy the defined
 %    model on a lattice.

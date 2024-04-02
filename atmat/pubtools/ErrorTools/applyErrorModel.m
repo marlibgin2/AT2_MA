@@ -1,5 +1,5 @@
-function varargout = applyErrorModel(varargin)%, OrbitCorrectionFlag)
-% SPOIL_THE_LATTICE deployes misalignments for sliced magnets and
+function varargout = applyErrorModel(varargin)
+% APPLYERRORMODEL deploys a complete error model for a lattice
 % [RINGWE, RING0, MAGe, GIRe, Xbpm, Ybpm] = applyErrorModel(RING,ErrorModel,...)
 %
 % INPUT
@@ -38,8 +38,8 @@ function varargout = applyErrorModel(varargin)%, OrbitCorrectionFlag)
 %               applied.
 % 2. RING0  -   {cell array of structs} AT2 lattice output, without errors.
 %
-% See also markSlicedMagnets, getmagnetslices, getMagGroupsFromGirderIndex,
-% atguessclass
+% See also errormodel_example, markSlicedMagnets, getmagnetslices,
+% getMagGroupsFromGirderIndex, atguessclass, errormodel_example
 
 
 %% Default settings
