@@ -153,6 +153,10 @@ ModelRM = getlinearrespmat(rerr,indBPM,indHCor,indVCor);
     
 end
 
+
+% Check whether lattice is 6D or 4D
+use6d = check_6d(rerr);
+
 ormH=ModelRM.OrbHCor;
 ormV=ModelRM.OrbVCor;
 % kval=ModelRM.kval;
@@ -161,7 +165,11 @@ ormV=ModelRM.OrbVCor;
 % delta=ModelRM.delta;
 
 % get initial orbit
-o=findorbit6Err(rerr,indBPM,inCOD);
+if use6d
+    o=findorbit6Err(rerr,indBPM,inCOD);
+else
+    o=findorbit4Err(rerr,0,indBPM,inCOD);
+end
 ox0=o(1,:);
 oy0=o(3,:);
 
@@ -192,7 +200,11 @@ for iter=1:Niter
     corv0=atgetfieldvalues(rerr,indVCor,yfname,{yfi,yfj});
     
     % get current orbit
-    o=findorbit6Err(rerr,indBPM,inCOD);
+    if use6d
+        o=findorbit6Err(rerr,indBPM,inCOD);
+    else
+        o=findorbit4Err(rerr,0,indBPM,inCOD);
+    end
     ox=o(1,:);
     oy=o(3,:);
     
@@ -273,7 +285,7 @@ for iter=1:Niter
     end
     
     %[~,t,~]=atlinopt(rtest,0,1);
-    t=tunechrom(rtest,0);
+    t=tunechrom(rtest);
     if not(isnan(t(1)) || isnan(t(2)))
         % apply correction in lattice
         rcor = rtest;
@@ -290,7 +302,13 @@ for iter=1:Niter
 end
 
 % get current orbit
-o=findorbit6Err(rcor,indBPM,inCOD);
+    if use6d
+        o=findorbit6Err(rcor,indBPM,inCOD);
+        dpp = o(5,1);
+    else
+        o=findorbit4Err(rcor,0,indBPM,inCOD);
+        dpp = 0;
+    end
 oxc=o(1,:);
 oyc=o(3,:);
     oxc = oxc.*W(:,1)';
@@ -298,6 +316,9 @@ oyc=o(3,:);
 
 Lh=atgetfieldvalues(rcor,indHCor,'Length');
 Lv=atgetfieldvalues(rcor,indVCor,'Length');
+Lh(Lh == 0) = 1;    % In case of thin correctors, KickAngle should already have been used
+Lv(Lv == 0) = 1;    % In case of thin correctors, KickAngle should already have been used
+
 hsL=hs.*Lh;
 vsL=vs.*Lv;
 
@@ -309,5 +330,5 @@ if printouttext
     disp(['    ' 'min' '    ' 'mean' '    ' 'max'])
     disp(['hs:'  num2str([min(hsL) mean(hsL) max(hsL)]*1e3,' %2.2f ') ' mrad'])
     disp(['vs:'  num2str([min(vsL) mean(vsL) max(vsL)]*1e3,' %2.2f ') ' mrad'])
-    disp(['dpp: ' num2str(inCOD(5))])
+    disp(['dpp @ s=0: ' num2str(dpp)])
 end

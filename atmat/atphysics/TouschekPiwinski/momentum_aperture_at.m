@@ -63,7 +63,7 @@ if ~isrecursivecall
     if nargin < 1 || isempty(varargin{1})
         error('momentum_aperture_at:No lattice given!');
     else
-        THERING = varargin{1};
+        THERING = varargin{1}(:);
     end
 
     if nargin < 2 || isempty(varargin{2})
