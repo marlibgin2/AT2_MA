@@ -3,7 +3,7 @@ function DAdist = calcDAdist(varargin)
 % lattice variants that differ onl though the application of a given error model
 % Tracking can be 6d or 4d
 % as defined by the input lattice. 
-% This is a higherlevl wrapper function
+% This is a higher level wrapper function
 % that in turn calls the lower level function "calcDA_raw"
 % 
 %% Inputs
