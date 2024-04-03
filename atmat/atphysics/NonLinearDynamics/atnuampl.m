@@ -26,6 +26,7 @@ function varargout=atnuampl(ring,ampl,xz,varargin)
 %
 % See also findtune, calcnaff
 
+minAmpl = 30e-6;
 
 lab={'x^2','p_x^2','z^2','p_z^2'};
 if nargin < 3, xz=1; end
@@ -59,8 +60,12 @@ tune0=nbper*lindata(end).mu/2/pi;
 offs=[nbper -nbper];
 siza=size(ampl);
 nampl=prod(siza);
-p0=repmat(0.00003*[1;0;1;0;0;0], 1,nampl); % 30 microns minimum amplitude
+
+% Enforce min. 30 micron amplitude, using correct sign
+p0=repmat(minAmpl*[1;0;1;0;0;0], 1,nampl); % 30 microns minimum amplitude
+ampl(ampl==0)=0.00003;
 p0(xz,:)=sign(ampl(:))'.*max(p0(xz,:),abs(ampl(:))');
+
 p0=p0+orbit(:,ones(1,nampl));
 p1=ringpass(ring,p0,nturns)-orbit(:,ones(1,nampl*nturns));
 if method == 4
