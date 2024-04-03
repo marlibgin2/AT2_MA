@@ -8,7 +8,7 @@ end
 
 %persistent ri; 
 
-ri = m4U_240114_b01_02_03_02__grd_segmented;
+ri = m4U_240114_b01_02_03_02; %__grd_segmented;
 if ~isempty(X0)
     ri  = alter_m4U_lattice(X0, ri, 'B'); % if new intial parameters alter the lattice
 else
