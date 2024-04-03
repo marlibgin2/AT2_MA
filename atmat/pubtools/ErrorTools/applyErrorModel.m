@@ -354,8 +354,10 @@ end
         %
 
         if isempty(Es.PolynomA) && isempty(Es.PolynomB) && isempty(Er.PolynomA) && isempty(Er.PolynomB) && Er.Scaling == 1 && Es.Scaling == 1, return; end
-        if isempty(Es), Es = zeros(1,4); end
-        if isempty(Er), Er = zeros(1,4); end
+        if isempty(Es.PolynomA), Es.PolynomA = zeros(1,4); end
+        if isempty(Er.PolynomA), Er.PolynomA = zeros(1,4); end
+        if isempty(Es.PolynomB), Es.PolynomB = zeros(1,4); end
+        if isempty(Er.PolynomB), Er.PolynomB = zeros(1,4); end
 
         % Identify the main field component for higher multipole scaling
         switch lower(class)
