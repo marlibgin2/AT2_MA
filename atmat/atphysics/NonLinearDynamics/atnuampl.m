@@ -26,6 +26,7 @@ function varargout=atnuampl(ring,ampl,xz,varargin)
 %
 % See also findtune, calcnaff
 
+minAmpl = 30e-6;
 
 lab={'x^2','p_x^2','z^2','p_z^2'};
 if nargin < 3, xz=1; end
