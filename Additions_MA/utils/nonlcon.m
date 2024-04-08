@@ -1,4 +1,4 @@
-function penalty = funMaxInscribedEllipse(X0)
+function valore = nonlcon(X0)
 
 h=ellipse(X0(1),X0(2),0,X0(3),0,'b',100,0);
 xe=h.XData(h.YData>=0);
@@ -30,10 +30,12 @@ DAtest = 1e3*DAtest;
 DAtest(DAtest(:,2)>2)=2;
 
 [in,on] = inpolygon(xe,ye,DAtest(:,1),DAtest(:,2));
-P1 = -X0(1)*X0(2); % ellipse area
-P2 = (~isempty(find(in==0)))*1e19; 
 
-%P2 = sum(in);disp(['P2 = ' num2str(P2)])
-penalty = P1 + P2;
+if (~isempty(find(in==0)))
+    valore = 1;
+else
+    valore=-1;
+end
+
 
 
