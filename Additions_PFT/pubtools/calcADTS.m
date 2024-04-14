@@ -76,6 +76,8 @@ function adts=calcADTS(varargin)
 %             plot of changes of tunes, rather then the tunes.
 % 2024/03/31: added possibiilty of calculation on a 2d grid of points.
 %             added furtehr plot options from plotADTS
+% 2024/04/14: adap to nbew version of atnuampl - additional inut parameter
+%             is minampl.
 %
 %% Input argument parsing
 [RING] = getargs(varargin,[]);
@@ -83,6 +85,7 @@ plotf            = any(strcmpi(varargin,'plot'));
 verbosef         = any(strcmpi(varargin,'verbose'));
 nturns           = getoption(varargin,'nturns',128);
 plane            = getoption(varargin,'plane','x');
+minamp           = getoption(varargin,'minamp',30E-6);
 xmax             = getoption(varargin,'xmax',0.005);
 xmin             = getoption(varargin,'xmin',0.0);
 ymax             = getoption(varargin,'ymax',0.004);
@@ -127,7 +130,8 @@ switch plane
     case {'x';'X'}
         amplx     = linspace(xmin,xmax,npx);
         [~,x0pos] = min(abs(amplx));
-        [Qxx,Qyx] = atnuampl(RING,amplx,1,'nturns',nturns,'method',method);
+        [Qxx,Qyx] = atnuampl(RING,amplx,1,'nturns',nturns,...
+                    'method',method,'minamp', minamp);
         dQxx = Qxx - Qxx(x0pos);
         dQyx = Qyx - Qyx(x0pos); 
         Qxxfrac = Qxx-fix(Qxx);
@@ -136,7 +140,8 @@ switch plane
     case {'y';'Y'}
         amply = linspace(ymin,ymax,npy);
         [~,y0pos] = min(abs(amply));
-        [Qxy,Qyy] = atnuampl(RING,amply,3,'nturns',nturns,'method',method);
+        [Qxy,Qyy] = atnuampl(RING,amply,3,'nturns',nturns,...
+                    'method',method,'minamp', minamp);
         dQxy = Qxy - Qxy(y0pos);
         dQyy = Qyy - Qyy(y0pos);
         Qxyfrac = Qxy-fix(Qxy);
@@ -147,12 +152,14 @@ switch plane
         [~,x0pos] = min(abs(amplx));
         amply     = linspace(ymin,ymax,npy);
         [~,y0pos] = min(abs(amply));
-        [Qxx,Qyx] = atnuampl(RING,amplx,1,'nturns',nturns,'method',method);
+        [Qxx,Qyx] = atnuampl(RING,amplx,1,'nturns',nturns,...
+                    'method',method,'minamp', minamp);
         dQxx = Qxx - Qxx(x0pos);
         dQyx = Qyx - Qyx(x0pos); 
         Qxxfrac = Qxx-fix(Qxx);
         Qyxfrac = Qyx-fix(Qyx);
-        [Qxy,Qyy] = atnuampl(RING,amply,3,'nturns',nturns,'method',method);
+        [Qxy,Qyy] = atnuampl(RING,amply,3,'nturns',nturns,...
+                    'method',method,'minamp', minamp);
         dQxy = Qxy - Qxy(y0pos);
         dQyy = Qyy - Qyy(y0pos);
         Qxyfrac = Qxy-fix(Qxy);
