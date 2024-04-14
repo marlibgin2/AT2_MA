@@ -7,7 +7,7 @@ function varargout = estimateperiodicity(RING)
 %
 % OUTPUT
 % 1. N          {scalar, optional} Estimated ring periodicity
-% 2. index      {cell array} lattice element indices, sorted into a cell
+% 2. index      {cell array, optional} lattice element indices, sorted into a cell
 %               array of length N depending on which achromat they belong to
 %
 % NOTES AND LIMITATIONS

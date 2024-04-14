@@ -311,21 +311,21 @@ end
         % --------------------------
         % horizontal plane: sway/yaw
         % --------------------------
-        sway   = eGS.Sway + eGR.Sway * randn();
-        yaw    = eGS.Yaw + eGR.Yaw * randn();
+        sway   = eGS.Sway + eGR.Sway * trunc_randn(1,2)';
+        yaw    = eGS.Yaw + eGR.Yaw * trunc_randn(1,2)';
         dx     = sway + yaw*(spos(Gi)-sm);
 
         % ---------------------------
         % vertical plane: heave/pitch
         % ---------------------------
-        heave  = eGS.Heave + eGR.Heave * randn();
-        pitch  = eGS.Pitch + eGR.Pitch * randn();
+        heave  = eGS.Heave + eGR.Heave * trunc_randn(1,2)';
+        pitch  = eGS.Pitch + eGR.Pitch * trunc_randn(1,2)';
         dy     = heave + pitch*(spos(Gi)-sm);
 
         % -------------------------------
         % move in (x,y), apply roll (phi)
         % -------------------------------
-        dphi   = eGS.Roll + eGR.Roll * randn();
+        dphi   = eGS.Roll + eGR.Roll * trunc_randn(1,2)';
 
         % For speed, call atshiftelem and attiltelem functions directly
         % rather than calling atsetshift and atsettilt. This avoids the

@@ -17,6 +17,7 @@ function varargout=atnuampl(ring,ampl,xz,varargin)
 %   Possible values are:
 %       orbit:  initial closed orbit
 %       nturns: specify the number of turns for tracking (default 256)
+%       minamp: specify the min. initial particle amplitude (default 30 µm)
 %       method: specify the method for tune determination
 %               1: Highest peak in fft
 %               2: Interpolation on fft results
@@ -24,15 +25,23 @@ function varargout=atnuampl(ring,ampl,xz,varargin)
 %               4: NAFF
 %   Other options are transmitted to the plot function
 %
+% NOTES
+% 1. Be aware that when looking at tuneshifts due to an oscillation
+%    amplitude in the orthonormal plane there is a risk of the ADTS
+%    calculation picking the wrong peak once the amplitudes become large
+%    enough due to betatron coupling. This is dealt with in the NAFF method
+%    by imposing a threshold on tune amplitude shifts from one amplitude to
+%    the next, before picking the largest amplitude peak.
+%
 % See also findtune, calcnaff
 
-minAmpl = 30e-6;
 
 lab={'x^2','p_x^2','z^2','p_z^2'};
 if nargin < 3, xz=1; end
 [nturns,varargs]=getoption(varargin,'nturns',256);
 [method,varargs]=getoption(varargs,'method',3);
 [orbit,varargs]=getoption(varargs,'orbit',[]);
+[minAmp,varargs]=getoption(varargs,'minamp',30e-6);
 
 if method == 4    % Turn adjustment, recommended for NAFF
     nturns = 2^(log2(nturns));
@@ -70,14 +79,42 @@ if method == 4
     tunetrack = nan(numel(ampl),2);
     for n = 1:numel(ampl)
         particleTurns = n:nampl:(numel(ampl)*nturns);
+
+        if any(isnan(p1(1:4,particleTurns)),'all')
+            % Particle was lost during tracking, don't run NAFF, assign NaN
+            % and continue 
+            tunetrack(n,1:2) = nan(1,2);
+            continue;
+        end
+
         [nux, amplx, ~] = calcnaff(p1(1,particleTurns),p1(2,particleTurns));
+        [nuy, amply, ~] = calcnaff(p1(3,particleTurns),p1(4,particleTurns));
+        
+        % If NAFF fails for any reason assign NaN and continue
+        if any(isnan([nux;nuy]))
+            tunetrack(n,1:2) = nan(1,2);
+            continue;
+        end
+
+        if n > 1
+            % If there is a tune calculated at a lower amplitude, first
+            % filter the tune peaks from NAFF to ignore frequencies
+            % differing too much from the previous amplitude. The threshold
+            % has been arbitrarily set to 0.1.
+            % This is useful primarily when looking at the horizontal tune
+            % shift from a vertical kick, or vice versa, in a lattice with
+            % a large amount of coupling.
+            dnux =  abs(tunetrack(n-1,1) - abs(nux)./(2*pi));
+            dnuy =  abs(tunetrack(n-1,2) - abs(nuy)./(2*pi));
+            ix = dnux < 0.1; nux = nux(ix); amplx = amplx(ix);
+            iy = dnuy < 0.1; nuy = nuy(iy); amply = amply(iy);
+        end
         [~, i] = max(amplx);        % Identify the dominant frequency peak
         nux = abs(nux(i))/(2*pi);   % Re-normalize to get the tune. Note the sign is ignored.
 
-        [nuy, amply, ~] = calcnaff(p1(3,particleTurns),p1(4,particleTurns));
         [~, i] = max(amply);
         nuy = abs(nuy(i))/(2*pi);
-    
+        
         tunetrack(n,1:2) = [nux,nuy];
     end
      
