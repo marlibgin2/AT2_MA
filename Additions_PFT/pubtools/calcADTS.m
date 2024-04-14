@@ -4,7 +4,7 @@ function adts=calcADTS(varargin)
 % by the input lattice
 %   
 %% Inputs 
-% Mandatury arguments
+% Mandatory arguments
 % RING : AT2 lattice array. 
 %
 % Optional arguments
