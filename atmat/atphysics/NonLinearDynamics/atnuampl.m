@@ -71,7 +71,7 @@ siza=size(ampl);
 nampl=prod(siza);
 p0=repmat(minAmp*[1;0;1;0;0;0], 1,nampl); % 30 microns minimum amplitude
 %p0(xz,:)=max(p0(xz,:),ampl(:)');
-ampl(ampl==0)=0.00003;
+ampl(ampl==0)=minAmp;
 p0(xz,:)=ampl;
 p0=p0+orbit(:,ones(1,nampl));
 p1=ringpass(ring,p0,nturns)-orbit(:,ones(1,nampl*nturns));
