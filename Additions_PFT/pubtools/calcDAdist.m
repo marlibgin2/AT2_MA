@@ -1,6 +1,6 @@
 function DAdist = calcDAdist(varargin)
 % Calculates and plots Dynamic Aperture of a number of 
-% lattice variants that differ onl though the application of a given error model
+% lattice variants that differ only through the application of a given error model
 % Tracking can be 6d or 4d
 % as defined by the input lattice. 
 % This is a higher level wrapper function
@@ -41,13 +41,17 @@ function DAdist = calcDAdist(varargin)
 %            as input in the form ('parameter', value)
 %
 % Optional arguments
-% all fields in DAoptions listed above
-% nseeds: number of seeds, default = 10
+%   all fields in DAoptions listed above
+%   nseeds: number of seeds, default = 10
+%   tunfams : list of magnet families used for ring tun matching, default = {'Q1_b3','Q2_b3'}
+%   nittune : number of iterations for tune matching, defauke = 1000
+%   TolTune : tolerance for tune matching, default = 1E-8
 %
 % Optional flags
 % plot : plots DA;
 % verbose: produces verbose output
-% correct: perform orbit correction
+% corrorb: perform orbit correction
+% corrtun: perform tune correction
 %
 %% Outputs
 % DAdist structure with fields
@@ -62,14 +66,18 @@ function DAdist = calcDAdist(varargin)
 % DAdist.outputs.DAVs=DAVs: Dynamic apeture for all seeds (only for
 %                           DAMode='border'
 %% Usage examples
-% DAdist = calcDAdist(RING,ErrorModel,DAoptions,'plot','correct','verbose');
-% DAdist = calcDAdist(RING,ErrorModel,[],'nturns',1024,'correct');
-% calcDAdist(RING,ErrorModel,[],'nturns',1024,'plot','correct');
+% DAdist = calcDAdist(RING,ErrorModel,DAoptions,'plot','corrorb','verbose');
+% DAdist = calcDAdist(RING,ErrorModel,[],'nturns',1024,'corrorb');
+% calcDAdist(RING,ErrorModel,[],'nturns',1024,'nseeds',10,'plot','corrorb');
+% DAdist = calcDAdist(RING,ErrorModel,[],'nturns',810,'corrorb','corrtun','tunfams',{'Q1','Q2'});
 
 %% History
 % PFT 2024/03/12
-% PFT 2024/03/29 : changed oputput to a structure, echoing also input
+% PFT 2024/03/29: changed oputput to a structure, echoing also input
 %                  parameters
+% PFT 2024/04/23: added capabilty to fit tunes
+% PFT 2024/04/27: added recording&plotting of rms orbit before and after correction
+%
 %% Input argument parsing
 [RING,ErrorModel,DAoptions] = getargs(varargin,[],[],[]);
 if (isempty(ErrorModel))
@@ -103,7 +111,9 @@ end
 
 plotf            = any(strcmpi(varargin,'plot'));
 verbosef         = any(strcmpi(varargin,'verbose'));
-correctf         = any(strcmpi(varargin,'correct'));
+corrorbf         = any(strcmpi(varargin,'corrorb'));
+corrtunf         = any(strcmpi(varargin,'corrtun'));
+plotorbrmsf      = any(strcmpi(varargin,'plotorbrms'));
 dp               = getoption(varargin,'dp',DAoptions.dp);
 z0               = getoption(varargin,'z0',DAoptions.z0);
 DAmode           = getoption(varargin,'DAmode',DAoptions.DAmode);
@@ -122,7 +132,11 @@ nang             = getoption(varargin,'nang',DAoptions.nang);
 res              = getoption(varargin,'res',DAoptions.res); 
 alpha            = getoption(varargin,'alpha',DAoptions.alpha);
 
-nseeds           = getoption(varargin,'nseeds',10);     
+nseeds           = getoption(varargin,'nseeds',10);
+tunfams          = getoption(varargin,'tunfams',{'Q1_b3','Q2_b3'});
+nittune          = getoption(varargin,'nittune',100); % max n. of iterations for tune mtaching
+TolTune          = getoption(varargin,'TolTune',1E-5); % tolerance for tune matching
+
 
 DAoptions.dp=dp;
 DAoptions.z0=z0;
@@ -180,11 +194,14 @@ if (verbosef)
     fprintf('%s Starting DA calculation \n', datetime);
 end
 
-DAVs=zeros(nang+1,2*(nseeds+1));
-DAs=zeros(1,nseeds+1);
+DAVs= zeros(nang+1,2*(nseeds+1));
+DAs = zeros(1,nseeds+1);
+orb0_stds = zeros(6,nseeds+1);
+orb_stds  = zeros(6,nseeds+1);
 try
-   rpara = atsummary(RING);
-   etax = rpara.etax;
+   rpara  = atsummary(RING);
+   Itunes = rpara.Itunes;
+   etax   = rpara.etax;
    if (isnan(z0))
        if (check_6d(RING))
         z0 = PhysConst.c*(rpara.syncphase-pi)/(2*pi*rpara.revFreq*rpara.harmon); %if z0 not given choose the synchronous phase
@@ -203,6 +220,8 @@ catch ME
      DAdist.outputs.DAav=DAav;
      DAdist.outputs.DAstd=DAav;
      DAdist.outputs.DAstd=DAstd;
+     DAdist.outputs.orb0_stds=orb0_stds;
+     DAdist.outputs.orb_stds=orb_stds;
      return
 end
 
@@ -213,14 +232,40 @@ for i=1:nseeds+1
 
  if (i>1)
      RINGe=applyErrorModel(RING,ErrorModel);
-     if (correctf) 
+     if (corrorbf) 
          try
-            RINGe = calcOrb(RINGe,'correct');
+            if (verbosef)
+                fprintf('%s Correcting orbit \n', datetime);
+            end
+            [RINGe, orb0, orb] = calcOrb(RINGe,'correct');
+            for j=1:6
+                orb0_stds(j,i)=std(orb0(j,:));
+                orb_stds(j,i)=std(orb(j,:));
+            end
          catch ME
-             fprintf('Error in orbit correction ');
-             fprintf('Error message is %s', ME);
+             fprintf('%s calDAdist: Error in orbit correction ', datetime);
+             fprintf('Error message is %s', ME.message);
              DAs(i)=NaN;
              break;
+         end
+     end
+     if (corrtunf)
+         try
+           rpara=atsummary(RINGe);
+           Itunese=rpara.Itunes;
+           if (verbosef)
+           fprintf('%s Fitting tunes from [ %5.3f %5.3f ] to [ %5.3f %5.3f ] \n',...
+              datetime, Itunese(1), Itunese(2),Itunes(1),Itunes(2));
+           end
+           [RINGe, its, penalty_tune]= fittuneRS(RINGe, Itunes,...
+                      tunfams{1}, tunfams{2}, nittune, TolTune,'Y');
+           if (verbosef)
+              fprintf('%s Tune fit complete with penalty = %6.2e after %5d iterations \n', datetime, penalty_tune, its);
+           end
+         catch ME
+             fprintf('%s calDAdist: Error in tune correction \n', datetime);
+             fprintf('Error message is %s \n', ME.message);
+             DAs(i)=NaN;
          end
      end
  else
@@ -246,23 +291,39 @@ DAstd = std(DAs);
 DAdist.inputs.RING=RING;
 DAdist.inputs.nseeds=nseeds;
 DAdist.inputs.ErrorModel=ErrorModel;
-DAdist.inputs.correctf=correctf;
+DAdist.inputs.corrorb=corrorbf;
+DAdist.inputs.corrtun=corrtunf;
+DAdist.inputs.nittune=nittune;
+DAdist.inputs.TolTune=TolTune;
+DAdist.inputs.tunfams=tunfams;
 DAdist.outputs.DAoptions=DAoptions;
 DAdist.outputs.DAVs=DAVs;
 DAdist.outputs.DAav=DAav;
 DAdist.outputs.DAstd=DAstd;
+DAdist.outputs.orb0_stds=orb0_stds;
+DAdist.outputs.orb_stds=orb_stds;
 
 if(verbosef)
     fprintf('DA calculation complete \n');
     toc;
 end
 
-%% Plots DA Distribution
-if (plotf&&strcmpi(DAmode,'border'))
+%% Plots DA Distribution and rms orbits
+if (plotf)
     if (verbosef)
         fprintf('Plotting DA... \n');
-        plotDAdist(DAdist,'verbose');
+        if (plotorbrmsf)
+            plotDAdist(DAdist,'verbose','plotorbrms');
+        else
+            plotDAdist(DAdist,'verbose');
+        end
     else
-        plotDAdist(DAdist);
+        if (plotorbrmsf)
+            plotDAdist(DAdist,'plotorbrms');
+        else
+            plotDAdist(DAdist);
+        end
     end
 end
+
+%%

@@ -1,4 +1,4 @@
-function [NewLAT, its, penalty, ftunes] = fittuneRS(LAT,tunes, fam1, fam2, maxits, Tol,useintegerf)
+function [NewLAT, its, penalty, ftunes] = fittuneRS(LAT,tunes, fam1, fam2, maxits, Tol, useintegerf)
 % Iterates calls to fittuneR
 %   Detailed explanation goes here
 

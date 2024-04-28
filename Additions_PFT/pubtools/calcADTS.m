@@ -12,9 +12,9 @@ function adts=calcADTS(varargin)
 %  'x' calculates only tunes vs horizontal position
 %  'y' calculates only tunes vs vertical position
 %  'xy' or 'td' calculates both but plots (if requested) are different
-%  'grid' calculates tunes on a grid of points in xy plane.
 %               'xy' will plot both tunes vs x and y 
 %                whereas 'td' and 'grid' will plot a tune diagram.
+%  'grid' calculates tunes on a grid of points in xy plane.
 %
 % xmax: max horizontal amplitude [m], default = 0.005 
 % xmin: min horizontal amplitude [m], default = 0.0 
@@ -76,7 +76,7 @@ function adts=calcADTS(varargin)
 %             plot of changes of tunes, rather then the tunes.
 % 2024/03/31: added possibiilty of calculation on a 2d grid of points.
 %             added furtehr plot options from plotADTS
-% 2024/04/14: adap to nbew version of atnuampl - additional inut parameter
+% 2024/04/14: adapted to new version of atnuampl - additional input parameter
 %             is minampl.
 %
 %% Input argument parsing

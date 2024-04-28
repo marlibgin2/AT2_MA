@@ -370,6 +370,7 @@ for ny=1:ntune
         else
             diffu(icounter) = -20;
         end
+
         diffuvec(1:4,icounter) = diffu(icounter);
         diffuvec(1:4,icounter) = diffu(icounter);
     else
@@ -408,7 +409,7 @@ if graf
     colormap('jet');
     colorbar;
     
-    res_ord=5; %7
+    res_ord=3; %7
     plot_net(res_ord,qrange(1),qrange(2),qrange(3),qrange(4));
     
     tstr2 = ['Tune Footprint'];

@@ -11,20 +11,25 @@ function plotDAdist(varargin)
 %       DAdist.outputs.DAoptions
 %
 % Optional flags
-% verbose : prints out diagnbostics 
+% verbose : prints out diagnostics 
+% plotorbrms: plots the rms of the uncorrected and corrected orbits for all
+% seeds
 %% Usage examples
 % plotDAdist(DAdist);
 % plotDAdist(DAdist_std,'XmaxDA', 0.012, 'YmaxDA', 0.004);
+% plotDAdist(DAdist_std,'plotorbrms','XmaxDA', 0.012, 'YmaxDA', 0.004);
 %
 % see also calcDAdist
 
 %% History
-% 2024/03/29
+% PFT 2024/03/29 
+% PFT 2024/04/27 : added plotting of orbit rms before and after correction
 %
 %% Input argument parsing
 %
-DAdist   = getargs(varargin,[]);
-verbosef = any(strcmpi(varargin,'verbose'));
+DAdist      = getargs(varargin,[]);
+verbosef    = any(strcmpi(varargin,'verbose'));
+plotorbrmsf = any(strcmpi(varargin,'plotorbrms'));
 XmaxDA   = getoption(varargin,'XmaxDA',DAdist.outputs.DAoptions.XmaxDA);
 YmaxDA   = getoption(varargin,'YmaxDA',DAdist.outputs.DAoptions.YmaxDA);
 
@@ -54,6 +59,29 @@ for i=1:nseeds+1
      end
  end
 end
+
+if (plotorbrmsf)
+   figure; 
+   plot(DAdist.outputs.orb0_stds(1,:)*1000);
+   xlabel('seed #');
+   ylabel('x/y[mm]');
+   hold;
+   plot(DAdist.outputs.orb0_stds(3,:)*1000);
+   legend({'X','Y'});
+   title('rms orbit before correction');
+
+   figure; 
+   plot(DAdist.outputs.orb_stds(1,:)*1000);
+   xlabel('seed #');
+   ylabel('x/y[mm]');
+   hold;
+   plot(DAdist.outputs.orb_stds(3,:)*1000);
+   legend({'X','Y'});
+   title('rms orbit after correction');
+end
+
+
+
  
 
 
