@@ -21,7 +21,7 @@ function DAV = calcDA_border( RING, r0, nsteps, nturns, dp, z0, etax, res, alpha
 % ymax: limits of the region where to look for the DA [m]
 %
 %% Output parameters
-% DAV: (nx2) vector containing DA border coordinates [m] 
+% DAV: (Nx2) vector containing DA border coordinates [m] 
 %                   1 if particle is not lost in nturns
 %                   0 if particle is lost in n turns
 %
@@ -44,7 +44,7 @@ function DAV = calcDA_border( RING, r0, nsteps, nturns, dp, z0, etax, res, alpha
 % 2023/12/28: Included limits to x and y so as to avoid large aspect
 %             ratios/asymmetry
 % 2024/03/08: General update and documentation
-% 2024/03/10: Eliminate he chromatic orbit check
+% 2024/03/10: Eliminate the chromatic orbit check
 
 %% Calculates DA
 angle_step=pi/nsteps;

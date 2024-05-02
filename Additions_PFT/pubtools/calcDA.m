@@ -1,4 +1,4 @@
-function [DA,DAV,DAoptions]=calcDA(varargin)
+function DAS=calcDA(varargin)
 %
 % Calculates and plots Dynamic Aperture. Tracking can be 6d or 4d
 % as defined by the input lattice. This is a higherlevel wrapper function
@@ -43,19 +43,33 @@ function [DA,DAV,DAoptions]=calcDA(varargin)
 % verbose: produces verbose output
 %
 %% Outputs
-% DA: Dynamic aperture [mm**2]
-% DAoptions: Structure with options used in the calculation
+% DAS: structure with the fields
+% DAS.inputs echoes the input parameters with fields
+%   DAS.inputs.RING
+%   DAS.inputs.DAoptions
+%
+% DAS.outputs has fiels
+%   DA       : Dynamic aperture [mm**2]
+%   DAV      : Vector of dynamic aperture border coordinates (if 'border' mode) 
+%              or vector of booleans indicating particle loss (if 'grid' mode)
+%   DAoptions: Structure with options used in the calculation (may differ
+%              from the input DAoptions if specific fields were 
+%              overwritten through optional parameters
 %
 %% Usage examples
-% [DA,~] = calcDA(RING,DAoptions,'plot');
-% [DA, DAoptions] = calcDA(RING,[],'nturns',1024,'DAmode','grid');
+% DAS = calcDA(RING,DAoptions,'plot');
+% DAS = calcDA(RING,[],'nturns',1024,'DAmode','grid');
 % calcDA(RING,[],'nturns',1024,'DAmode','grid');
 
 %% History
 % PFT 2024/03/09
+% PFT 2024/05/01 : updated documentation,changed output parameter 
+%                  structure and separated calculation from plotting
 %
 %% Input argument parsing
 [RING,DAoptions] = getargs(varargin,[],[]);
+DAS.inputs.DAoptions=DAoptions;
+DAS.inputs.RING=RING;
 if (isempty(DAoptions))
     DAoptions.dp=0.0;
     DAoptions.z0=nan;
@@ -180,7 +194,7 @@ end
 PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
 PhysConst = PC.PC;      %Load physical constants
 
-%% Calculates and plots DA
+%% Calculates DA
 if (verbosef)
     tic;
     fprintf('*** \n');
@@ -189,6 +203,10 @@ end
 try
    rpara = atsummary(RING);
    etax = rpara.etax;
+   %
+   % for 6d tracking and if DAoptions.z0 is not given
+   % make sure the initial logiudinal coordinate corresponds 
+   % to the synchronous particle phase
    if (isnan(z0))
        if (check_6d(RING))
         z0 = PhysConst.c*(rpara.syncphase-pi)/(2*pi*rpara.revFreq*rpara.harmon); %if z0 not given choose the synchronous phase
@@ -198,38 +216,20 @@ try
        DAoptions.z0=z0;
    end
    [DA,DAV] = calcDA_raw(RING,DAoptions,etax,rpara.beta0(1),rpara.beta0(2));
-   if (plotf)
-     switch DAmode
-       case 'border'
-           figure;plot(DAV(:,1)*1000,DAV(:,2)*1000,'-ob');
-           xlabel('X [mm]'); ylabel('Y [mm]');grid;
-           xlim([-XmaxDA XmaxDA]*1000);ylim([0 YmaxDA]*1000);
-
-         case 'grid'
-           DAM = zeros(npday+1,2*npdax+1);
-           k= 1;
-           for i=0:npday
-              for j= 1:2*npdax+1
-                DAM(npday+1-i,j)=DAV(k);
-                k=k+1;
-               end
-            end
-            DAM=DAM*255;
-            map=[0 0.75 0; 1 1 1];
-            figure;image([-XmaxDA*1000,XmaxDA*1000],[YmaxDA*1000,0],DAM);
-            ax=gca;
-            ax.YDir='normal';
-            colormap(map);
-            xlabel('X[mm]');
-            ylabel('Y[mm]');    
-            xlim([-XmaxDA XmaxDA]*1000);ylim([0 YmaxDA]*1000);grid;  
-     end
-   end
+   %% Collects data for output structure
+    DAS.outputs.DA=DA;
+    DAS.outputs.DAV=DAV;
+    DAS.outputs.DAoptions=DAoptions;
 catch ME
      fprintf('%s Error in calcDA \n', datetime);
      fprintf('Error message was:%s \n',ME.message);
-     DA=NaN;
+     DAS=[];
 end
+
+if (plotf&&not(isempty(DAS)))
+    plotDA(DAS);
+end
+
 if(verbosef)
     fprintf('DA calculation complete \n');
     toc;

@@ -68,13 +68,14 @@ function rp=ExMOGA(varargin)
 %          rp.outputs.DAoptions = DAoptions
 %          rp.outputs.Sc1=strength of first chromaticty correction sextupole family
 %          rp.outputs.Sc2=strength of second chromaticty correction sextupole family
-%          rp.outputs.DA=dynamic aperte (rd calc)
+%          rp.outputs.DA=dynamic aperture (rd calc)
 %
 %% Usage Examples
 % rp=ExMOGA(MOGAResults,12,'plot','fitchrom','plotda','verbose');
 % rp=ExMOGA(MOGAResults,12,'plot','fitchrom','fitdisp','plotda','verbose');
 % rp=ExMOGA(MOGAResults,12,'plot','fitchrom','fitdisp','fittune','tunes',[55.13658 16.20460]);
 % rp=ExMOGA(MOGAResults,12,'plot','fitchrom','fitdisp','verbose','saveOPA');
+% rp=ExMOGA(MOGAResults,12,'plot','fitchrom','fitdisp','verbose','DAoptions',DAoptions);
 
 %% Input argument parsing
 [MOGAResults,index]=getargs(varargin,[],1);

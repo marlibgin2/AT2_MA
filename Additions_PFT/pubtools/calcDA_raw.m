@@ -6,7 +6,7 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 %
 %% Mandatory input arguments
 % RING: AT2 lattice array
-% DAoptions :Structure containing the following fields:
+% DAoptions: Structure containing the following fields:
 %               DAmode   = 'grid' or 'border'
 %               nturns   : number of turns
 %               betax0   : horizontal beta for normalization - if NaN, no normalization is done
@@ -35,7 +35,6 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 % betay : vertical beta at the tracking point [m]. USed for scaling. If
 %         nan, no scaling is done
 %
-
 %% Output parameters
 % DA: Dynamic aperture [mm**2]
 % DAV : vector of dynamic aperture border coordinates (if 'border' mode) 

@@ -7,7 +7,7 @@ function plotDAdist(varargin)
 % Optional arguments
 % XmaxDA : horizontal limits for DA plots are (-XmaxDA,XmaxDA) [m]
 % YmaxDA : vertical limits for DA plots are (0,YmaxDA) [m]
-% If not givenm, the two value aboce are taken from
+% If not given, the two values above are taken from
 %       DAdist.outputs.DAoptions
 %
 % Optional flags
