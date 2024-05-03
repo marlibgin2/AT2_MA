@@ -117,6 +117,28 @@ Magnet{end}.Random{2} =     struct( ...
     'Scaling', 1);          % Multiplicative factor, useful for current errors
 
 
+% GENERIC DIPOLE MODEL
+Magnet{end+1}.ID = 'Bend';    % May be either atclass or FamName. Latter takes precedence if available.
+
+% Generic machining misalignments are used
+Magnet{end}.Systematic{1}   =   DDR_ChallengingMachiningTolerances.Systematic;
+Magnet{end}.Random{1}       =   DDR_ChallengingMachiningTolerances.Random;
+
+% PolB = zeros(1,21); PolB([3 4 5 9 15]) = [5.0, 5.2, 3.5, 80, 50]*1e-4;
+% PolA = zeros(1,21); PolA(4) = [4.9]*1e-4;
+Magnet{end}.Random{2} = struct( ...
+    'PolynomB', [], ...     % All values are RMS, and specify variation of and relative to the main component
+    'PolynomA', [], ...     % All values are RMS, and specify variation of and relative to the main component
+    'Scaling', 1 + 1e-5);          % Multiplicative factor, useful for current errors
+
+% PolB = zeros(1,21); PolB([9 15 21]) = 0.5e-4;
+% PolA = zeros(1,21);
+Magnet{end}.Systematic{2} = struct( ...
+    'PolynomB', [], ...     % All values are RMS
+    'PolynomA', [], ...     % All values are RMS
+    'Scaling', 1);          % Multiplicative factor, useful for current errors
+
+
 
 % GENERIC CORRECTOR MODEL
 Magnet{end+1}.ID = 'Corrector';    % May be either atclass or FamName. Latter takes precedence if available.
