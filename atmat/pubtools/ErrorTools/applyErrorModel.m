@@ -38,8 +38,15 @@ function varargout = applyErrorModel(varargin)
 %               applied.
 % 2. RING0  -   {cell array of structs} AT2 lattice output, without errors.
 %
+%
+% NOTES
+% 1. In order to apply the girder misalignment errors, the input lattice
+%    needs to be prepared with linear transformation maps by calling
+%    calculateGirderMaps. This should ideally be done as soon as the
+%    lattice is created as it's only needed once.
+%
 % See also errormodel_example, markSlicedMagnets, getmagnetslices,
-% getMagGroupsFromGirderIndex, atguessclass, errormodel_example
+% getMagGroupsFromGirderIndex, atguessclass
 
 
 %% Default settings
@@ -139,36 +146,6 @@ index_magnetslices = getmagnetslices(RING);
 index_girderelements = getMagGroupsFromGirderIndex(RING);
 
 
-
-
-
-
-%% Deploy girder errors
-if GirderFlag
-    for n = 1:numel(index_girderelements)
-        % Get girder type, if any. Otherwise just apply the baseline
-        if isfield(RING{index_girderelements{n}(1)},'GirderType')
-            girderType = {RING{index_girderelements{n}(1)}.GirderType};
-        else
-            girderType = {'Baseline'};
-        end
-        iFound = filterByGirder(girderType);
-
-
-
-        for p = 1:numel(iFound)
-            % Depending on the girder type there may be different error magnitudes
-            move_grd(index_girderelements{n}, ERRORMODEL.Girder{iFound(p)}.Random{1}, ERRORMODEL.Girder{iFound(p)}.Systematic{1});
-        end
-    end
-end
-
-    function iFound = filterByGirder(girderType)
-        iFound = cellfun(@(x) any(strcmpi(x.ID, girderType)), ERRORMODEL.Girder);
-        iFound = find(iFound);
-    end
-
-
 %% Deploy magnet errors
 
 % First, filter away all errors that do not have an ID and warn the user
@@ -182,14 +159,14 @@ EM_classIDs = getcellstruct(ERRORMODEL.Magnet,'ID',k);
 for n = 1:numel(index_magnetslices)
     % Get family name
     atfamname = RING{index_magnetslices{n}(1)}.FamName;
-    
+
     % Check if there are family-specific errors defined
     for p = 1:numel(EM_classIDs)
         foundFlag = any(strcmpi(atfamname,EM_classIDs{p}));
         if foundFlag
             k = p;
             atclass = atguessclass(RING{index_magnetslices{n}(1)});     % Still need to identify the class to know the main field component
-            break; 
+            break;
         end
     end
 
@@ -244,15 +221,15 @@ for n = 1:numel(index_magnetslices)
         end
 
         if MisalignmentFlag && ~all(cellfun(@isempty,args_misalignment))
-            move_mag(index_magnetslices{n},args_misalignment{:});
+            generateMagnetMisalignment(index_magnetslices{n},args_misalignment{:});
         end
 
         if FieldErrorFlag && ~all(cellfun(@isempty,args_field))
-            applyfielderror(index_magnetslices{n},args_field{:},atclass);
+            generateFieldError(index_magnetslices{n},args_field{:},atclass);
         end
 
         if ScalingFlag && ~all(cellfun(@isempty,args_scaling))
-            applyScalingError(index_magnetslices{n},args_scaling{:});
+            generateScalingError(index_magnetslices{n},args_scaling{:});
         end
         %         % Check whether this error is a misalignment
         %         if (isfield(ERRORMODEL.Magnet{k(i)},'Systematic') && any(isfield(ERRORMODEL.Magnet{k(i)}.Systematic,{'Heave','Sway','Surge','Pitch','Yaw','Roll'}))) ...
@@ -270,6 +247,30 @@ for n = 1:numel(index_magnetslices)
 end
 
 
+%% Deploy girder errors
+if GirderFlag
+    for n = 1:numel(index_girderelements)
+        % Get girder type, if any. Otherwise just apply the baseline
+        if isfield(RING{index_girderelements{n}(1)},'GirderType')
+            girderType = {RING{index_girderelements{n}(1)}.GirderType};
+        else
+            girderType = {'Baseline'};
+        end
+        iFound = filterByGirder(girderType);
+
+
+
+        for p = 1:numel(iFound)
+            % Depending on the girder type there may be different error magnitudes
+            generateGirderMisalignment(index_girderelements{n}, ERRORMODEL.Girder{iFound(p)}.Random{1}, ERRORMODEL.Girder{iFound(p)}.Systematic{1});
+        end
+    end
+end
+
+    function iFound = filterByGirder(girderType)
+        iFound = cellfun(@(x) any(strcmpi(x.ID, girderType)), ERRORMODEL.Girder);
+        iFound = find(iFound);
+    end
 
 
 
@@ -278,17 +279,24 @@ end
 
 
 
-% ----------------------
-% spoiling functions ...
-% ----------------------
-% <MSj> In the interest of speed I reworked the below into nested
-% functions, to avoid the overhead of copying the lattice for each girder
-% or magnet that should be moved.
-% Further work is likely needed here, as atsetshift and atsettilt function
-% calls also leads to a significant amount of copying.
+%% Subroutines / nested functions
+% -------------------------------
+% As error simulations should ideally use as few CPU cycles as possible we
+% do not want to spend any on copying data on each function call, in
+% particular not copying the lattice multiple times. Therefore, in the
+% interest of speed I reworked the below into nested functions (as global
+% variables can cause severe head-aches when troubleshooting).
+%
+% NB! The slow-downs the lattice copying can cause is NOT minor! 
+%
+% Note that further work is likely needed here, as atsetshift and atsettilt
+% function calls also leads to a significant amount of copying.
 
-    function move_grd(Gi, eGR, eGS)
-        % Input checks
+% GENERATEGIRDERMISALIGNMENT generates and applies girder errors based on the provided model
+    function generateGirderMisalignment(Gi, eGR, eGS)
+
+        % INPUT CHECKS
+        % In case an error type is not defined, set it to zero.
         if ~isfield(eGR,'Sway'), eGR.Sway = 0; end
         if ~isfield(eGS,'Sway'), eGS.Sway = 0; end
         if ~isfield(eGR,'Yaw'), eGR.Yaw = 0; end
@@ -300,48 +308,156 @@ end
         if ~isfield(eGR,'Roll'), eGR.Roll = 0; end
         if ~isfield(eGS,'Roll'), eGS.Roll = 0; end
 
-        % -------------------------------------
-        % define coordinates of girder elements
-        % and pivotal point for yaw/pitch moves
-        % -------------------------------------
-        s1     = spos(Gi(1));
-        s2     = spos(Gi(end));
-        sm     = (s1+s2)/2; % pivotal centre
 
-        % --------------------------
-        % horizontal plane: sway/yaw
-        % --------------------------
-        sway   = eGS.Sway + eGR.Sway * trunc_randn(1,2)';
-        yaw    = eGS.Yaw + eGR.Yaw * trunc_randn(1,2)';
-        dx     = sway + yaw*(spos(Gi)-sm);
+        % GENERATE ERROR
+        % Call a defined error distribution function. Ideally this should
+        % be part of the error model definition. Default is a normal
+        % distribution truncated at 2 sigma.
 
-        % ---------------------------
-        % vertical plane: heave/pitch
-        % ---------------------------
+        % Rotation errors
         heave  = eGS.Heave + eGR.Heave * trunc_randn(1,2)';
         pitch  = eGS.Pitch + eGR.Pitch * trunc_randn(1,2)';
-        dy     = heave + pitch*(spos(Gi)-sm);
+        roll   = eGS.Roll + eGR.Roll * trunc_randn(1,2)';
 
-        % -------------------------------
-        % move in (x,y), apply roll (phi)
-        % -------------------------------
-        dphi   = eGS.Roll + eGR.Roll * trunc_randn(1,2)';
+        % Translation errors. Note that surge is ignored
+        sway   = eGS.Sway + eGR.Sway * trunc_randn(1,2)';
+        yaw    = eGS.Yaw + eGR.Yaw * trunc_randn(1,2)';
+        surge  = 0;
 
-        % For speed, call atshiftelem and attiltelem functions directly
-        % rather than calling atsetshift and atsettilt. This avoids the
-        % quite large overhead of copying the entire lattice a large number
-        % of times.
+
+        % APPLY ERROR
         for ii = 1:length(Gi)
-            RING{Gi(ii)}=atshiftelem(RING{Gi(ii)},dx(ii),dy(ii),'RelativeShift');
-            RING{Gi(ii)}=attiltelem(RING{Gi(ii)},dphi,'RelativeTilt');
+            applyGirderError(Gi(ii));
         end
 
 
+        function applyGirderError(gI)
+            % APPLYGIRDERERROR applies element misalignments based on a rigid body girder model
+            %
+            %  applyGirderError(girderIndex, surge, sway, heave, yaw, pitch, roll, varargin)
+            %
+            % NOTES
+            % 1. The function relies on pre-computed linear maps going from the
+            %    Cartesian girder system to the local Frenet-Serret coordinate system
+            %    at the entrance and exit of each element. These maps are static as
+            %    long as the reference particle trajectory for the lattice doesn't
+            %    change, which is usually not the case in most common scenarios. To
+            %    generate them, call calculateGirderMaps.
+            % 2. Affine matrix transformations are used as the linear maps. These can
+            %    handle both translations, rotations, and scaling. The latter is for
+            %    obvious reasons disabled by enforcing the matrix norm to be 1.
+            % 3. Rotations are applied according to the Tate convention, i.e. yaw
+            %    first, then pitch, and roll last.
+            %
+            % See also calculateGirderMaps, applyErrorModel
+
+            % Generate the girder affine transformation matrix
+            R = eye(4);
+            R(1:3,1:3) = genGirderRotMat3(yaw,pitch,roll);
+            T = [surge, sway, heave]';
+            RT = R; RT(1:3,4) = T;
+
+            % Apply the transformation to the lattice girder elements
+            applyRTmat(gI);
+
+
+            function applyRTmat(index)
+
+                for nn = 1:numel(index)
+                    % Assemble the affine matrix for the coordinate errors
+                    % NB! Energy deviation and time lag are ignored, as the former
+                    % isn't affected by misalignment and the latter is irrelevant
+                    % for non-cavities.
+                    a1 = eye(4); p1 = eye(4);
+                    a2 = eye(4); p2 = eye(4);
+
+                    % Note that the 'exit fields' are inverted when assembling the
+                    % affine matrix, before applying the transformation.
+                    if isfield(RING{index(nn)},'R1')
+                        a1(1:2,1:2) =     RING{index(nn)}.R1([1 3],[1 3]);
+                        a2(1:2,1:2) = inv(RING{index(nn)}.R2([1 3],[1 3]));
+                        p1(1:2,1:2) =     RING{index(nn)}.R1([2 4],[2 4]);
+                        p2(1:2,1:2) = inv(RING{index(nn)}.R2([2 4],[2 4]));
+                    else
+                        % If the R1 and R2 fields didn't exist, create them in the
+                        % output lattice
+                        RING{index(nn)}.R1 = eye(6);
+                        RING{index(nn)}.R2 = eye(6);
+                    end
+                    if isfield(RING{index(nn)},'T1')
+                        a1(1:2,4) = +RING{index(nn)}.T1([1 3]);
+                        a2(1:2,4) = -RING{index(nn)}.T2([1 3]);
+                        p1(1:2,4) = +RING{index(nn)}.T1([2 4]);
+                        p2(1:2,4) = -RING{index(nn)}.T2([2 4]);
+                    else
+                        % If the T1 and T2 fields didn't exist, create them in the
+                        % output lattice
+                        RING{index(nn)}.T1 = zeros(6,1);
+                        RING{index(nn)}.T2 = zeros(6,1);
+                    end
+
+                    % Apply the girder error for the spatial coordinates
+                    % RT is inverted as it represents the girder shift and a1, p1
+                    % etc. represent the change in particle coordinates.
+                    A1 = RING{index(nn)}.misalignmentMapGirderEntry \ inv(RT) * RING{index(nn)}.misalignmentMapGirderEntry * a1;
+                    A2 = RING{index(nn)}.misalignmentMapGirderExit \ inv(RT) * RING{index(nn)}.misalignmentMapGirderExit * a2;
+
+                    % Apply the girder error for the momentum coordinates; here
+                    % the translations should not be applied so only use R..
+                    P1 = affine2rot(RING{index(nn)}.misalignmentMapGirderEntry) \ inv(R) * affine2rot(RING{index(nn)}.misalignmentMapGirderEntry) * p1;
+                    P2 = affine2rot(RING{index(nn)}.misalignmentMapGirderExit) \ inv(R) * affine2rot(RING{index(nn)}.misalignmentMapGirderExit) * p2;
+
+                    % Build the new T1, T2, R1, R2
+                    % NB! cT (time lag) may be treated as just a position. dP
+                    % (particle energy deviation) is not affected by any girder
+                    % rotation or shift however (assuming only magnetic elements);
+                    % hence the difference when assembling the T1/R1/R2/T2.
+                    RING{index(nn)}.T1([1 3 6])           = A1(1:3,4);
+                    RING{index(nn)}.T1([2 4])             = P1(1:2,4);
+
+                    RING{index(nn)}.T2([1 3 6])           = -A2(1:3,4);
+                    RING{index(nn)}.T2([2 4])             = -P2(1:2,4);
+
+                    RING{index(nn)}.R1([1 3 6],[1 3 6])   = A1(1:3,1:3);
+                    RING{index(nn)}.R1([2 4],[2 4])       = P1(1:2,1:2);
+
+                    RING{index(nn)}.R2([1 3 6],[1 3 6])   = inv(A2(1:3,1:3));
+                    RING{index(nn)}.R2([2 4],[2 4])       = inv(P2(1:2,1:2));
+
+                    % To be safe, enforce the R1, R2 norm to be identically 1, in
+                    % order to avoid spurious growth or damping.
+                    RING{index(nn)}.R1 = RING{index(nn)}.R1 ./ norm(RING{index(nn)}.R1);
+                    RING{index(nn)}.R2 = RING{index(nn)}.R2 ./ norm(RING{index(nn)}.R2);
+                end
+            end
+
+
+
+            function Rout = affine2rot(Rin)
+                % AFFINE2ROT strip out the translation part of the affine transformation
+                Rout = Rin;
+                Rout(1:3,4) = zeros(3,1);
+            end
+
+
+            function R = genGirderRotMat3(yaw, pitch, roll)
+                % GENGIRDERROTMAT generates a 3D rotation matrix
+                % Order of angle application follows Tate convention, i.e. the sequence is yaw,
+                % pitch and roll. This is done in the girder system, i.e. Cartesian x,y,z.
+                %
+                % NB! The rotation matrix assumes x axis is along the girder, z axis is
+                % down-up, and y is side-to-side of the girder.
+                Ry = rotz(yaw*180/pi);
+                Rp = roty(pitch*180/pi);
+                Rr = rotx(roll*180/pi);
+
+                R = Rr*Rp*Ry;
+            end
+        end
     end
 
-
-
-    function applyfielderror(mi, Es, Er, class)
+% GENERATEFIELDERROR generates and applies field errors based on the provided model
+    function generateFieldError(mi, Es, Er, class)
 
         % The input checks are likely better placed in the error model
         %         if ~isfield(EM,'Systematic'), EM.Systematic = struct('PolynomA',[],'PolynomB',[]); end
@@ -403,27 +519,23 @@ end
 
     end
 
-
-    function applyScalingError(mi, Es, Er)
+% GENERATESCALINGERROR generates and applies field scaling errors
+    function generateScalingError(mi, Es, Er)
 
         if isempty(Es), Es.Scaling = 1; end
         if isempty(Er), Er.Scaling = 1; end
 
         % Generate the error for this set of magnet elements (usually a circuit)
         Scaling = Es.Scaling + abs(Er.Scaling - 1) .* trunc_randn(1,2)';
-        
+
         for ii = 1:numel(mi)
             RING{mi(ii)}.PolynomB = RING{mi(ii)}.PolynomB .* Scaling;
             RING{mi(ii)}.PolynomA = RING{mi(ii)}.PolynomA .* Scaling;
         end
     end
 
-
-% -----------------------
-% move individual magnets
-% -----------------------
-
-    function move_mag(mi, Es, Er)
+% GENERATEMAGNETMISALIGNMENT
+    function generateMagnetMisalignment(mi, Es, Er)
         % ------------------------------------------
         % input: mi, magnet index / me: magnet error
         % ------------------------------------------

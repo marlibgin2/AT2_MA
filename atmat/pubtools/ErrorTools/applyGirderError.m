@@ -1,4 +1,23 @@
 function RING = applyGirderError(RING, gI, surge, sway, heave, yaw, pitch, roll, varargin)
+% APPLYGIRDERERROR applies element misalignments based on a rigid body girder model
+%
+%  NEWRING = applyGirderError(RING, girderIndex, surge, sway, heave, yaw, pitch, roll, varargin)
+%
+% NOTES
+% 1. The function relies on pre-computed linear maps going from the
+%    Cartesian girder system to the local Frenet-Serret coordinate system
+%    at the entrance and exit of each element. These maps are static as
+%    long as the reference particle trajectory for the lattice doesn't
+%    change, which is usually not the case in most common scenarios. To
+%    generate them, call calculateGirderMaps. 
+% 2. Affine matrix transformations are used as the linear maps. These can
+%    handle both translations, rotations, and scaling. The latter is for
+%    obvious reasons disabled by enforcing the matrix norm to be 1.
+% 3. Rotations are applied according to the Tate convention, i.e. yaw
+%    first, then pitch, and roll last.
+% 
+% See also calculateGirderMaps, applyErrorModel
+
 
 % This step should be possible to avoid with a slight rewrite below.
 % RING = RING;

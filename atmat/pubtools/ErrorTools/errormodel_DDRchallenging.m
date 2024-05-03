@@ -7,7 +7,7 @@ function EM = errormodel_DDRchallenging
 
 
 % Generic girder errors
-Girder{1}.ID = 'Baseline';
+Girder{1}.ID = {'Baseline','M1','M2','U1','U2','U3','U4','U5'};
 
 Girder{1}.Systematic{1} = struct( ...
     'Pitch', 0, ...
