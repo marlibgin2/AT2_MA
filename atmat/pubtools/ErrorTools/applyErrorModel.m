@@ -509,7 +509,7 @@ end
         % Generate the error for this magnet
         Et.PolynomB = Es.PolynomB + Er.PolynomB .* trunc_randn(maxOrder,2)';
         Et.PolynomA = Es.PolynomA + Er.PolynomA .* trunc_randn(maxOrder,2)';
-
+        
         % Apply error
         for ii = 1:numel(mi)
             RING{mi(ii)}.PolynomB = padZeros(RING{mi(ii)}.PolynomB,maxOrder) + RING{mi(ii)}.(MainComponentField)(MainComponentIndex) * Et.PolynomB;
@@ -529,7 +529,14 @@ end
         Scaling = Es.Scaling + abs(Er.Scaling - 1) .* trunc_randn(1,2)';
 
         for ii = 1:numel(mi)
-            RING{mi(ii)}.PolynomB = RING{mi(ii)}.PolynomB .* Scaling;
+            % Note that if the magnet element has a bending angle then
+            % PolynomB(1) must be adjusted accordingly
+            if isfield(RING{mi(ii)},'BendingAngle')
+                RING{mi(ii)}.PolynomB = RING{mi(ii)}.PolynomB .* Scaling;
+                RING{mi(ii)}.PolynomB(1) = RING{mi(ii)}.PolynomB(1) - (RING{mi(ii)}.BendingAngle .* Scaling);
+            else
+                RING{mi(ii)}.PolynomB = RING{mi(ii)}.PolynomB .* Scaling;
+            end
             RING{mi(ii)}.PolynomA = RING{mi(ii)}.PolynomA .* Scaling;
         end
     end
