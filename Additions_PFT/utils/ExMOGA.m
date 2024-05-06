@@ -847,8 +847,8 @@ end
 %% Calculates and Plots the Dynamic Aperture
 %
 if (plotdaf)
-    DA=calcDA(ACHROGRD,DAoptions,'plot','4d');
-    fprintf('Dynamic Aperture = %4.2f mm**2 \n',DA);
+    DAS=calcDA(ACHROGRD,DAoptions,'plot','4d');
+    fprintf('Dynamic Aperture = %4.2f mm**2 \n',DAS.outputs.DA);
 else
     DA=NaN;
 end
@@ -1067,7 +1067,7 @@ rp.outputs.DAoptions = DAoptions;
 rp.outputs.LatticeOptData = LatticeOptData;
 rp.outputs.Sc1=Sc1;
 rp.outputs.Sc2=Sc2;
-rp.outputs.DA=DA;
+rp.outputs.DA=DAS.outputs.DA;
 
 if(strcmp(optMode,'SEXT')||strcmp(optMode,'NonLinear'))
     rp.outputs.DVLins = DVLins;

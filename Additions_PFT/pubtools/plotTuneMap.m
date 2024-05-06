@@ -11,19 +11,34 @@ function plotTuneMap(tunemap,varargin)
 % plotmode: 'abs' : plots full tune value (including integer part)
 %           'rel' : plots tune variations with respect to small amplitude
 %                   tunes.
+%            note: plotmode is onlöyrelevane for plottypes :x,y,xy
 % plottype: 
-%   'x'   : ADTS along horizontal axis (default)
-%   'y'   : ADTS along vertical axis
-%   'xy'  : both ADTS
-%   'td'  : same as above, but on a tune diagram
-%   'grid': grid of points on a tune diagram 
-%   'diff': tune diffusion plot on xy plane
-%   'fmap': tune diffusion plot on tune diagram
-%   'chro': chromatic tune footprint on a tune diagram
+%   'x'     : ADTS along horizontal axis (default)
+%   'y'     : ADTS along vertical axis
+%   'xy'    : both ADTS
+%   'td'    : same as above, but on a tune diagram
+%   'grid'  : grid of points on a tune diagram 
+%   'diff'  : tune diffusion plot on xy plane
+%   'fmap'  : tune diffusion plot on tune diagram
+%   'chro'  : tunes vs energy deviation
+%   'chrotd': chromatic tune footprint on a tune diagram
 %
 % resorder: resonance order for tune diagram, default = 3
 % qxrange=[qxmin qymin]: horizontal plot range in tune diagram,  default =[0 1]
 % qyrange=[qymin qymax]: vertical plot range in tune diagram, default= [0 1]
+% xminplot: minimum horizontal coordinate in tune plots, default from tunemap structure;
+% xmaxplot: maximum horizontal coordinate in tune plots, default from tunemap structure;
+% yminplot: minimum horizontal coordinate in tune plots, default from tunemap structure;
+% ymaxplot: maximum vertical coordinate in tune plots, default from tunemap structure;
+% caxrange= [cmin cmax]: color axis range, default 'auto'
+% dqx     : horizontal half width of square in tune space for FMA plots,
+%           default = 0.001
+% dqy     : vertical half width of square in tune space for FMA plots,
+%           default = 0.001 
+% 
+%
+% Optional flags
+% rate : selects diffusion rate instead of diffusion
 %
 %% Usage examples
 % plotTuneMap(tunemap,'plottype','x','plotmode','rel');
@@ -31,20 +46,36 @@ function plotTuneMap(tunemap,varargin)
 
 %% History
 % PFT 2024/04/27: first version, based on plotADTS
-%
+% PFT 2024/05/03: added chromatic tunemap plots
+% PFT 2024/05/05: added tune diffusion plots
 
 %% Input argument parsing
-plotmode = getoption(varargin,'plotmode',tunemap.inputs.plotmode);
-plottype = getoption(varargin,'plottype',tunemap.inputs.plottype);
-resorder = getoption(varargin,'resorder',3);
-qxrange  = getoption(varargin,'qxrange',[0.0 1.0]);
-qyrange  = getoption(varargin,'qyrange',[0.0 1.0]);
+plotmode   = getoption(varargin,'plotmode',tunemap.inputs.plotmode);
+plottype   = getoption(varargin,'plottype',tunemap.inputs.plottype);
+resorder   = getoption(varargin,'resorder',3);
+qxrange    = getoption(varargin,'qxrange',[0.0 1.0]);
+qyrange    = getoption(varargin,'qyrange',[0.0 1.0]);
+caxrange   = getoption(varargin,'caxrange','auto');
+dqx        = getoption(varargin,'dqx',0.001);
+dqy        = getoption(varargin,'dqy',0.001);
+ratef      = any(strcmpi(varargin,'rate'));
 
 xmin  = tunemap.inputs.xmin;
 xmax  = tunemap.inputs.xmax;
+ymin  = tunemap.inputs.ymin;
 ymax  = tunemap.inputs.ymax;
 amplx = tunemap.outputs.amplx;
 amply = tunemap.outputs.amply;
+dpmin = tunemap.inputs.dpmin;
+dpmax = tunemap.inputs.dpmax;
+dps   = tunemap.outputs.dps;
+npx   = tunemap.inputs.npx;
+npy   = tunemap.inputs.npy;
+
+xminplot = getoption(varargin,'xminplot',xmin);
+xmaxplot = getoption(varargin,'xmaxplot',xmax);
+yminplot = getoption(varargin,'yminplot',ymin);
+ymaxplot = getoption(varargin,'ymaxplot',ymax);
 
 %% Plots Tune Map
 switch plotmode
@@ -53,12 +84,16 @@ switch plotmode
        Qyxplot   = tunemap.outputs.Qyx;
        Qxyplot   = tunemap.outputs.Qxy;
        Qyyplot   = tunemap.outputs.Qyy;
+       Qxdpplot  = tunemap.outputs.Qxdp;
+       Qydpplot  = tunemap.outputs.Qydp;
 
     case 'rel'
         Qxxplot  = tunemap.outputs.dQxx;
         Qyxplot  = tunemap.outputs.dQyx;
         Qxyplot  = tunemap.outputs.dQxy;
         Qyyplot  = tunemap.outputs.dQyy;
+        Qxdpplot = tunemap.outputs.dQxdp;
+        Qydpplot = tunemap.outputs.dQydp;
 
     otherwise
         fprintf('%s Error in plotTuneMap. Unknown plot mode : %s \n', ...
@@ -70,7 +105,7 @@ switch plottype
 
     case {'x';'X'}
         if not(isempty(amplx)||isempty(Qxxplot)||isempty(Qyxplot))
-            figure; xlim([xmin*1000,xmax*1000]);
+            figure; xlim([xminplot*1000,xmaxplot*1000]);
             plot(amplx*1000,Qxxplot,'-ok');xlabel('X[mm]');
             hold on;
             if (strcmpi(plotmode,'abs'))
@@ -93,7 +128,7 @@ switch plottype
         
     case {'y';'Y'}
         if not(isempty(amply)||isempty(Qxyplot)||isempty(Qyyplot))
-            figure; xlim([0,ymax*1000]); 
+            figure; xlim([yminplot,ymaxplot]*1000); 
             plot(amply*1000,Qxyplot,'-ok');xlabel('Y[mm]');
             hold on;
             if (strcmpi(plotmode,'abs'))
@@ -116,7 +151,7 @@ switch plottype
 
     case {'xy';'XY';'xY';'Xy'}
         if not(isempty(amplx)||isempty(Qxxplot)||isempty(Qyxplot))
-            figure; xlim([xmin*1000,xmax*1000]);
+            figure; xlim([xminplot,xmaxplot]*1000);
             plot(amplx*1000,Qxxplot,'-ok');xlabel('X[mm]');
             hold on;
             if (strcmpi(plotmode,'abs'))
@@ -139,7 +174,7 @@ switch plottype
 
 
         if not(isempty(amply)||isempty(Qxyplot)||isempty(Qyyplot))
-            figure; xlim([0,ymax*1000]); 
+            figure; xlim([yminplot,ymaxplot]*1000); 
             plot(amply*1000,Qxyplot,'-ok');xlabel('Y[mm]');
             hold on;
             if (strcmpi(plotmode,'abs'))
@@ -194,14 +229,106 @@ switch plottype
         end
 
     case {'diff';'DIFF'}
-        fprintf('%s Error in plotTuneMap: plottype not implemented yet: %s \n',datetime,plottype);       
+        if (ratef)
+            Qdiff   = tunemap.outputs.Qdiffrate;
+        else
+            Qdiff   = tunemap.outputs.Qdiff;
+        end
+        Qdiffmat= reshape(Qdiff,npy,npx);
+        
+        figure;
+        h=imagesc([min(amplx),max(amplx)]*1000,[min(amply),max(amply)]*1000,...
+               Qdiffmat);
+        set(h,'alphadata',~isnan(Qdiffmat));
+        ax=gca; ax.YDir='normal';
+        xlim([xminplot xmaxplot]*1000);ylim([yminplot ymaxplot]*1000);
+        xlabel('X[mm]');ylabel('Y[mm]');
+        grid on;
+        colormap('jet');
+        clim(caxrange);
+        if (ratef)
+            title('Tune Diffusion Rate');
+        else
+            title('Tune Diffusion');
+        end
+        colorbar;
 
     case {'fma';'FMA'}
-        fprintf('%s Error in plotTuneMap: plottype not implemented yet: %s \n',datetime,plottype);       
+        if (ratef)
+            Qdiff   = tunemap.outputs.Qdiffrate;
+        else
+            Qdiff   = tunemap.outputs.Qdiff;
+        end
+        Qxgridfrac=tunemap.outputs.Qxgridfrac;
+        Qygridfrac=tunemap.outputs.Qygridfrac;
+
+        %Qdiffmat= reshape(Qdiff,npy,npx);
+        %Qdiffmat(isnan(Qdiffmat))=0.0;
+        %Qxfma = reshape(tunemap.outputs.Qxgridfrac,npy,npx);
+        %Qyfma = reshape(tunemap.outputs.Qygridfrac,npy,npx);
+   
+        Qxfma(:,1:npx*npy) = [Qxgridfrac'-dqx; Qxgridfrac'-dqx; ...
+                              Qxgridfrac'+dqx; Qxgridfrac'+dqx];
+        Qyfma(:,1:npx*npy) = [Qygridfrac'-dqy; Qygridfrac'+dqy; ...
+                              Qygridfrac'+dqy; Qygridfrac'-dqy];
+        
+        %Qxfma(isnan(Qxfma))=0.0;
+        %Qyfma(isnan(Qyfma))=0.0;
+        figure;
+       % h=imagesc('XData',Qxfma,'YData',Qyfma,'CData', Qdiffmat);
+        fill(Qxfma,Qyfma,Qdiff);hold;
+        plot_net(resorder,qxrange(1),qxrange(2),...
+                          qyrange(1),qyrange(2));
+        grid on;
+        colormap('jet');
+        shading flat;
+        clim(caxrange);
+        if (ratef)
+            title('Tune Diffusion Rate');
+        else
+            title('Tune Diffusion');
+        end
+        colorbar;
 
     case {'chro';'CHRO'}
-        fprintf('%s Error in plotTuneMap: plottype not implemented yet: %s \n',datetime,plottype);       
+         if not(isempty(dps)||isempty(Qxdpplot)||isempty(Qydpplot))
+            figure; xlim([dpmin dpmax]*100);
+            plot(dps*100,Qxdpplot,'-ok');xlabel('dp[%]');
+            hold on;
+            if (strcmpi(plotmode,'abs'))
+                ylabel('Qx');
+                yyaxis right; 
+            else
+                ylabel('dQ');
+            end
+            plot(dps*100,Qydpplot,'-or');
+            if (strcmpi(plotmode,'abs'))
+                ylabel('Qy');
+                legend({'Qx';'Qy'});
+            else
+                legend({'dQx';'dQy'});
+            end
+            grid on;
+        else
+            fprintf('%s Error in plotTuneMap: Qxdp or Qydp data not available in tunemap structure for plottype %s\n', datetime, plottype);
+        end
         
+    case {'chrotd';'CHROTD'}
+        Qxdpfrac=tunemap.outputs.Qxdpfrac;
+        Qydpfrac=tunemap.outputs.Qydpfrac;
+        [~,dp0pos] = min(abs(dps));
+
+        if not(isempty(Qxdpfrac)||isempty(Qydpfrac))
+            figure;plot(Qxdpfrac(1:dp0pos),Qydpfrac(1:dp0pos),'ob');hold;
+            plot(Qxdpfrac(dp0pos:length(dps)),Qydpfrac(dp0pos:length(dps)),'or');
+            plot_net(resorder,qxrange(1),qxrange(2),...
+                          qyrange(1),qyrange(2));
+                          
+            xlabel('qx');ylabel('qy');
+            title(strcat('Res order = ',num2str(resorder)));
+        else
+            fprintf('%s Error in plotTuneMap: Qxx, Aqxy, Qyx or Qyx not available for plottype %s \n', datetime, plottype);
+        end
     otherwise
         fprintf('%s Error in plotTuneMap: unknown plottype: %s \n',datetime,plottype);       
         return

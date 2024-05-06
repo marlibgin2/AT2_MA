@@ -48,7 +48,7 @@ function DAS=calcDA(varargin)
 %   DAS.inputs.RING
 %   DAS.inputs.DAoptions
 %
-% DAS.outputs has fiels
+% DAS.outputs has fields
 %   DA       : Dynamic aperture [mm**2]
 %   DAV      : Vector of dynamic aperture border coordinates (if 'border' mode) 
 %              or vector of booleans indicating particle loss (if 'grid' mode)
@@ -77,9 +77,9 @@ if (isempty(DAoptions))
     DAoptions.nturns=1024;
     DAoptions.betax0=nan;
     DAoptions.betay0=nan;
-    DAoptions.xmaxdas=0.007;
+    DAoptions.xmaxdas=0.015;
     DAoptions.xmindas =-0.0150;
-    DAoptions.ymaxdas = 0.006;
+    DAoptions.ymaxdas = 0.007;
     DAoptions.XmaxDA = 0.015;
     DAoptions.YmaxDA = 0.007;
     DAoptions.npdax = 64;

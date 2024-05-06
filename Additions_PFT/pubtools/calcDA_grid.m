@@ -34,12 +34,12 @@ function DAV = calcDA_grid(RING, X0, Y0, nturns, dp, z0, etax, xmax, xmin, ymax)
 %% History
 % 2023/11/06 Written by Pedro F. Tavares
 % 2024/02/09 general updates, documetnation and standardization of names
-% 2024/03/10: eliminated the chromatic orbit check. the etax inout is no
+% 2024/03/10: eliminated the chromatic orbit check. the etax input is no
 %             longer required and will also be eliminated
 
 %% Calculates Dynamic Aperture
 np   = size(X0,1);
-DAV   = zeros(np,1);
+DAV  = zeros(np,1);
 % Evaluate the Chromatic orbit
 % twiss=  gettwiss(THERING, 0.0);
 

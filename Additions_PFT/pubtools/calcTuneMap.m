@@ -4,19 +4,21 @@ function tunemap=calcTuneMap(varargin)
 % Calculates an plots frequency maps and tune diffusion maps
 %
 % This is a high level wrapper to the function calcTune. 
-% Tracking is 5d, i.e. 4d + fixed energy deviation
+% Tracking is 4d + fixed energy deviation
 %   
 %% Inputs 
 % Mandatory arguments
 % RING : AT2 lattice array. 
 %
 % Optional arguments
+% desc: descriptive string
 % mode: 'X', 'Y', 'XY', 'td', 'grid', 'diff', 'chrom': default is 'X'
 %  'x'     calculates only tunes vs horizontal position
 %  'y'     calculates only tunes vs vertical position
 %  'xy'    calculates both x and y
 %  'grid'  calculates tunes on a grid of points in xy plane.
-%  'diff'  calculates tune diffusion map
+%  'diff'  calculates tune diffusion map - for this choice the tunr
+%          calculation method is 4 (NAFF) regardless of the input choice
 %  'chrom' calculates chromatic tune footprint.
 %
 % minamplx: minimum absolute value of amplitude in horizontal direction,
@@ -42,7 +44,7 @@ function tunemap=calcTuneMap(varargin)
 % method 1: Highest peak in fft
 %        2: Interpolation on fft results
 %        3: Windowing + interpolation (default)
-%        4: NAFF
+%        4: NAFF (this is always the method in case the mode is "diff"
 %
 % plotmode: 'abs' : plots full tune value (inc. integer part) (default)
 %           'rel' : plots tune variations with respect to small amplitude
@@ -60,7 +62,12 @@ function tunemap=calcTuneMap(varargin)
 % resorder: resonance order for tune diagram, default = 5
 % qxrange=[qxmin qymin]: horizontal plot range in tune diagram,  default =[0 1]
 % qyrange=[qymin qymax]: vertical plot range in tune diagram, default= [0 1]
-%
+% xminplot: minimum horizontal coordinate in tune plots, default = xmin
+% xmaxplot: maximum horizontal coordinate in tune plots, default = xmax 
+% yminplot: minimum horizontal coordinate in tune plots, default = ymin 
+% ymaxplot: maximum vertical coordinate in tune plots, default = ymax
+% caxrange: color axis range, default [-10 0]
+
 % Optional flags
 % plot : plots tune map
 % verbose: produces verbose output
@@ -68,7 +75,7 @@ function tunemap=calcTuneMap(varargin)
 %% Outputs
 % Structure with fields
 % tunemap.inputs echoes the inputs given to the function 
-%   tunemap.inputs.plane
+%   tunemap.inputs.mode
 %   tunemap.inputs.xmin 
 %   tunemap.inputs.xmax
 %   tunemap.inputs.ymax
@@ -86,18 +93,43 @@ function tunemap=calcTuneMap(varargin)
 %   tunemap.inputs.qxrange
 %   tunemap.inputs.qyrange
 %
-% tunemap.outputs.Qxx: (1xnx) array of horizontal tune values
-% tunemap.outputs.Qyx: (1xnx) array of vertical tune values
-% tunemap.outputs.Qxy: (1xny) array of horizontal tune values
-% tunemap.outputs.Qyy: (1xny) array of vertical tune values
-% tunemap.outputs.amplx : (1xn) array of horizontal amplitudes
-% tunemap.outputs.amply : (1xn) array of vertical amplitudes
-% tunemap.outputs.Qxgrid: (nxxny) array of horizontal tune values
-% tunemap.outputs.Qygrid: (nxxny) array of vertical tune values
 %
+% tunemap.outputs contains subfields
+%   tunemap.outputs.desc      : datetime + input description
+%   tunemap.outputs.Qxx       : (1xnpx) array of horizontal tune values
+%   tunemap.outputs.dQxx      : (1xnpx) array of horizonal tune change values 
+%   tunemap.outputs.Qxxfrac   : (1xnpx) array of fractional horizonal tune values
+%   tunemap.outputs.Qyx       : (1xnpx) array of vertical tune values
+%   tunemap.outputs.dQyx      : (1xnpx) array of vertical tune change values 
+%   tunemap.outputs.Qyxfrac   : (1xnpx) array of fractional vertical tune values
+%   tunemap.outputs.Qxy       : (1xnpy) array of horizontal tune values
+%   tunemap.outputs.dQxy      : (1xnpy) array of horizonal tune change values 
+%   tunemap.outputs.Qxyfrac   : (1xnpy) array of fractional horizonal tune values
+%   tunemap.outputs.Qyy       : (1xnpy) array of vertical tune values
+%   tunemap.outputs.dQyy      : (1xnpy) array of vertical tune change values 
+%   tunemap.outputs.Qyyfrac   : (1xnpy) array of fractional vertical tune values
+%   tunemap.outputs.amplx     : (1xnpx) array of horizontal amplitudes
+%   tunemap.outputs.amply     : (1xnpy) array of vertical amplitudes
+%   tunemap.outputs.Qxgrid    : (npx*npyx1) array of horizontal tune values
+%   tunemap.outputs.dQxgrid   : (npx*npyx1) array of horizonal tune change values 
+%   tunemap.outputs.Qxgridfrac: (npx*npyx1) array of fractional horizonal tune values
+%   tunemap.outputs.Qygrid    : (npx*npyx1) array of vertical tune values
+%   tunemap.outputs.dQygrid   : (npx*npyx1) array of vertical tune change values 
+%   tunemap.outputs.Qygridfrac: (npx*npyx1) array of fractional vertical tune values
+%   tunemap.outputs.Qxdp      : (1xndp) array of horizontal tune values
+%   tunemap.outputs.dQxdp     : (1xnpd) array of horizonal tune change values 
+%   tunemap.outputs.Qxdpfrac  : (1xnpd) array of fractional horizonal tune values
+%   tunemap.outputs.Qydp      : (1xndp) array of vertical tune values
+%   tunemap.outputs.dQydp     : (1xnpd) array of vertical tune change values 
+%   tunemap.outputs.Qydpfrac  : (1xnpd) array of fractional vertical tune values
+%   tunemap.outputs.dps       : (1xnpd) array of energy deviations
+%   tunemap.outputs.Qdiff     : (npx*npyx1) array of tune diffusions
+%   tunemap.outputs.axdiff    : (npx*npyx1) array of horizontal coordinates for tune diffusion map
+%   tunemap.outputs.aydiff    : (npx*npyx1) array of vertical coordinates for tune diffusion map
+%   tunemap.outputs.Qdiffrate : (npx*npyx1) array of tune diffusion rates 
 %
 %% Usage examples
-% tunemap = calcTuneMap(RING,'plot');
+% tunemap = calcTuneMap(RING,'plot','desc','Testing...');
 % calcTuneMap(RING,'nturns',1024,'plot');
 % tunemap = calcTuneMap(RING,'plot','xmax',0.007,'mode','x','npx',128);
 % tunemap = calcTuneMap(RING,'plot','xmin',-0.007,'xmax',0.004,'mode','x');
@@ -105,17 +137,20 @@ function tunemap=calcTuneMap(varargin)
 
 %% History
 % PFT 2024/04/27: first version, based on calcADTS
+% PFT 2023/05/03: included description input and output, added chromatic
+%                 tune map
 %
 %% Input argument parsing
 [RING] = getargs(varargin,[]);
 plotf            = any(strcmpi(varargin,'plot'));
 verbosef         = any(strcmpi(varargin,'verbose'));
+desc             = getoption(varargin,'desc','Tune map calculation');
 nturns           = getoption(varargin,'nturns',128);
 mode             = getoption(varargin,'mode','x');
 minampx          = getoption(varargin,'minampx',30E-6);
 minampy          = getoption(varargin,'minampy',30E-6);
-xmax             = getoption(varargin,'xmax',0.005);
-xmin             = getoption(varargin,'xmin',0.0);
+xmax             = getoption(varargin,'xmax', 0.005);
+xmin             = getoption(varargin,'xmin',-0.005);
 ymax             = getoption(varargin,'ymax',0.004);
 ymin             = getoption(varargin,'ymin',0.000);
 dp               = getoption(varargin,'dp',0.0);
@@ -130,6 +165,11 @@ plottype         = getoption(varargin,'plottype','x');
 resorder         = getoption(varargin,'resorder',3);
 qxrange          = getoption(varargin,'qxrange',[0.0 1.0]);
 qyrange          = getoption(varargin,'qyrange',[0.0 1.0]);
+xminplot         = getoption(varargin,'xminplot',xmin);
+xmaxplot         = getoption(varargin,'xmaxplot',xmax);
+yminplot         = getoption(varargin,'yminplot',ymin);
+ymaxplot         = getoption(varargin,'ymaxplot',ymax);
+caxrange         = getoption(varargin,'caxrange',[-10 0]);
 
 %% Preamble
 RING=atdisable_6d(RING);
@@ -153,15 +193,27 @@ Qxgrid=[];
 Qygrid=[];
 Qxgridfrac=[];
 Qygridfrac=[];
+axgrid=[];
+aygrid=[];
 
-Qxgrid2=[];
-Qygrid2=[];
-Qxgridfrac2=[];
-Qygridfrac2=[];
+Qxdp = [];
+Qydp = [];
+dQxdp = [];
+dQydp = [];
+Qxdpfrac = [];
+Qydpfrac = [];
 
+dps=[];
+
+Qdiff=[];
+axdiff=[];
+aydiff=[];
+
+Qdiffrate = [];
 
 %% Calculates Tune Map
 
+tstart=tic;
 if (verbosef)
     fprintf('%s Starting Tune Map calculation ... \n',datetime);
 end
@@ -229,31 +281,72 @@ switch mode
         amplx=linspace(xmin,xmax,npx);
         amply=linspace(ymin,ymax,npy);
         [amplx_m, amply_m]=meshgrid(amplx,amply);
-        ax  = reshape(amplx_m,npx*npy,1);
-        ay  = reshape(amply_m,npx*npy,1);
+        axgrid  = reshape(amplx_m,npx*npy,1);
+        aygrid  = reshape(amply_m,npx*npy,1);
         Rin = zeros(6,npx*npy);
-        Rin(1,:)=ax;
-        Rin(3,:)=ay;
-        Rin(5,:)=dp;
-        tunes = calcTune(RING,Rin,'nturns',nturns,...
+        %Rin(1,:)=ax;
+        %Rin(3,:)=ay;
+        %Rin(5,:)=dp;
+        Rin=zeros(1,6)';
+        Rin(5)=dp;
+        Qxgrid=nan(npx*npy,1);
+        Qygrid=nan(npx*npy,1);
+        parfor i=1:npx*npy
+            %Rin(1)=ax(i);
+            %Rin(3)=ay(i);
+            tunes = calcTune(RING,[axgrid(i) 0.0 aygrid(i) 0.0 dp 0.0]','nturns',nturns,...
                     'method',method,'minampx', minampx,'minampy',minampy);
+            Qxgrid(i)=tunes.outputs.Qx;
+            Qygrid(i)=tunes.outputs.Qy;
+        end
      
-        Qxgrid = tunes.outputs.Qx;
-        Qygrid = tunes.outputs.Qy;
+        %Qxgrid = tunes.outputs.Qx;
+        %Qygrid = tunes.outputs.Qy;
 
         Qxgridfrac = Qxgrid-fix(Qxgrid);
         Qygridfrac = Qygrid-fix(Qygrid);
 
-        case {'diff';'DIFF'}
-             fprintf('%s Error in calcTuneMap. Calculation mode not implemented yet: %s \n', ...
-                   datetime, mode);
+     case {'diff';'DIFF'}
+        amplx=linspace(xmin,xmax,npx);
+        amply=linspace(ymin,ymax,npy);
+        [amplx_m, amply_m]=meshgrid(amplx,amply);
+        axdiff  = reshape(amplx_m,npx*npy,1);
+        aydiff  = reshape(amply_m,npx*npy,1);     
+        
+        Qxgrid =nan(npx*npy,1);
+        Qygrid =nan(npx*npy,1);
+        Qxgrid2=nan(npx*npy,1);
+        Qygrid2=nan(npx*npy,1);
+        parfor i=1:npx*npy
+            tunes = calcTune(RING,[axdiff(i) 0.0 aydiff(i) 0.0 dp 0.0]',...
+                    'nturns',nturns,'method',4,'minampx', minampx,...
+                    'minampy',minampy,'nsets',2);
+            Qxgrid(i)=tunes.outputs.Qx(1);
+            Qygrid(i)=tunes.outputs.Qy(1);
+            Qxgrid2(i)=tunes.outputs.Qx(2);
+            Qygrid2(i)=tunes.outputs.Qy(2);
+        end
+        Qdiff = log10(sqrt(((Qxgrid2-Qxgrid).^2) + ((Qygrid2-Qygrid).^2)));
+        Qdiffrate = log10(sqrt(((Qxgrid2-Qxgrid).^2) + ((Qygrid2-Qygrid).^2))/nturns);
+        Qxgridfrac = Qxgrid-fix(Qxgrid);
+        Qygridfrac = Qygrid-fix(Qygrid);
+       
+     case {'chro';'CHRO'}
+         Rin       = zeros(6,npd);
+         dps       = linspace(dpmin,dpmax,npd);
+         Rin(5,:)  = dps;
+         [~,dp0pos] = min(abs(dps));
+         tunes     = calcTune(RING,Rin,'nturns',nturns,...
+                    'method',method,'minampx', minampx,'minampy',0);
+         Qxdp      = tunes.outputs.Qx;
+         dQxdp     = Qxdp - Qxdp(dp0pos);
+         Qxdpfrac  = Qxdp - fix(Qxdp);
 
-
-        case {'chro';'CHRO'}
-
-             fprintf('%s Error in calcTuneMap. Calculation mode not implemented yet: %s \n', ...
-                   datetime, mode);
-        tunemap=[];
+         tunes     = calcTune(RING,Rin,'nturns',nturns,...
+                    'method',method,'minampx', 0,'minampy',minampy);
+         Qydp      = tunes.outputs.Qy;
+         dQydp     = Qydp - Qydp(dp0pos);
+         Qydpfrac  = Qydp - fix(Qydp);
 
      otherwise
         fprintf('%s Error in calcTuneMap. Unknown calculation mode : %s \n', ...
@@ -261,9 +354,11 @@ switch mode
         tunemap=[];
         return
 end
+telapsed = toc(tstart);
 %
 %% Collects output structure info
 tunemap.inputs.mode=mode;
+tunemap.inputs.desc=desc;
 tunemap.inputs.dp=dp;
 tunemap.inputs.xmin=xmin;
 tunemap.inputs.xmax=xmax;
@@ -284,6 +379,7 @@ tunemap.inputs.resorder=resorder;
 tunemap.inputs.qxrange=qxrange;
 tunemap.inputs.qyrange=qyrange;
 
+tunemap.outputs.desc=strcat(sprintf('%s',datetime),' : ', desc);
 tunemap.outputs.Qxx=Qxx;
 tunemap.outputs.Qyx=Qyx;
 tunemap.outputs.Qxy=Qxy;
@@ -304,11 +400,30 @@ tunemap.outputs.Qxgrid=Qxgrid;
 tunemap.outputs.Qygrid=Qygrid;
 tunemap.outputs.Qxgridfrac = Qxgridfrac;
 tunemap.outputs.Qygridfrac = Qygridfrac;
+tunemap.outputs.axgrid = axgrid;
+tunemap.outputs.aygrid = aygrid;
+
+tunemap.outputs.Qxdp     = Qxdp;
+tunemap.outputs.dQxdp    = dQxdp;
+tunemap.outputs.Qxdpfrac = Qxdpfrac;
+tunemap.outputs.Qydp     = Qydp;
+tunemap.outputs.dQydp    = dQydp;
+tunemap.outputs.Qydpfrac = Qydpfrac;
+
+tunemap.outputs.dps         = dps;
+tunemap.outputs.Qdiff       = Qdiff;
+tunemap.outputs.axdiff      = axdiff;
+tunemap.outputs.aydiff      = aydiff;
+tunemap.outputs.Qdiffrate   = Qdiffrate;
+
+tunemap.outputs.telapsed    = telapsed;
 
 %% Plots Tune Map
 if (plotf)
-   plotTuneMap(tunemap,'plottype',plottype,'plotmode',plotmode,'resorder', resorder, ...
-                 'qxrange', qxrange, 'qyrange', qyrange);
+   plotTuneMap(tunemap,'plottype',plottype,'plotmode',plotmode,'resorder',...
+               resorder,'qxrange', qxrange, 'qyrange', qyrange, ...
+               'xminplot', xminplot, 'xmaxplot', xmaxplot, 'yminplot', ...
+               yminplot, 'ymaxplot', ymaxplot, 'caxrange', caxrange);
 end
 
 

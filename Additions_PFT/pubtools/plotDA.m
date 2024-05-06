@@ -19,6 +19,7 @@ function plotDA(varargin)
 
 %% History
 % PFT 2024/05/01
+% PFT 2024/05/05 bug fix for grid mode plotting
 
 %% Input argument parsing
 %
@@ -29,6 +30,8 @@ YmaxDA   = getoption(varargin,'YmaxDA',DAS.outputs.DAoptions.YmaxDA);
 
 DAmode = DAS.outputs.DAoptions.DAmode;
 DAV    = DAS.outputs.DAV;
+npdax  = DAS.outputs.DAoptions.npdax;
+npday  = DAS.outputs.DAoptions.npday;
 
 switch DAmode
      case 'border'

@@ -1,4 +1,4 @@
-function [tune,spectrum]=findtune(pos,method)
+function [tune,spectrum]=findtune(pos,method,varargin)
 %FINDTUNE   get the tune value from turn by turn positions
 %
 %TUNE=FINDTUNE(POS,METHOD)
@@ -10,9 +10,10 @@ function [tune,spectrum]=findtune(pos,method)
 %               3: Windowing + interpolation
 %
 %[TUNE,SPECTRUM]=FINDTUNE(...) Also returns the fft
+% PFT 2024/05/03 added optional flag to control verbose output
 
 
-
+verbosef = any(strcmpi(varargin,'verbose'));
 if nargin < 2, method=3; end
 
 nturns=size(pos,1);
@@ -66,10 +67,12 @@ tune(wrong)=NaN;
 errmax=2.5*std(tune,0,2);
 keep=(abs(tune-mean(tune,2))<=errmax);
 reject=find(~(keep | wrong));
-for bpm=reject
-    fprintf('rejected BPM %d\n', bpm);
+if (verbosef)
+    for bpm=reject
+        fprintf('rejected BPM %d\n', bpm);
+    end
+    fprintf('%20s tune:%g (rms:%g)\n',methname, mean(tune(keep),2),std(tune(keep),0,2));
 end
-fprintf('%20s tune:%g (rms:%g)\n',methname, mean(tune(keep),2),std(tune(keep),0,2));
 
 function vv=phi(a,b,c) %#ok<DEFNU>
 d1=c*(a+b);
