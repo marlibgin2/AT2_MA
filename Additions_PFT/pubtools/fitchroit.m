@@ -3,7 +3,7 @@ function [LAT_C,Penalty,its] = fitchroit(LAT, chrom_fams, chroms0, Nitchro, TolC
 % by iterative calls to atfitchrome  
 %% inputs
 %      LAT: Lattice cell array
-%      chrom_fams: cell array of styrings containg the sextupooe families to
+%      chrom_fams: cell array of strings containing the sextupole families to
 %                  be used
 %      chrosm0: vector of target chromatricities
 %      Nitchro: # max of iterations

@@ -61,8 +61,11 @@ function tunes=calcTune(RING,Rin,varargin)
 % PFT 2024/04/28 First version, based on atnuampl with modifications by
 %                M.Sjöström
 % PFT 2024/05/03 Added optional flag for enabling/suppressing verbose output
-% PFT 2024/05/04 Added tune calcualtion for two consectuvie sets of turns 
+% PFT 2024/05/04 Added tune calcualtion for two consecutive sets of turns 
 %                - Useful for tune  diffusion map  calculations
+% PFT 2024/05/09 Added removal od DC component in NAFF calculation.
+% PFT 2024/05/10 Added handling of cases where the first tracked particle
+%                is lost
 
 %% Input argument parsing
 nturns   = getoption(varargin,'nturns',128);
@@ -111,9 +114,10 @@ for j=1:nsets
             continue;
         end
         particleTurns = (n+npt*nturns*(j-1)):npt:(npt*nturns+npt*nturns*(j-1)); 
-    
-        [nux, amplx, ~] = calcnaff(p1(1,particleTurns),p1(2,particleTurns));
-        [nuy, amply, ~] = calcnaff(p1(3,particleTurns),p1(4,particleTurns));
+        xmean = mean(p1(1,particleTurns));
+        ymean = mean(p1(3,particleTurns));
+        [nux, amplx, ~] = calcnaff(p1(1,particleTurns)-xmean,p1(2,particleTurns));
+        [nuy, amply, ~] = calcnaff(p1(3,particleTurns)-ymean,p1(4,particleTurns));
         
         % If NAFF fails for any reason assign NaN and continue
         if any(isnan([nux;nuy]))
@@ -122,18 +126,21 @@ for j=1:nsets
         end
 
         if n > 1
-        % If there is a tune calculated at a lower amplitude, first
+        % If there is a previously calculated tune, first
         % filter the tune peaks from NAFF to ignore frequencies
-        % differing too much from the previous amplitude. The threshold
+        % differing too much from the previous result. The threshold
         % has been arbitrarily set to 0.1.
         % This is useful primarily when looking at the horizontal tune
         % shift from a vertical kick, or vice versa, in a lattice with
         % a large amount of coupling.
-          dnux =  abs(tunetrack(n-1,1+2*(j-1)) - abs(nux)./(2*pi));
-          dnuy =  abs(tunetrack(n-1,2+2*(j-1)) - abs(nuy)./(2*pi));
-          ix = dnux < 0.1; nux = nux(ix); amplx = amplx(ix);
-          iy = dnuy < 0.1; nuy = nuy(iy); amply = amply(iy);
-       end
+          if (not(any(isnan(tunetrack(n-1,1+2*(j-1):2+2*(j-1))))))
+            dnux =  abs(tunetrack(n-1,1+2*(j-1)) - abs(nux)./(2*pi));
+            dnuy =  abs(tunetrack(n-1,2+2*(j-1)) - abs(nuy)./(2*pi));
+            ix = dnux < 0.1; nux = nux(ix); amplx = amplx(ix);
+            iy = dnuy < 0.1; nuy = nuy(iy); amply = amply(iy);
+          end
+        end
+
        [~, i] = max(amplx);        % Identify the dominant frequency peak
        nux = abs(nux(i))/(2*pi);   % Re-normalize to get the tune. Note the sign is ignored.
 
@@ -159,10 +166,20 @@ if (not(method==4))
     tunetrack=tunetrackm;
 end
 
-[~,k]=min([repmat(fractune0,1,nsets)-tunetrack(1,:); 1-repmat(fractune0,1,nsets)-tunetrack(1,:)]);
-np=offs(k);
-offset=round(repmat(tune0,1,nsets)-np.*tunetrack(1,:));
-tunetrack=np(ones(npt,1),:).*tunetrack + offset(ones(npt,1),:);
+% finds at least one case for which tunetrack is valid
+validtune=false;
+for n=1:npt
+    if (not(any(isnan(tunetrack(n,:)))))
+        [~,k]=min([repmat(fractune0,1,nsets)-tunetrack(n,:); 1-repmat(fractune0,1,nsets)-tunetrack(n,:)]);
+        np=offs(k);
+        offset=round(repmat(tune0,1,nsets)-np.*tunetrack(n,:));
+        validtune=true;
+        break;
+    end
+end
+if (validtune)
+    tunetrack=np(ones(npt,1),:).*tunetrack + offset(ones(npt,1),:);
+end
 
 %% Collects output structure data
 tunes.outputs.Qx   = tunetrack(:,1:nsets:2*nsets-1);
