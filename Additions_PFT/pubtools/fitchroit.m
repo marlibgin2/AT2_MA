@@ -3,12 +3,21 @@ function [LAT_C,Penalty,its] = fitchroit(LAT, chrom_fams, chroms0, Nitchro, TolC
 % by iterative calls to atfitchrome  
 %% inputs
 %      LAT: Lattice cell array
-%      chrom_fams: cell array of strings containing the sextupole families to
+%      chrom_fams: (1X2) cell array of strings with  sextupole families to
 %                  be used
-%      chrosm0: vector of target chromatricities
+%      chrosm0: (1X2) array of target chromatricities
 %      Nitchro: # max of iterations
-%      TolChrom: Tolerances
+%      TolChrom: (1X2) array of tolerances
+%% outputs
+% LAT_C : lattice with corrected
+% Penalty: penalty achieved
+% its: iterations performed
 %
+%% Usage Examples
+%[ACHR_ZC,Penalty,its] = fitchroit(ACHR, {'S3';'S5'}, [0 0], 10, [1E-6 1E-6})
+% 
+
+
   try
         k=0; its=0.0;   
         LAT_C=LAT;

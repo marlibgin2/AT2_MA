@@ -15,11 +15,11 @@ function DAS=calcDA(varargin)
 %               xmaxdas  : limits of the range in which the DA border is searched
 %               xmindas  : limits of the range in which the DA border is searched
 %               ymaxdas  : limits of the range in which the DA border is searched
+%               dp      : initial dp/p (6d tracking) or fixed dp/p (4d tracking)
 %
 % Parameters for "border" DA calculation mode
 %               r0      : initial guess [m]
 %               nang    : number of angular steps
-%               dp      : initial dp/p (6d tracking) or fixed dp/p (4d tracking)
 %               z0      : initial longitudinal coordinate (6d tracking). Nan uses synchrnous phase
 %               res     : resolution [m]
 %               alpha   : da enlargement factor for border search
@@ -36,25 +36,48 @@ function DAS=calcDA(varargin)
 %            as input in the form ('parameter', value)
 %
 % Optional arguments
-% all fields in DAoptions listed above. If given
+% all fields in DAoptions listed above. 
+% desc : descriptive string, default='DA calculation'
+% mode : calculation mode, default = 'xy'. Possible values are
+%       'xy'  : calculates DA in the xy plane for a given initial energy
+%               deviation. Tracking may be 4d + energy or 6d as defined by
+%               the input lattice.
+%       'xydp': calculate DA in the xp and yp planes. 
+%                tracking is 4d plus fixed
+%               energy deviation.
+% ndp         : number of points alog the energy axis for xdp and ydp 
+%               calculation modes, default = 11
+% dpmin       : minimum energy deviation, default = -0.04
+% dpmax       : maximum energy deviation, default = +0.04
 %
 % Optional flags
-% plot : plots DA;
+% plot : plots DA
 % verbose: produces verbose output
 %
 %% Outputs
 % DAS: structure with the fields
-% DAS.inputs echoes the input parameters with fields
+% DAS.inputs echoes the input parameters with sub-fields
 %   DAS.inputs.RING
 %   DAS.inputs.DAoptions
+%   DAS.inputs.ndp
+%   DAS.inputs.dpmin
+%   DAS.inputs.dpmax
 %
-% DAS.outputs has fields
-%   DA       : Dynamic aperture [mm**2]
-%   DAV      : Vector of dynamic aperture border coordinates (if 'border' mode) 
-%              or vector of booleans indicating particle loss (if 'grid' mode)
-%   DAoptions: Structure with options used in the calculation (may differ
-%              from the input DAoptions if specific fields were 
-%              overwritten through optional parameters
+% DAS.outputs has sub-fields
+%   
+%   DAS.outputs.desc       : datetime + input description
+%   DAS.outputs.DA         : Dynamic aperture [mm**2]
+%   DAS.outputs.DAV        : (DAoptions.nangX2) array of dynamic aperture border coordinates (if DAoptions'border' DAmode) 
+%                            or ( (2*DAoptions.npdax+1)X (DAoptions.npday+1) array of booleans indicating particle loss (if 'grid' DAmode)
+%   DAS.outputs. DAoptions : Structure with options used in the calculation (may differ
+%                            from the input DAoptions if specific fields were 
+%                            overwritten through optional parameters
+%   DAS.outputs.DAXp       : (1 X ndp) array of positive X DA [m]
+%   DAS.outputs.DAYp       : (1 X ndp) array of positive Y DA [m]
+%   DAS.outputs.DAXm       : (1 X ndp) array of negative X DA [m]
+%   DAS.outputs.dps        : (1Xndp) array of energy deviations (mode 'xydp')
+%
+%   DAS.outputs.telapsed    : elpased calculation time (sec)
 %
 %% Usage examples
 % DAS = calcDA(RING,DAoptions,'plot');
@@ -65,11 +88,13 @@ function DAS=calcDA(varargin)
 % PFT 2024/03/09
 % PFT 2024/05/01 : updated documentation,changed output parameter 
 %                  structure and separated calculation from plotting
+% PFT 2024/05/13 : added xydp calculation mode
 %
 %% Input argument parsing
 [RING,DAoptions] = getargs(varargin,[],[]);
-DAS.inputs.DAoptions=DAoptions;
 DAS.inputs.RING=RING;
+DAS.inputs.DAoptions=DAoptions;
+
 if (isempty(DAoptions))
     DAoptions.dp=0.0;
     DAoptions.z0=nan;
@@ -96,6 +121,7 @@ if (isempty(DAoptions))
     DAoptions.Y0da = zeros(DAoptions.npDA,1);  % vertical coordinates of grid points [m]
 end
 
+mode             = getoption(varargin,'mode','xy');
 plotf            = any(strcmpi(varargin,'plot'));
 verbosef         = any(strcmpi(varargin,'verbose'));
 dp               = getoption(varargin,'dp',DAoptions.dp);
@@ -115,6 +141,17 @@ r0               = getoption(varargin,'r0', DAoptions.r0);
 nang             = getoption(varargin,'nang',DAoptions.nang);
 res              = getoption(varargin,'res',DAoptions.res); 
 alpha            = getoption(varargin,'alpha',DAoptions.alpha);
+
+ndp              = getoption(varargin,'ndp',11);
+dpmin            = getoption(varargin,'dpmin',-0.04);
+dpmax            = getoption(varargin,'dpmax',+0.04);
+
+dps=linspace(dpmin,dpmax,ndp);
+
+DAS.inputs.mode=mode;
+DAS.inputs.ndp=ndp;
+DAS.inputs.dpmin=dpmin;
+DAS.inputs.dpmax=dpmax;
 
 DAoptions.dp=dp;
 DAoptions.z0=z0;
@@ -191,35 +228,67 @@ if (strcmp(DAmode,'grid'))
     DAoptions.Y0da=Y0da;
     DAoptions.dxdy=dxdy;
 end
+%% preamble
 PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
 PhysConst = PC.PC;      %Load physical constants
 
+DAXp=zeros(1,ndp);
+DAXm=zeros(1,ndp);
+DAYp=zeros(1,ndp);
+
 %% Calculates DA
+tstart=tic;
 if (verbosef)
-    tic;
     fprintf('*** \n');
     fprintf('%s Starting DA calculation \n', datetime);
 end
 try
    rpara = atsummary(RING);
    etax = rpara.etax;
-   %
    % for 6d tracking and if DAoptions.z0 is not given
-   % make sure the initial logiudinal coordinate corresponds 
+   % make sure the initial longitudinal coordinate corresponds 
    % to the synchronous particle phase
    if (isnan(z0))
        if (check_6d(RING))
-        z0 = PhysConst.c*(rpara.syncphase-pi)/(2*pi*rpara.revFreq*rpara.harmon); %if z0 not given choose the synchronous phase
+        z0 = PhysConst.c*(rpara.syncphase-pi)/(2*pi*rpara.revFreq*rpara.harmon); %if z0 not given, choose the synchronous phase
        else
         z0=0.0;
        end
        DAoptions.z0=z0;
    end
-   [DA,DAV] = calcDA_raw(RING,DAoptions,etax,rpara.beta0(1),rpara.beta0(2));
+   switch mode
+       case {'xy';'XY'}
+            
+            [DA,DAV] = calcDA_raw(RING,DAoptions,etax,rpara.beta0(1),rpara.beta0(2));
+
+       case {'xydp';'XYDP'}
+            DA=nan;
+            DAoptions.DAmode = 'border';
+            DAoptions.nang = 2;
+            for i=1:ndp
+                DAoptions.dp=dps(i);
+                [~,DAV]=calcDA_raw(RING,DAoptions,etax,rpara.beta0(1),rpara.beta0(2));
+                DAXp(i)=DAV(1,1);
+                DAYp(i)=DAV(2,2);
+                DAXm(i)=DAV(3,1);
+            end
+
+       otherwise
+           fprintf('%s Error in calcDA, unknown mode %s',datetime, mode);
+   end
+
+   telapsed=toc(tstart);
    %% Collects data for output structure
-    DAS.outputs.DA=DA;
-    DAS.outputs.DAV=DAV;
-    DAS.outputs.DAoptions=DAoptions;
+
+   DAS.outputs.DA=DA;
+   DAS.outputs.DAV=DAV;
+   DAS.outputs.DAoptions=DAoptions;
+   DAS.outputs.DAXp=DAXp;
+   DAS.outputs.DAYp=DAYp;
+   DAS.outputs.DAXm=DAXm;
+   DAS.outputs.dps=dps;
+   DAS.outputs.telapsed=telapsed;
+
 catch ME
      fprintf('%s Error in calcDA \n', datetime);
      fprintf('Error message was:%s \n',ME.message);
@@ -230,7 +299,8 @@ if (plotf&&not(isempty(DAS)))
     plotDA(DAS);
 end
 
+
 if(verbosef)
     fprintf('DA calculation complete \n');
-    toc;
+    fprintf('Elapsed time = %d10 sec', telapsed);
 end
