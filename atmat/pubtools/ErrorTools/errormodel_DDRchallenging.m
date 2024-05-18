@@ -2,8 +2,8 @@ function EM = errormodel_DDRchallenging(varargin)
 % Generates error model structure for use with "applyErrorModel"
 %% Inputs 
 % Optional arguments these are either scaling factors that multiply the 
-%         errors defined in the chalenging model defined below or (in the
-%         case of strran) a relative execitation error
+%         errors defined in the challenging model defined below or (in the
+%         case of strran) a relative excitation error
 %
 % gdran   = girder random alignment scaling factor, default = 1.0.
 % mgalran = individual magnet random alignment scaling factor, defalt = 1.0.
@@ -11,7 +11,6 @@ function EM = errormodel_DDRchallenging(varargin)
 % mulran  = random multipole error scaling factor, default = 1.0
 % bpmran  = random bpm alignment error scaling factor, default = 1.0
 % strran  = random magnet strength relative error, default = 0.02%
-
 %% Usage examples
 % ErrorModel=errormodel_DDRchallenging('gdran',0.0,'mgalran',1.0,'mulsys',0.0,'mulran',0.0,'strran',2E-4,'bpmran',0.0);
 %
