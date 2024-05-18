@@ -27,4 +27,3 @@ subplot(2,3,6); plot(s(gI), RES1(5,:),'-xb'); hold on; plot(s(gI+1), RES2(5,:),'
 phi1 = cellfun(@(x) asin(x(1,3)),ROT1);
 phi2 = cellfun(@(x) asin(x(1,3)),ROT2);
 figure; phi_ax = plotyy(s(gI), 1e6*phi1, s(gI+1), 1e6*phi2); xlabel('s [m]'); ylabel(phi_ax(1),'R1 \phi [µrad]'); ylabel(phi_ax(2),'R2 \phi [µrad]'); title('Roll angle \phi');
-
