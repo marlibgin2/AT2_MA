@@ -69,7 +69,7 @@ tune0=nbper*lindata(end).mu/2/pi;
 offs=[nbper -nbper];
 siza=size(ampl);
 nampl=prod(siza);
-p0=repmat(minAmp*[1;0;1;0;0;0], 1,nampl); % specifies minimum amplitude
+p0=repmat(minAmp*[1;0;1;0;0;0], 1,nampl); % 30 microns minimum amplitude
 %p0(xz,:)=max(p0(xz,:),ampl(:)');
 ampl(ampl==0)=minAmp;
 p0(xz,:)=ampl;
@@ -136,4 +136,3 @@ else
     ylabel('\nu');
     grid on
 end
-
