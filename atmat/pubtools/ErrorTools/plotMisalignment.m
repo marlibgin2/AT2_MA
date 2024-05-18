@@ -4,8 +4,8 @@ function varargout=plotMisalignment(varargin)
 %Helper function for atplot: plot the misalignments
 %
 %  USAGE:
-% >> atbaseplot(ring,@plotAperture);
-% >> atplot(ring,@plotAperture);        (obsolete)
+% >> atbaseplot(ring,@plotMisalignment);
+% >> atplot(ring,@plotMisalignment);        (obsolete)
 %
 %See also atplot atbaseplot
 

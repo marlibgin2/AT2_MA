@@ -70,8 +70,7 @@ end
 [lo,pa]=atx(r,0,positions);
 
 emitx=pa.modemittance(1);
-%emity=emitx./2;
-emity=emitx.*0.025;
+emity=emitx./2;
 
 [emitx,emity,integrationmethod,sigp,sigs,~] = ...
     getargs(varargs, emitx, emity,'integral',pa.espread,pa.blength);
