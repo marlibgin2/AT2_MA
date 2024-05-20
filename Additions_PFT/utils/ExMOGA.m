@@ -850,7 +850,7 @@ if (plotdaf)
     DAS=calcDA(ACHROGRD,DAoptions,'plot','4d');
     fprintf('Dynamic Aperture = %4.2f mm**2 \n',DAS.outputs.DA);
 else
-    DA=NaN;
+    DAS=[];
 end
 
 %
@@ -1067,7 +1067,11 @@ rp.outputs.DAoptions = DAoptions;
 rp.outputs.LatticeOptData = LatticeOptData;
 rp.outputs.Sc1=Sc1;
 rp.outputs.Sc2=Sc2;
-rp.outputs.DA=DAS.outputs.DA;
+if (not(isempty(DAS)))
+    rp.outputs.DA=DAS.outputs.DA;
+else
+    rp.outputs.DA=nan;
+end
 
 if(strcmp(optMode,'SEXT')||strcmp(optMode,'NonLinear'))
     rp.outputs.DVLins = DVLins;
