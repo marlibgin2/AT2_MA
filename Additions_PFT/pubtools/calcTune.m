@@ -4,7 +4,7 @@ function tunes=calcTune(RING,Rin,varargin)
 % 
 % Differences wrt atnuampl
 %   Tracking is done in absolute coordinates, not wrt the closed orbit.
-%   added ability ability to deal with a grid of points 
+%   added ability to deal with a grid of points 
 %   added ability to do off-energy tracking.
 %
 %% Inputs
@@ -14,7 +14,7 @@ function tunes=calcTune(RING,Rin,varargin)
 % Rin: (6XN) matrix of initial coordinates 
 %
 % Optional arguments
-%   nturns :# of turns for tracking for each set, default = 256.
+%   nturns :# of turns for tracking for each set, default = 252.
 %   nsets  :# of sets of consecutive turns for which tunes are to be
 %           determined, default = 1
 %   minampx: minimum initial horizontal particle amplitude, default = 30 µm.
@@ -24,8 +24,10 @@ function tunes=calcTune(RING,Rin,varargin)
 %        2: Interpolation on fft results
 %        3: Windowing + interpolation (default)
 %        4: NAFF
+%   verbose: if true, turns on verbose output
+%
 %% Optional flags
-% verbose : turns on verbose output
+% fixturns : maintains input number of turns even for NAFF
 %
 %% Outputs
 % tunes structure with fields
@@ -37,11 +39,13 @@ function tunes=calcTune(RING,Rin,varargin)
 %   tunes.inputs.minampx
 %   tunes.inputs.minampy
 %   tunes.inputs.method
+%   tunes.inputs.fixturnsf
 %
-% tunes.outputs.Qx  : (Nxnsets) array of Horizontal tunes 
-% tunes.outputs.Qy  : (Nxnsets) array vertical tunes
-% tunes.outputs.lost: (Nx1) array of logicals (1= particle was lost)
-% tunes.outputs.Rout: Particle coordinates at the end of tracking. 
+% tunes.outputs.Qx    : (Nxnsets) array of Horizontal tunes 
+% tunes.outputs.Qy    : (Nxnsets) array vertical tunes
+% tunes.outputs.lost  : (Nx1) array of logicals (1= particle was lost)
+% tunes.outputs.Rout  : Particle coordinates at the end of tracking. 
+% tunes.outputs.nturns: number of turns (may be different from input)
 %
 % NOTES
 % 1. Be aware that when looking at tuneshifts due to an oscillation
@@ -54,7 +58,8 @@ function tunes=calcTune(RING,Rin,varargin)
 % See also findtune, calcnaff
 %% Usage examples
 % tunes = calcTune(RING,[0.001 0 0 0 0 0 0]','nturns', 128, 'method', 3);
-% tunes = calcTune(RING,Rin, 'nturns',1024, 'nsets',2, 'method', 4);
+% tunes = calcTune(RING,Rin, 'nturns',1024, 'nsets',2, 'method', 4, 'verbose');
+% tunes = calcTune(RING,Rin, 'nturns',1024, 'nsets',2, 'method', 4, 'fixturns');
 
 
 %% History
@@ -66,32 +71,41 @@ function tunes=calcTune(RING,Rin,varargin)
 % PFT 2024/05/09 Added removal od DC component in NAFF calculation.
 % PFT 2024/05/10 Added handling of cases where the first tracked particle
 %                is lost
+% PFT 2024/05/19 Added improved handling of q/1-q ambiguity for 
+%                NAFF calculation method. Added check the n. turns 
+%                is larger than 66 for NAFF. Added optional flag 
+%                for fixing n. of turns, even for NAFF.
+%                
 
 %% Input argument parsing
-nturns   = getoption(varargin,'nturns',128);
-nsets    = getoption(varargin,'nsets', 1);
-minampx  = getoption(varargin,'minampx',30E-6);
-minampy  = getoption(varargin,'minampy',30E-6);
-method   = getoption(varargin,'method',3);
-verbosef = any(strcmpi(varargin,'verbose'));
+nturns    = getoption(varargin,'nturns',128);
+nsets     = getoption(varargin,'nsets', 1);
+minampx   = getoption(varargin,'minampx',30E-6);
+minampy   = getoption(varargin,'minampy',30E-6);
+method    = getoption(varargin,'method',3);
+verbosef  = getoption(varargin,'verbose',false);
+fixturnsf = any(strcmpi(varargin,'fixturns'));
 
-tunes.inputs.RING    = RING;
-tunes.inputs.nturns  = nturns;
-tunes.inputs.minampx = minampx;
-tunes.inputs.minampy = minampy;
-tunes.inputs.method  = method;
+tunes.inputs.RING      = RING;
+tunes.inputs.nturns    = nturns;
+tunes.inputs.minampx   = minampx;
+tunes.inputs.minampy   = minampy;
+tunes.inputs.method    = method;
+tunes.inputs.fixturnsf = fixturnsf;
 
 %% Preamble
 npt = size(Rin,2);
 
-if method == 4    % Turn adjustment, recommended for NAFF
+if ( (method == 4) && not(fixturnsf))    % Turn adjustment, recommended for NAFF
     nturns = 2^(log2(nturns));
-    nturns = nturns + 6-mod(nturns,6);
+    nturns = (fix(nturns/6)+1)*6;
+    nturns = max(nturns,66);
 end
 
 [~,nbper]=atenergy(RING);
 [lindata,fractune0]=atlinopt(RING,0.0,1:length(RING)+1);
 tune0=nbper*lindata(end).mu/2/pi;
+inttune0=fix(tune0);
 offs=repmat([nbper -nbper],1,nsets);
 
 Rin(1,(Rin(1,:)==0))=minampx;
@@ -116,15 +130,40 @@ for j=1:nsets
         particleTurns = (n+npt*nturns*(j-1)):npt:(npt*nturns+npt*nturns*(j-1)); 
         xmean = mean(p1(1,particleTurns));
         ymean = mean(p1(3,particleTurns));
-        [nux, amplx, ~] = calcnaff(p1(1,particleTurns)-xmean,p1(2,particleTurns));
-        [nuy, amply, ~] = calcnaff(p1(3,particleTurns)-ymean,p1(4,particleTurns));
-        
+        if (verbosef)
+            [nux, amplx, ~] = calcnaff(p1(1,particleTurns)-xmean,p1(2,particleTurns),'Debug','Display');
+            [nuy, amply, ~] = calcnaff(p1(3,particleTurns)-ymean,p1(4,particleTurns),'Debug','Display');
+        else
+            [nux, amplx, ~] = calcnaff(p1(1,particleTurns)-xmean,p1(2,particleTurns));
+            [nuy, amply, ~] = calcnaff(p1(3,particleTurns)-ymean,p1(4,particleTurns));
+        end
         % If NAFF fails for any reason assign NaN and continue
         if any(isnan([nux;nuy]))
             tunetrack(n,1+nsets*(j-1):2+nsets*(j-1)) = nan(1,2);
             continue;
         end
 
+        % Re-normalize to get the tunes
+        nux = nux/(2*pi);   
+        nuy = nuy/(2*pi);   
+
+        % Fix the 1/1-q ambiguity
+        for i=1:numel(nux)
+            if (nux(i)<0)
+                nux(i)=abs(nux(i));
+            else
+                nux(i)=1-nux(i);
+            end
+        end
+        
+        for i=1:numel(nuy)
+            if (nuy(i)<0)
+                nuy(i)=abs(nuy(i));
+            else
+                nuy(i)=1-nuy(i);
+            end
+        end
+       
         if n > 1
         % If there is a previously calculated tune, first
         % filter the tune peaks from NAFF to ignore frequencies
@@ -134,20 +173,19 @@ for j=1:nsets
         % shift from a vertical kick, or vice versa, in a lattice with
         % a large amount of coupling.
           if (not(any(isnan(tunetrack(n-1,1+2*(j-1):2+2*(j-1))))))
-            dnux =  abs(tunetrack(n-1,1+2*(j-1)) - abs(nux)./(2*pi));
-            dnuy =  abs(tunetrack(n-1,2+2*(j-1)) - abs(nuy)./(2*pi));
+            dnux =  tunetrack(n-1,1+2*(j-1)) - nux;
+            dnuy =  tunetrack(n-1,2+2*(j-1)) - nuy;
             ix = dnux < 0.1; nux = nux(ix); amplx = amplx(ix);
             iy = dnuy < 0.1; nuy = nuy(iy); amply = amply(iy);
           end
         end
 
-       [~, i] = max(amplx);        % Identify the dominant frequency peak
-       nux = abs(nux(i))/(2*pi);   % Re-normalize to get the tune. Note the sign is ignored.
+        [~, i] = max(amplx);   % Identify the dominant frequency peak
+        nux = nux(i);       
+        [~, i] = max(amply);   % Identify the dominant frequency peak
+        nuy = nuy(i);       
 
-       [~, i] = max(amply);
-       nuy = abs(nuy(i))/(2*pi);
-        
-       tunetrack(n,1+nsets*(j-1):2+nsets*(j-1)) = [nux,nuy];
+        tunetrack(n,1+nsets*(j-1):2+nsets*(j-1)) = [nux,nuy];
     end
   else
 
@@ -167,24 +205,29 @@ if (not(method==4))
 end
 
 % finds at least one case for which tunetrack is valid
-validtune=false;
-for n=1:npt
-    if (not(any(isnan(tunetrack(n,:)))))
-        [~,k]=min([repmat(fractune0,1,nsets)-tunetrack(n,:); 1-repmat(fractune0,1,nsets)-tunetrack(n,:)]);
-        np=offs(k);
-        offset=round(repmat(tune0,1,nsets)-np.*tunetrack(n,:));
-        validtune=true;
-        break;
+if (not(method==4))
+    validtune=false;
+    for n=1:npt
+        if (not(any(isnan(tunetrack(n,:)))))
+            [~,k]=min([repmat(fractune0,1,nsets)-tunetrack(n,:); 1-repmat(fractune0,1,nsets)-tunetrack(n,:)]);
+            np=offs(k);
+            offset=round(repmat(tune0,1,nsets)-np.*tunetrack(n,:));
+            validtune=true;
+            break;
+        end
     end
-end
-if (validtune)
-    tunetrack=np(ones(npt,1),:).*tunetrack + offset(ones(npt,1),:);
+    if (validtune)
+        tunetrack=np(ones(npt,1),:).*tunetrack + offset(ones(npt,1),:);
+    end
+else
+    tunetrack=nbper*tunetrack-fix(nbper*tunetrack)+repmat(inttune0,npt,nsets);
 end
 
 %% Collects output structure data
-tunes.outputs.Qx   = tunetrack(:,1:nsets:2*nsets-1);
-tunes.outputs.Qy   = tunetrack(:,2:nsets:2*nsets);
-tunes.outputs.lost = lost';
-tunes.outputs.Rout = Rout;
+tunes.outputs.Qx     = tunetrack(:,1:nsets:2*nsets-1);
+tunes.outputs.Qy     = tunetrack(:,2:nsets:2*nsets);
+tunes.outputs.lost   = lost';
+tunes.outputs.Rout   = Rout;
+tunes.outputs.nturns = nturns;
 
 

@@ -81,7 +81,9 @@ function DAdist = calcDAdist(varargin)
 %% Input argument parsing
 [RING,ErrorModel,DAoptions] = getargs(varargin,[],[],[]);
 if (isempty(ErrorModel))
-    ErrorModel=errormodel_var('girdersc',0.0,'magalsc',1.0,'multsc',0.0);
+    ErrorModel=errormodel_DDRchallenging('gdran',0.0,'magalran',1.0,...
+                                         'mulsys',0.0, 'mulran',1.0,...
+                                         'bpmran', 0.0, 'strran', 0.0);
 end
 if (isempty(DAoptions))
     DAoptions.dp=0.0;

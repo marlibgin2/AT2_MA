@@ -154,8 +154,7 @@ function tunemap=calcTuneMap(varargin)
 %                                   as diffusion map modes always set
 %                                   method=4
 %   tunemap.outputs.nped          : lattice periodicity
-%   tunemap.outputs.nturns        : nturns over the whole ring (may be
-%                                   different from input value)
+%   tunemap.outputs.nturns        : number of turns (may be different from input value)
 %   tunemap.outputs.Qxx           : (1Xnpx) array of horizontal tune values
 %   tunemap.outputs.dQxx          : (1Xnpx) array of horizonal tune change values 
 %   tunemap.outputs.Qxxfrac       : (1Xnpx) array of fractional horizonal tune values
@@ -240,6 +239,8 @@ function tunemap=calcTuneMap(varargin)
 % PFT 2024/05/10: added tune calculation on grids in (x,dp) and (y,dp)
 %                 planes
 % PFT 2024/05/12: added lattice periodicty check
+% PFT 2024/05/19: added checl that number of turns is larger than 66 for
+%                 NAFF
 %
 %% Input argument parsing
 [ACHRO] = getargs(varargin,[]);
@@ -288,14 +289,23 @@ tunemap.inputs.nturns=nturns;
 ACHRO  = atdisable_6d(ACHRO);
 nped   = atGetRingProperties(ACHRO).Periodicity;  
 
-% sets the number of turns if "method" is NAFF or "mode" requires NAFF
+% If "method" is NAFF or "mode" requires NAFF
+% number of turns is a multipe of 6 and the periodicity, otherwise it is
+% only a multiple ofthe periodicity
 if (method==4 || smoothf || strcmpi(mode,'difxy') || strcmpi(mode,'difxdp') || strcmpi(mode,'difydp'))
     ndiv=lcm(nped,6);
 else
     ndiv=nped;
 end
-nturns = fix(nturns/ndiv)*ndiv; 
-
+if (method==4 || smoothf || strcmpi(mode,'difxy') || strcmpi(mode,'difxdp') || strcmpi(mode,'difydp'))
+    nturns = 2^(log2(nturns));
+end
+nturns = (fix(nturns/ndiv)+1)*ndiv; 
+% if "mathod" is NAFF, minimum number of turns is 66
+%
+if (method==4 || smoothf || strcmpi(mode,'difxy') || strcmpi(mode,'difxdp') || strcmpi(mode,'difydp'))
+    nturns = max(nturns,66);
+end
 Qxx=[];
 Qyx=[];
 Qxy=[];
@@ -382,7 +392,8 @@ switch mode
         [~,x0pos] = min(abs(amplx));
         tunes     = calcTune(ACHRO,Rin,'nturns',nturns,...
                     'method',method,'minampx', ...
-                    minampx,'minampy',minampy);
+                    minampx,'minampy',minampy,'fixturns',...
+                    'verbose', verbosef);
         Qxx       = tunes.outputs.Qx;
         Qyx       = tunes.outputs.Qy;
         dQxx = Qxx - Qxx(x0pos);
@@ -397,7 +408,9 @@ switch mode
         Rin(5,:)  = dp;
         [~,y0pos] = min(abs(amply));
         tunes = calcTune(ACHRO,Rin,'nturns',nturns,...
-                    'method',method,'minampx', minampx, 'minampy',minampy);
+                    'method',method,'minampx', minampx, ...
+                    'minampy',minampy,'fixturns',...
+                    'verbose', verbosef);
         Qxy  = tunes.outputs.Qx;
         Qyy  = tunes.outputs.Qy;
 
@@ -416,7 +429,9 @@ switch mode
         Rin(3,npx+1:npx+npy) = amply;
         [~,y0pos] = min(abs(amply));
         tunes = calcTune(ACHRO,Rin,'nturns',nturns,...
-                    'method',method,'minampx', minampx, 'minampy',minampy);
+                    'method',method,'minampx', minampx, ...
+                    'minampy',minampy,'fixturns',...
+                    'verbose', verbosef);
         Qxx  = tunes.outputs.Qx(1:npx);
         Qyx  = tunes.outputs.Qy(1:npx);
         Qxy  = tunes.outputs.Qx(npx+1:npx+npy);
@@ -452,14 +467,16 @@ switch mode
             Rin(3,:) = aygridxy';
             Rin(5,:) = dp;
             tunes = calcTune(ACHRO,Rin,'nturns',nturns,'method',method, ...
-                             'minampx',minampx,'minampy',minampy);
+                             'minampx',minampx,'minampy',minampy,...
+                             'fixturns','verbose',verbosef);
             Qxgridxy=tunes.outputs.Qx;
             Qygridxy=tunes.outputs.Qy;
         else
             parfor i=1:npx*npy
                 tunes = calcTune(ACHRO,[axgridxy(i) 0.0 aygridxy(i) 0.0 dp 0.0]',...
                         'nturns',nturns,'method',method, ...
-                        'minampx',minampx,'minampy',minampy);
+                        'minampx',minampx,'minampy',minampy,'fixturns',...
+                        'verbose',verbosef);
                         Qxgridxy(i)=tunes.outputs.Qx;
                         Qygridxy(i)=tunes.outputs.Qy;
             end
@@ -488,14 +505,15 @@ switch mode
             Rin(1,:) = axgridxdp';
             Rin(5,:) = dpgridxdp';
             tunes = calcTune(ACHRO,Rin,'nturns',nturns,'method',method, ...
-                             'minampx',minampx,'minampy',minampy);
+                             'minampx',minampx,'minampy',minampy,...
+                             'fixturns','verbose',verbosef);
             Qxgridxdp=tunes.outputs.Qx;
             Qygridxdp=tunes.outputs.Qy;
         else
             parfor i=1:npd*npx
                 tunes = calcTune(ACHRO,[axgridxdp(i) 0.0 0.0 0.0 dpgridxdp(i) 0.0]',...
                         'nturns',nturns,'method',method,'minampx', minampx,...
-                        'minampy',minampy);
+                        'minampy',minampy,'fixturns','verbose',verbosef);
                 Qxgridxdp(i)=tunes.outputs.Qx;
                 Qygridxdp(i)=tunes.outputs.Qy;
             end
@@ -524,14 +542,15 @@ switch mode
             Rin(3,:) = aygridydp';
             Rin(5,:) = dpgridydp';
             tunes = calcTune(ACHRO,Rin,'nturns',nturns,'method',method, ...
-                             'minampx',minampx,'minampy',minampy);
+                             'minampx',minampx,'minampy',minampy,...
+                             'fixturns','verbose',verbosef);
             Qxgridydp=tunes.outputs.Qx;
             Qygridydp=tunes.outputs.Qy;
         else
             parfor i=1:npd*npy
                 tunes = calcTune(ACHRO,[0.0 0.0 aygridydp(i) 0.0 dpgridydp(i) 0.0]',...
                         'nturns',nturns,'method',method,'minampx', minampx,...
-                        'minampy',minampy);
+                        'minampy',minampy,'fixturns','verbose',verbosef);
                 Qxgridydp(i)=tunes.outputs.Qx;
                 Qygridydp(i)=tunes.outputs.Qy;
             end
@@ -565,7 +584,7 @@ switch mode
             Rin(5,:) = dp;
             tunes = calcTune(ACHRO,Rin,'nturns',nturns,'method',method, ...
                              'minampx',minampx,'minampy',minampy,...
-                             'nsets',2);
+                             'nsets',2,'fixturns','verbose',verbosef);
             Qxgridxy=tunes.outputs.Qx(:,1);
             Qygridxy=tunes.outputs.Qy(:,1);
             Qxgridxy2=tunes.outputs.Qx(:,2);
@@ -574,7 +593,8 @@ switch mode
             parfor i=1:npx*npy
                 tunes = calcTune(ACHRO,[axdifxy(i) 0.0 aydifxy(i) 0.0 dp 0.0]',...
                             'nturns',nturns,'method',method,'minampx', minampx,...
-                            'minampy',minampy,'nsets',2);
+                            'minampy',minampy,'nsets',2,'fixturns',...
+                            'verbose',verbosef);
                 Qxgridxy(i)=tunes.outputs.Qx(1);
                 Qygridxy(i)=tunes.outputs.Qy(1);
                 Qxgridxy2(i)=tunes.outputs.Qx(2);
@@ -610,7 +630,7 @@ switch mode
             Rin(5,:) = dpdifxdp';
             tunes = calcTune(ACHRO,Rin,'nturns',nturns,'method',method, ...
                              'minampx',minampx,'minampy',minampy,...
-                             'nsets',2);
+                             'nsets',2,'fixturns','verbose',verbosef);
             Qxgridxdp=tunes.outputs.Qx(:,1);
             Qygridxdp=tunes.outputs.Qy(:,1);
             Qxgridxdp2=tunes.outputs.Qx(:,2);
@@ -619,7 +639,8 @@ switch mode
             parfor i=1:npd*npx
                 tunes = calcTune(ACHRO,[axdifxdp(i) 0.0 0.0 0.0 dpdifxdp(i) 0.0]',...
                         'nturns',nturns,'method',method,'minampx', minampx,...
-                        'minampy',minampy,'nsets',2);
+                        'minampy',minampy,'nsets',2,'fixturns',...
+                        'verbose',verbosef);
                 Qxgridxdp(i)=tunes.outputs.Qx(1);
                 Qygridxdp(i)=tunes.outputs.Qy(1);
                 Qxgridxdp2(i)=tunes.outputs.Qx(2);
@@ -656,7 +677,7 @@ switch mode
             Rin(5,:) = dpdifydp';
             tunes = calcTune(ACHRO,Rin,'nturns',nturns,'method',method, ...
                              'minampx',minampx,'minampy',minampy,...
-                             'nsets',2);
+                             'nsets',2,'fixturns','verbose',verbosef);
             Qxgridydp=tunes.outputs.Qx(:,1);
             Qygridydp=tunes.outputs.Qy(:,1);
             Qxgridydp2=tunes.outputs.Qx(:,2);
@@ -665,7 +686,8 @@ switch mode
             parfor i=1:npd*npy
                 tunes = calcTune(ACHRO,[0.0 0.0 aydifydp(i) 0.0 dpdifydp(i) 0.0]',...
                         'nturns',nturns,'method',method,'minampx', minampx,...
-                    'minampy',minampy,'nsets',2);
+                    'minampy',minampy,'nsets',2,'fixturns',...
+                    'verbose',verbosef);
                 Qxgridydp(i)=tunes.outputs.Qx(1);
                 Qygridydp(i)=tunes.outputs.Qy(1);
                 Qxgridydp2(i)=tunes.outputs.Qx(2);
@@ -685,7 +707,8 @@ switch mode
          Rin(5,:)  = dps;
          [~,dp0pos] = min(abs(dps));
          tunes     = calcTune(ACHRO,Rin,'nturns',nturns,...
-                    'method',method,'minampx', minampx,'minampy',minampy);
+                    'method',method,'minampx', minampx,'minampy',minampy,...
+                    'fixturns','verbose',verbosef);
          Qxdp      = tunes.outputs.Qx;
          dQxdp     = Qxdp - Qxdp(dp0pos);
          Qxdpfrac  = Qxdp - fix(Qxdp);
