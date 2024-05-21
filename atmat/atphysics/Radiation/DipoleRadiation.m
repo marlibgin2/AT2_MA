@@ -7,5 +7,5 @@ function [I1,I2,I3,I4,I5,I6,Iv] = DipoleRadiation(ring,lindata)
 % R.H. Helm, M.J. Lee, P.L. Morton and M. Sands
 % SLAC-PUB-1193, March 1973
 
-[I1,I2,I3,I4,I5,I6,Iv] = ElementRadiation(ring,lindata,'UseQuadrupole', false);
+[I1,I2,I3,I4,I5,I6,Iv] = ElementRadiation(ring,lindata,'UseQuadrupoles', false);
 
