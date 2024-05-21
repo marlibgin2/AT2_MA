@@ -50,3 +50,9 @@ athelp.mat
 
 # octave files
 octave-workspace
+
+# MATLAB autosave files
+*.asv
+
+# Auto-generated Contents.m files
+Contents.m
