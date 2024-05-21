@@ -30,6 +30,7 @@ function varargout = atsummary(varargin)
 %
 %  Written by Eugene Tan
 %  Revised by Laurent S. Nadolski
+%  2024/02/16 PFT : Added values to output structure etax, betax, betay
 
 global THERING %#ok<GVMIS>
 
@@ -90,6 +91,7 @@ global THERING %#ok<GVMIS>
         smm.compactionFactor = alphac;
         smm.etac = etac;
         smm.tunes = ringdata.tune;
+        smm.Itunes=[TD(length(TD)).mu(1)/(2*pi), TD(length(TD)).mu(2)/(2*pi)];
         smm.chromaticity = ringdata.chromaticity;
 
 
@@ -137,6 +139,10 @@ global THERING %#ok<GVMIS>
         etaprimex = TD(1).Dispersion(2);
         etaprimey = TD(1).Dispersion(4);
 
+        smm.etax = etax;
+        smm.etay = etay;
+        smm.beta0 = [bx by];
+
         if DisplayFlag
             SeparatorString = '   ******************************************************************\n';
             fprintf('\n');
@@ -147,6 +153,7 @@ global THERING %#ok<GVMIS>
             fprintf('   Revolution time: \t\t% 4.5f [ns] (%4.5f [MHz]) \n', smm.revTime*1e9,smm.revFreq*1e-6);
             fprintf('   Betatron tune H: \t\t% 4.5f (%4.5f [kHz])\n', smm.tunes(1),smm.tunes(1)/smm.revTime*1e-3);
             fprintf('                 V: \t\t% 4.5f (%4.5f [kHz])\n', smm.tunes(2),smm.tunes(2)/smm.revTime*1e-3);
+            fprintf('   Full tunes H/V \t\t %4.5f %4.5f\n', smm.Itunes(1),smm.Itunes(2));
             fprintf('   Momentum Compaction Factor: \t% 4.5e\n', smm.compactionFactor);
             fprintf('   Chromaticity H: \t\t%+4.5f\n', smm.chromaticity(1));
             fprintf('                V: \t\t%+4.5f\n', smm.chromaticity(2));
