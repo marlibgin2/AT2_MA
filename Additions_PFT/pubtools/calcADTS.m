@@ -70,14 +70,16 @@ function adts=calcADTS(varargin)
 % adts = calcADTS(RING,'xmin',-0.007,'xmax',0.004,'ymin',0.0,'ymax',0.002,'plane','grid');
 
 %% History
-% 2024/03/17: first version PFT.
-% 2024/03/23: added possibility of negative amplitudes, documentation
+% PFT 2024/03/17: first version.
+% PFT 2024/03/23: added possibility of negative amplitudes, documentation
 %             improvements. Changed output argument to structure. Allow
 %             plot of changes of tunes, rather then the tunes.
-% 2024/03/31: added possibiilty of calculation on a 2d grid of points.
+% PFT 2024/03/31: added possibiilty of calculation on a 2d grid of points.
 %             added furtehr plot options from plotADTS
-% 2024/04/14: adapted to new version of atnuampl - additional input parameter
+% PFT 2024/04/14: adapted to new version of atnuampl - additional input parameter
 %             is minampl.
+% PFT 2024/05/24: updated use of verbose flag in call to 
+%             findtune
 %
 %% Input argument parsing
 [RING] = getargs(varargin,[]);
@@ -185,8 +187,8 @@ switch plane
         offs=[nbper -nbper];
         
         p1=ringpass(RING,Rin,nturns)-orbit(:,ones(1,npx*npy*nturns));
-        tunetrack=[findtune(reshape(p1(1,:),npx*npy,nturns)',method);...
-        findtune(reshape(p1(3,:),npx*npy,nturns)',method)]';
+        tunetrack=[findtune(reshape(p1(1,:),npx*npy,nturns)',method,'verbose',false);...
+        findtune(reshape(p1(3,:),npx*npy,nturns)',method),'verbose',false]';
         [~,k]=min([fractune0-tunetrack(1,:); 1-fractune0-tunetrack(1,:)]);
         np=offs(k);
         offset=round(tune0-np.*tunetrack(1,:));

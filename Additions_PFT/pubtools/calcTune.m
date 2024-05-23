@@ -63,18 +63,20 @@ function tunes=calcTune(RING,Rin,varargin)
 
 
 %% History
-% PFT 2024/04/28 First version, based on atnuampl with modifications by
-%                M.Sjöström
-% PFT 2024/05/03 Added optional flag for enabling/suppressing verbose output
-% PFT 2024/05/04 Added tune calcualtion for two consecutive sets of turns 
+% PFT 2024/04/28: First version, based on atnuampl with modifications by
+%                 M.Sjöström
+% PFT 2024/05/03: Added optional flag for enabling/suppressing verbose output
+% PFT 2024/05/04: Added tune calcualtion for two consecutive sets of turns 
 %                - Useful for tune  diffusion map  calculations
-% PFT 2024/05/09 Added removal od DC component in NAFF calculation.
-% PFT 2024/05/10 Added handling of cases where the first tracked particle
-%                is lost
-% PFT 2024/05/19 Added improved handling of q/1-q ambiguity for 
-%                NAFF calculation method. Added check the n. turns 
-%                is larger than 66 for NAFF. Added optional flag 
-%                for fixing n. of turns, even for NAFF.
+% PFT 2024/05/09: Added removal od DC component in NAFF calculation.
+% PFT 2024/05/10: Added handling of cases where the first tracked particle
+%                 is lost
+% PFT 2024/05/19: Added improved handling of q/1-q ambiguity for 
+%                 NAFF calculation method. Added check the n. turns 
+%                 is larger than 66 for NAFF. Added optional flag 
+%                 for fixing n. of turns, even for NAFF.
+% PFT 2024/05/24: Updated use of verbose flag in call to 
+%                 findtune
 %                
 
 %% Input argument parsing
@@ -189,13 +191,9 @@ for j=1:nsets
     end
   else
 
-    if (verbosef)
-        tunetrackj=[findtune(reshape(p1(1,1+npt*nturns*(j-1):npt*nturns*j),npt,nturns)','verbose',method);...
-                   findtune(reshape(p1(3,1+npt*nturns*(j-1):npt*nturns*j),npt,nturns)','verbose',method)]';
-    else
-        tunetrackj=[findtune(reshape(p1(1,1+npt*nturns*(j-1):npt*nturns*j),npt,nturns)',method);...
-                   findtune(reshape(p1(3,1+npt*nturns*(j-1):npt*nturns*j),npt,nturns)',method)]';
-    end
+    tunetrackj=[findtune(reshape(p1(1,1+npt*nturns*(j-1):npt*nturns*j),npt,nturns)',method,'verbose',verbosef);...
+                findtune(reshape(p1(3,1+npt*nturns*(j-1):npt*nturns*j),npt,nturns)',method,'verbose',verbosef)]';
+    
     tunetrackm = [tunetrackm tunetrackj];
   end
 end
