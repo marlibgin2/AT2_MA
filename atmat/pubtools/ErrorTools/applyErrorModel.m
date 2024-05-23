@@ -533,7 +533,7 @@ end
             % PolynomB(1) must be adjusted accordingly
             if isfield(RING{mi(ii)},'BendingAngle')
                 RING{mi(ii)}.PolynomB = RING{mi(ii)}.PolynomB .* Scaling;
-                RING{mi(ii)}.PolynomB(1) = RING{mi(ii)}.PolynomB(1) - (RING{mi(ii)}.BendingAngle .* Scaling);
+                RING{mi(ii)}.PolynomB(1) = RING{mi(ii)}.PolynomB(1) - (RING{mi(ii)}.BendingAngle .* (Scaling-1));
             else
                 RING{mi(ii)}.PolynomB = RING{mi(ii)}.PolynomB .* Scaling;
             end

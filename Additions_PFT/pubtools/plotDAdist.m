@@ -62,20 +62,20 @@ end
 
 if (plotorbrmsf)
    figure; 
-   plot(DAdist.outputs.orb0_stds(1,:)*1000);
+   plot(DAdist.outputs.orb0_stds(1,2:end)*1000,'-o');
    xlabel('seed #');
    ylabel('x/y[mm]');
    hold;
-   plot(DAdist.outputs.orb0_stds(3,:)*1000);
+   plot(DAdist.outputs.orb0_stds(3,2:end)*1000,'-o');
    legend({'X','Y'});
    title('rms orbit before correction');
 
    figure; 
-   plot(DAdist.outputs.orb_stds(1,:)*1000);
+   plot(DAdist.outputs.orb_stds(1,2:end)*1000,'-o');
    xlabel('seed #');
    ylabel('x/y[mm]');
    hold;
-   plot(DAdist.outputs.orb_stds(3,:)*1000);
+   plot(DAdist.outputs.orb_stds(3,2:end)*1000,'-o');
    legend({'X','Y'});
    title('rms orbit after correction');
 end
