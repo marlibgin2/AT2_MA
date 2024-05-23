@@ -1,4 +1,6 @@
 function smm = atsummary_fast(ring,isdipole)
+
+
 %    e_mass=510999.06450473;	% eV
 %    e_radius= 2.81794091754E-15;                  % m
 %    hbar=197.327054064; % MeV*fm

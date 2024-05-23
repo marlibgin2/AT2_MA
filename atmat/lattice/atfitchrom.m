@@ -1,5 +1,5 @@
 function newring=atfitchrom(ring,varargin)
-%ATFITCHROM Fit chromaticites by scaling 2 sextupole families
+%ATFITCHROM Fit chromaticites by adjusting 2 sextupole families
 %
 % NEWRING = ATFITCHROM(RING,NEWCHROM,SEXTFAMILY1,SEXTFAMILY2)
 % NEWRING = ATFITCHROM(RING,DPP,NEWCHROM,SEXTFAMILY1,SEXTFAMILY2)

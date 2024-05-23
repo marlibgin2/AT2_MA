@@ -33,13 +33,20 @@ function values = atgetfieldvalues(ring,varargin)
 def=(length(vargs)==length(varargin));  % No default value specified
 
 if islogical(vargs{1}) || isnumeric(vargs{1})
-    values=atgetfield(ring(vargs{1}),vargs{2:end});
-else
-    values=atgetfield(ring,vargs{:});
+    index = vargs{1}; vargs = vargs(2:end);
 end
 
-    function values = atgetfield(line,varargin)
-        [values,isnumscal,isok]=cellfun(@scan,line(:),'UniformOutput',false);
+% if numel(vargs) > 1
+%     pos = vargs{2:end};
+% else
+%     pos = {':'};
+% end
+
+        if exist('index','var')
+            [values,isnumscal,isok]=cellfun(@scan,ring(index),'UniformOutput',false);
+        else
+            [values,isnumscal,isok]=cellfun(@scan,ring,'UniformOutput',false);
+        end
         isok=cell2mat(isok);
         isnumscal=cell2mat(isnumscal);
         if all(isnumscal)
@@ -47,17 +54,30 @@ end
         elseif all(~isnumscal(isok)) && def
             values(~isok)={[]};
         end
-        
+
+        % NB! Any checks, filtering, etc. that can be moved out from this
+        % function the better as it will be called a LOT!
         function [val,isnumscal,isok]=scan(el)
-            try
-                val=getfield(el,varargin{:});
+            if isfield(el,vargs{1})
+%                     val = el.(vargs{1})(vargs{2:end});  % NB! Calling with dynamic field names is faster but less flexible.
+                val=getfield(el,vargs{:});   
                 isok=true;
-            catch
+            else
                 val=default_val;
                 isok=false;
             end
+
+% NB! try/catch statements are expensive and are to be avoided, especially
+% in low-level functions likely to be called thousands of times!
+%             try
+%                 val=getfield(el,varargin{:});
+%                 isok=true;
+%             catch
+%                 val=default_val;
+%                 isok=false;
+%             end
             isnumscal=isnumeric(val) && isscalar(val);
         end
-    end
+   
 
 end

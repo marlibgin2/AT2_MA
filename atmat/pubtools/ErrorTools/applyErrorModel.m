@@ -258,8 +258,6 @@ if GirderFlag
         end
         iFound = filterByGirder(girderType);
 
-
-
         for p = 1:numel(iFound)
             % Depending on the girder type there may be different error magnitudes
             generateGirderMisalignment(index_girderelements{n}, ERRORMODEL.Girder{iFound(p)}.Random{1}, ERRORMODEL.Girder{iFound(p)}.Systematic{1});
@@ -271,11 +269,6 @@ end
         iFound = cellfun(@(x) any(strcmpi(x.ID, girderType)), ERRORMODEL.Girder);
         iFound = find(iFound);
     end
-
-
-
-
-
 
 
 
@@ -515,6 +508,7 @@ end
             RING{mi(ii)}.PolynomB = padZeros(RING{mi(ii)}.PolynomB,maxOrder) + RING{mi(ii)}.(MainComponentField)(MainComponentIndex) * Et.PolynomB;
             RING{mi(ii)}.PolynomA = padZeros(RING{mi(ii)}.PolynomA,maxOrder) + RING{mi(ii)}.(MainComponentField)(MainComponentIndex) * Et.PolynomA;
             RING{mi(ii)}.MaxOrder = maxOrder - 1;
+            RING{mi(ii)}.K = RING{mi(ii)}.PolynomB(2);  % Present for backwards compatibility
         end
 
     end
@@ -533,10 +527,11 @@ end
             % PolynomB(1) must be adjusted accordingly
             if isfield(RING{mi(ii)},'BendingAngle')
                 RING{mi(ii)}.PolynomB = RING{mi(ii)}.PolynomB .* Scaling;
-                RING{mi(ii)}.PolynomB(1) = RING{mi(ii)}.PolynomB(1) - (RING{mi(ii)}.BendingAngle .* (Scaling-1));
+                RING{mi(ii)}.PolynomB(1) = RING{mi(ii)}.PolynomB(1) - (RING{mi(ii)}.BendingAngle .* (Scaling - 1));
             else
                 RING{mi(ii)}.PolynomB = RING{mi(ii)}.PolynomB .* Scaling;
             end
+            RING{mi(ii)}.K = RING{mi(ii)}.PolynomB(2);  % Present for backwards compatibility
             RING{mi(ii)}.PolynomA = RING{mi(ii)}.PolynomA .* Scaling;
         end
     end
@@ -567,8 +562,6 @@ end
         end
 
     end
-
-
 
 
 %% Assign outputs

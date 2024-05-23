@@ -1,23 +1,22 @@
 function EM = errormodel_DDRchallenging(varargin)
-% Generates error model structure for use with "applyErrorModel"
+% ERRORMODEL_DDRCHALLENGING Generates error model structure corresponding to the MAX IV DDR
+%
 %% Inputs 
 % Optional arguments these are either scaling factors that multiply the 
-%         errors defined in the challenging model defined below or (in the
-%         case of strran) a relative excitation error
+%         errors defined in the chalenging model defined below or (in the
+%         case of strran) a relative execitation error
 %
 % gdran   = girder random alignment scaling factor, default = 1.0.
 % mgalran = individual magnet random alignment scaling factor, defalt = 1.0.
 % mulsys  = systematic magnet multipole error scaling factor, default = 1.0
 % mulran  = random multipole error scaling factor, default = 1.0
 % bpmran  = random bpm alignment error scaling factor, default = 1.0
-% strran  = random magnet strength relative error, default = 0.02%
+% strran  = random magnet strength relative error, default = 0.0
+
 %% Usage examples
-% ErrorModel=errormodel_DDRchallenging('gdran',0.0,'mgalran',1.0,'mulsys',0.0,'mulran',0.0,'strran',2E-4,'bpmran',0.0);
+% ErrorModel=errormodel_standard('gdran',0.0,'mgalran',1.0,'mulsys',0.0,'mulran',0.0,'strran',0.0,'bpmran',0.0);
 %
 
-%% History
-% 2024/05/16 : added input arguments as scalingf factors for each type of
-%              error
 %% Input argument parsing
 
 gdran      = getoption(varargin,'gdran',1);
@@ -25,13 +24,11 @@ mgalran    = getoption(varargin,'mgalran',1);
 mulsys     = getoption(varargin,'mulsys',1);
 mulran     = getoption(varargin,'mulran',1);
 bpmran     = getoption(varargin,'bpmran',1);
-strran     = getoption(varargin,'strran',2E-4);
+strran     = getoption(varargin,'strran',1);
 
 
 
 %% Girder error definitions
-% Error model used is first based on girder name, which will be a
-
 
 % Generic girder errors
 Girder{1}.ID = {'Baseline','M1','M2','U1','U2','U3','U4','U5'};
@@ -69,8 +66,8 @@ DDR_ChallengingMachiningTolerances.Systematic = struct( ...
     'Heave', 0, ...
     'Surge', 0);
 DDR_ChallengingMachiningTolerances.Random = struct( ...
-    'Pitch', 0*mgalran, ...
-    'Yaw', 0*mgalran, ...
+    'Pitch', 0*mgalran , ...
+    'Yaw', 0*mgalran , ...
     'Roll', 0.1e-3*mgalran, ...
     'Sway', 10e-6*mgalran, ...
     'Heave', 10e-6*mgalran, ...
@@ -81,7 +78,7 @@ DDR_ChallingingBPMCalibrationAccuracy.Random = struct(...
     'Heave', 10e-6*bpmran);
 
 % BASELINE FIELD ERROR, MAIN COMPONENT
-StandardFieldError = strran;   % DDR assumes a field error of 0.02% RMS across the board, truncated at 2 sigma, for the main components
+StandardFieldError = 0.02e-2;   % DDR assumes a field error of 0.02% RMS across the board, truncated at 2 sigma, for the main components
 
 
 % GENERIC QUADRUPOLE MODEL
@@ -94,16 +91,16 @@ Magnet{1}.Random{1}         =   DDR_ChallengingMachiningTolerances.Random;
 PolB(1,[2 3 4 6 10]) = [2.5, 2.8, 1.9, 1.3, 0.3]*1e-4*mulran;
 PolA(1,[3,4]) = [2.9, 1.4]*1e-4*mulran;
 Magnet{end}.Random{2} = struct( ...
-    'PolynomB', PolB, ...     % All values are RMS, and specify variation of and relative to the main component
-    'PolynomA', PolA, ...     % All values are RMS, and specify variation of and relative to the main component
-    'Scaling', 1 + StandardFieldError);            % Multiplicative factor, useful for current errors
+    'PolynomB', PolB*mulran, ...     % All values are RMS, and specify variation of and relative to the main component
+    'PolynomA', PolA*mulran, ...     % All values are RMS, and specify variation of and relative to the main component
+    'Scaling', 1 + StandardFieldError*strran);            % Multiplicative factor, useful for current errors
 
 % Systematic errors, incl. multipoles
 PolB(1,[6 10 14]) = [0.5, 0.5, 0.1]*1e-4*mulsys;
 PolA = [0,0,0,0]*mulsys;
 Magnet{end}.Systematic{2} = struct( ...
-    'PolynomB', PolB, ...     % All values are RMS
-    'PolynomA', PolA, ...     % All values are RMS
+    'PolynomB', PolB*mulsys, ...     % All values are RMS
+    'PolynomA', PolA*mulsys, ...     % All values are RMS
     'Scaling', 1);            % Multiplicative factor, useful for current errors
 
 
@@ -117,15 +114,15 @@ Magnet{end}.Random{1}       =   DDR_ChallengingMachiningTolerances.Random;
 PolB = zeros(1,21); PolB([3 4 5 9 15]) = [5.0, 5.2, 3.5, 80, 50]*1e-4*mulran;
 PolA = zeros(1,21); PolA(4) = [4.9]*1e-4*mulran;
 Magnet{end}.Random{2} = struct( ...
-    'PolynomB', PolB, ...     % All values are RMS, and specify variation of and relative to the main component
-    'PolynomA', PolA, ...     % All values are RMS, and specify variation of and relative to the main component
-    'Scaling', 1 + StandardFieldError);          % Multiplicative factor, useful for current errors
+    'PolynomB', PolB*mulran, ...     % All values are RMS, and specify variation of and relative to the main component
+    'PolynomA', PolA*mulran, ...     % All values are RMS, and specify variation of and relative to the main component
+    'Scaling', 1 + StandardFieldError*strran);          % Multiplicative factor, useful for current errors
 
 PolB = zeros(1,21); PolB([9 15 21]) = 0.5e-4*mulsys;
 PolA = zeros(1,21)*mulsys;
 Magnet{end}.Systematic{2} = struct( ...
-    'PolynomB', PolB, ...     % All values are RMS
-    'PolynomA', PolA, ...     % All values are RMS
+    'PolynomB', PolB*mulsys, ...     % All values are RMS
+    'PolynomA', PolA*mulsys, ...     % All values are RMS
     'Scaling', 1);          % Multiplicative factor, useful for current errors
 
 
@@ -139,7 +136,7 @@ Magnet{end}.Random{1}       =   DDR_ChallengingMachiningTolerances.Random;
 Magnet{end}.Random{2} =     struct( ...
     'PolynomB', []*mulran, ...   % All values are RMS
     'PolynomA', []*mulran, ...     % All values are RMS
-    'Scaling', 1  + StandardFieldError);          % Multiplicative factor, useful for current errors
+    'Scaling', 1  + StandardFieldError*strran);          % Multiplicative factor, useful for current errors
 
 Magnet{end}.Systematic{2} = struct( ...
     'PolynomB', []*mulsys, ...   % All values are RMS
@@ -159,7 +156,7 @@ Magnet{end}.Random{1}       =   DDR_ChallengingMachiningTolerances.Random;
 Magnet{end}.Random{2} = struct( ...
     'PolynomB', []*mulran, ...     % All values are RMS, and specify variation of and relative to the main component
     'PolynomA', []*mulran, ...     % All values are RMS, and specify variation of and relative to the main component
-    'Scaling', 1 + StandardFieldError);          % Multiplicative factor, useful for current errors
+    'Scaling',  1 + StandardFieldError*strran);          % Multiplicative factor, useful for current errors
 
 % PolB = zeros(1,21); PolB([9 15 21]) = 0.5e-4;
 % PolA = zeros(1,21);

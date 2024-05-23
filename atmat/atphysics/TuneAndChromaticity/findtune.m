@@ -2,18 +2,20 @@ function [tune,spectrum]=findtune(pos,method,varargin)
 %FINDTUNE   get the tune value from turn by turn positions
 %
 %TUNE=FINDTUNE(POS,METHOD)
+%TUNE=FINDTUNE(...,'verbose',VALUE)
 %
 %POS:       Tune-by-turn particle position
 %METHOD:    Method for tune determination:
 %               1: Highest peak in fft
 %               2: Interpolation on fft results
 %               3: Windowing + interpolation
+%VALUE:     {Optional, default true} boolean flag
 %
 %[TUNE,SPECTRUM]=FINDTUNE(...) Also returns the fft
-% PFT 2024/05/03 added optional flag to control verbose output
 
 
-verbosef = any(strcmpi(varargin,'verbose'));
+verbosef = getoption(varargin,'verbose',true);
+% verbosef = any(strcmpi(varargin,'verbose'));
 if nargin < 2, method=3; end
 
 nturns=size(pos,1);

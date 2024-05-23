@@ -1,11 +1,11 @@
-function varargout=atnuampl(ring,ampl,xz,varargin)
+function varargout=atnuampl(ring,ampl,xy,varargin)
 %ATNUAMPL	computes tune shift with amplitude
-%[NUX,NUZ]=ATNUAMPL(RING,AMPLITUDE)
-%[NUX,NUZ]=ATNUAMPL(RING,AMPLITUDE,1)
+%[NUX,NUY]=ATNUAMPL(RING,AMPLITUDE)
+%[NUX,NUY]=ATNUAMPL(RING,AMPLITUDE,1)
 %
 %	Computes tunes for the specified horizontal amplitudes
 %
-%[NUX,NUZ]=ATNUAMPL(RING,AMPLITUDE,3)
+%[NUX,NUY]=ATNUAMPL(RING,AMPLITUDE,3)
 %
 %	Computes tunes for the specified vertical amplitudes
 %
@@ -37,7 +37,7 @@ function varargout=atnuampl(ring,ampl,xz,varargin)
 
 
 lab={'x^2','p_x^2','z^2','p_z^2'};
-if nargin < 3, xz=1; end
+if nargin < 3, xy=1; end
 [nturns,varargs]=getoption(varargin,'nturns',256);
 [method,varargs]=getoption(varargs,'method',3);
 [orbit,varargs]=getoption(varargs,'orbit',[]);
@@ -70,9 +70,9 @@ offs=[nbper -nbper];
 siza=size(ampl);
 nampl=prod(siza);
 p0=repmat(minAmp*[1;0;1;0;0;0], 1,nampl); % specifies minimum amplitude
-%p0(xz,:)=max(p0(xz,:),ampl(:)');
+%p0(xy,:)=max(p0(xy,:),ampl(:)');
 ampl(ampl==0)=minAmp;
-p0(xz,:)=ampl;
+p0(xy,:)=ampl;
 p0=p0+orbit(:,ones(1,nampl));
 p1=ringpass(ring,p0,nturns)-orbit(:,ones(1,nampl*nturns));
 if method == 4
@@ -119,8 +119,8 @@ if method == 4
     end
      
 else
-    tunetrack=[findtune(reshape(p1(1,:),nampl,nturns)',method);...
-        findtune(reshape(p1(3,:),nampl,nturns)',method)]';
+    tunetrack=[findtune(reshape(p1(1,:),nampl,nturns)',method,'verbose',false);...
+        findtune(reshape(p1(3,:),nampl,nturns)',method,'verbose',false)]';
 end
 [~,k]=min([fractune0-tunetrack(1,:); 1-fractune0-tunetrack(1,:)]);
 np=offs(k);
@@ -132,7 +132,7 @@ else
     inttunes=floor(tune0);
     plot((ampl.*ampl)',tunetrack-inttunes(ones(nampl,1),:),'o-',varargs{:});
     legend('\nu_x','\nu_z');
-    xlabel(lab{xz});
+    xlabel(lab{xy});
     ylabel('\nu');
     grid on
 end
