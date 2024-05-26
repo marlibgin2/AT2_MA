@@ -31,7 +31,7 @@ isdipoleUC = LatticeOptData.isdipoleUC;
 scan_fams=LatticeOptData.scan_fams;
 try
   [UC_T, its, penalty, ftunes]=fittuneRS(UC,uctunes,scan_fams{3},...
-                               scan_fams{4},nit, TolTunes,'No');
+                               scan_fams{4},'maxits', nit, 'Tol', TolTunes,'UseIntegerPart', false);
    rp=atsummary_fast(UC_T,isdipoleUC); 
 %   rp=atsummary(UC_T); 
    

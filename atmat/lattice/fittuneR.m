@@ -1,5 +1,5 @@
 function newring=fittuneR(ring,varargin)
-% Modified version of attfittune which implments only a fraction of the
+% Modified version of attfittune which implements only a fraction of the
 % proposed quadrupole strength correction
 % This is called iteratively in order to stabilize larger tune shifts.
 %
@@ -37,16 +37,16 @@ function newring=fittuneR(ring,varargin)
 %
 % See also ATFITCHROM
 
-fra=0.5; %fraction of quadrupole strength correction to be applied
 
 newargs=getdparg(varargin);
 newring=wrapper6d(ring,@fittune,newargs{:});
 
     function newring=fittune(ring,~,varargin)
-        [UseIntegerPart,varargs]=getflag(varargin,'UseIntegerPart');
+        [UseIntegerPart,varargs]=getoption(varargin,'UseIntegerPart',true);
         [delta,varargs]=getoption(varargs,'KStep',1.0e-6);
+        [frac,varargs]=getoption(varargs,'frac',0.5); %fraction of quadrupole strength correction to be applied
         [newtunes,famname1,famname2,varargs]=getargs(varargs,[],[],[]);
-
+        
         idx1=varelem(ring,famname1);
         idx2=varelem(ring,famname2);
 
@@ -66,18 +66,20 @@ newring=wrapper6d(ring,@fittune,newargs{:});
 
         % Compute initial tunes before fitting
         tunes = gettune(ring,varargs{:});
+         
 
         % Take Derivative
         tunes1 = gettune(setqp(ring,idx1,kl1,delta),varargs{:});
         tunes2 = gettune(setqp(ring,idx2,kl2,delta),varargs{:});
+        
 
         %Construct the Jacobian
         J = [tunes1-tunes tunes2-tunes]/delta;
         dK = J\(newtunes(:)-tunes);
 
         % Apply new strengths
-        newring = setqp(ring,idx1,kl1,dK(1)*fra);
-        newring = setqp(newring,idx2,kl2,dK(2)*fra);
+        newring = setqp(ring,idx1,kl1,dK(1)*frac);
+        newring = setqp(newring,idx2,kl2,dK(2)*frac);
 
         function ring2=setqp(ring,idx,k0,delta)
             k=k0*(1+delta);

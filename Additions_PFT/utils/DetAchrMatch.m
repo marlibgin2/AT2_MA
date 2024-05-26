@@ -241,7 +241,7 @@ if(not(isnan(tunesuc0(1)))&&not(isnan(tunesuc0(2)))&&not(isnan(tunesuc(1)))&&not
     end
     
     try
-        [UC_tune, its, penaltyuctune, ftunes]= fittuneRS(UC, tunesuc, uctune_fams{1}, uctune_fams{2}, nittune, TolTune, 'N');
+        [UC_tune, its, penaltyuctune, ftunes]= fittuneRS(UC, tunesuc, uctune_fams{1}, uctune_fams{2},'maxits',nittune,'Tol',TolTune,'UseIntegerPart',false);
         Penalty = sqrt(Penalty^2 + penaltyuctune^2);
         if (verbosef)
             fprintf('Unit cell tunes fit to[ %8.5f %8.5f ]\n',...
@@ -526,7 +526,7 @@ if(fittunef)
      end
     
      [ACHRO_fit, its, penalty_tune]= fittuneRS(ACHRO_fit, [qxfit qyfit],...
-         ringtune_fams{1}, ringtune_fams{2}, nittune, TolTune,'Y');
+         ringtune_fams{1}, ringtune_fams{2}, 'maxits', nittune, 'Tol', TolTune,'UseIntegerPart', true);
     if (verbosef)
         fprintf('Period Tune fit complete with penalty = %6.2e after %5d iterations \n', penalty_tune, its);
     end

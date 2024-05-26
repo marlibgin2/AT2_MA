@@ -496,7 +496,7 @@ if(fitucf&&not(isnan(tunesuc0(1)))&&not(isnan(tunesuc0(2))))
         fprintf('Fitting unit cell tunes from %4.3f %4.3f to %4.3f %4.3f \n',...
              tunesuc0(1), tunesuc0(2), tunesuc(1), tunesuc(2) );
     end
-[UC_tune, its, penaltyuctune, ftunes]= fittuneRS(UC, tunesuc, uctune_fams{1}, uctune_fams{2}, nittune, TolTune, 'N');
+[UC_tune, its, penaltyuctune, ftunes]= fittuneRS(UC, tunesuc, uctune_fams{1}, uctune_fams{2}, 'maxits', nittune, 'Tol', TolTune, 'UseIntegerPart', false);
     try
         rpuc = atsummary(UC_tune);
         tunesuc1  = rpuc.tunes;
@@ -732,8 +732,8 @@ if(fittunef)
      end
     
     [LAT_tune, its, penalty_tune]= fittuneRS(LAT_bet, [qxfit qyfit],...
-         ringtune_fams{1}, ringtune_fams{2}, LatticeOptData.nittune, ...
-         LatticeOptData.TolTune,'Y');
+         ringtune_fams{1}, ringtune_fams{2}, 'maxits', LatticeOptData.nittune, ...
+         'Tol', LatticeOptData.TolTune,'UseIntegerPart',true);
     if (verbose)
         fprintf('Period Tune fit complete with penalty = %6.2e after %5d iterations \n', penalty_tune, its);
     end
@@ -921,8 +921,8 @@ if (tunescanf)
             try
                 [LAT_scan, its, penalty_tune]= fittuneRS(LAT_scan, [qxfit qyfit],...
                                         ringtune_fams{1}, ringtune_fams{2},...
-                                        LatticeOptData.nittune,...
-                                        LatticeOptData.TolTune,'Y');
+                                        'maxits', LatticeOptData.nittune,...
+                                        'Tol', LatticeOptData.TolTune,'UseIntegerPart', true);
                 if (verbose)
                     fprintf('Ring Tunes fit to [ %4.2f , %4.2f ] with penalty = %6.2e after %5d iterations \n', Qxfit, Qyfit, penalty_tune, its);
                 end

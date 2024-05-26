@@ -24,7 +24,7 @@ function tunes=calcTune(RING,Rin,varargin)
 %        2: Interpolation on fft results
 %        3: Windowing + interpolation (default)
 %        4: NAFF
-%   verbose: if true, turns on verbose output
+% verbose : defines level of verbose output, default=0, i.e. no output
 %
 %% Optional flags
 % fixturns : maintains input number of turns even for NAFF
@@ -77,6 +77,7 @@ function tunes=calcTune(RING,Rin,varargin)
 %                 for fixing n. of turns, even for NAFF.
 % PFT 2024/05/24: Updated use of verbose flag in call to 
 %                 findtune
+% PFT 2024/05/26: Updted the handlig of verbose output
 %                
 
 %% Input argument parsing
@@ -85,7 +86,7 @@ nsets     = getoption(varargin,'nsets', 1);
 minampx   = getoption(varargin,'minampx',30E-6);
 minampy   = getoption(varargin,'minampy',30E-6);
 method    = getoption(varargin,'method',3);
-verbosef  = getoption(varargin,'verbose',false);
+verbosef  = getoption(varargin,'verbose',0);
 fixturnsf = any(strcmpi(varargin,'fixturns'));
 
 tunes.inputs.RING      = RING;
@@ -132,7 +133,7 @@ for j=1:nsets
         particleTurns = (n+npt*nturns*(j-1)):npt:(npt*nturns+npt*nturns*(j-1)); 
         xmean = mean(p1(1,particleTurns));
         ymean = mean(p1(3,particleTurns));
-        if (verbosef)
+        if (verbosef>1)
             [nux, amplx, ~] = calcnaff(p1(1,particleTurns)-xmean,p1(2,particleTurns),'Debug','Display');
             [nuy, amply, ~] = calcnaff(p1(3,particleTurns)-ymean,p1(4,particleTurns),'Debug','Display');
         else
@@ -191,8 +192,8 @@ for j=1:nsets
     end
   else
 
-    tunetrackj=[findtune(reshape(p1(1,1+npt*nturns*(j-1):npt*nturns*j),npt,nturns)',method,'verbose',verbosef);...
-                findtune(reshape(p1(3,1+npt*nturns*(j-1):npt*nturns*j),npt,nturns)',method,'verbose',verbosef)]';
+    tunetrackj=[findtune(reshape(p1(1,1+npt*nturns*(j-1):npt*nturns*j),npt,nturns)',method,'verbose',verbosef>1);...
+                findtune(reshape(p1(3,1+npt*nturns*(j-1):npt*nturns*j),npt,nturns)',method,'verbose',verbosef>1)]';
     
     tunetrackm = [tunetrackm tunetrackj];
   end

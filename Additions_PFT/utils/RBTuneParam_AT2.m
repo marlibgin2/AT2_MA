@@ -110,7 +110,7 @@ UCRB_T = UCRB;
 %UCRB_T=atfittune(UCRB,tunes,'reversebend','dip');
 %UCRB_T=atfittune(UCRB_T,tunes,'reversebend','dip');
 try
-    [UCRB_T, its, penalty]=fittuneRS(UCRB,tunes, 'reversebend','dip', 100, 1E-6,'No');
+    [UCRB_T, its, penalty]=fittuneRS(UCRB,tunes, 'reversebend','dip', 'maxits', 100, 'Tol', 1E-3,'UseIntegerPart', false);
 catch
     fprintf('Problems fitting tunes %8.3f %8.3f \n', tunes(1), tunes(2));
 end
