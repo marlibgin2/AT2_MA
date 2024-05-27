@@ -14,7 +14,7 @@ function EM = errormodel_DDRchallenging(varargin)
 % strran  = random magnet strength relative error, default = 0.0
 
 %% Usage examples
-% ErrorModel=errormodel_standard('gdran',0.0,'mgalran',1.0,'mulsys',0.0,'mulran',0.0,'strran',0.0,'bpmran',0.0);
+% ErrorModel=errormodel_DDRchallenging('gdran',0.0,'mgalran',1.0,'mulsys',0.0,'mulran',0.0,'strran',0.0,'bpmran',0.0);
 %
 
 %% Input argument parsing
@@ -134,13 +134,13 @@ Magnet{end}.Systematic{1}   =   DDR_ChallengingMachiningTolerances.Systematic;
 Magnet{end}.Random{1}       =   DDR_ChallengingMachiningTolerances.Random;
 
 Magnet{end}.Random{2} =     struct( ...
-    'PolynomB', [], ...   % All values are RMS
-    'PolynomA', [], ...     % All values are RMS
+    'PolynomB', []*mulran, ...   % All values are RMS
+    'PolynomA', []*mulran, ...     % All values are RMS
     'Scaling', 1  + StandardFieldError*strran);          % Multiplicative factor, useful for current errors
 
 Magnet{end}.Systematic{2} = struct( ...
-    'PolynomB', [], ...   % All values are RMS
-    'PolynomA', [], ...     % All values are RMS
+    'PolynomB', []*mulsys, ...   % All values are RMS
+    'PolynomA', []*mulsys, ...     % All values are RMS
     'Scaling', 1);          % Multiplicative factor, useful for current errors
 
 
