@@ -26,3 +26,9 @@
 *.pdf binary
 *.png binary
 *.xlsx binary
+
+## Windows/Linux EOL behaviour
+text=auto
+
+## /**/*.m text eol=lf
+
