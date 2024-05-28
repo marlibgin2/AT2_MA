@@ -69,7 +69,7 @@ switch DAS.inputs.mode
                 end
                 DAM=DAM*255;
                 map=[0 0.75 0; 1 1 1];
-                figure;image([xminplot xmaxplot]*1000,[YmaxDA*1000,0],DAM);
+                figure;image([xminplot xmaxplot]*1000,[Ymaxplot*1000,0],DAM);
                 ax=gca;
                 ax.YDir='normal';
                 colormap(map);

@@ -14,7 +14,7 @@ function f = RINGOpt_EmitDynAp(x, LatticeOptData)
 % The dynamic aperture area in real space (possibly scaled to chosen 
 % beta functions) and emittance are objective functions. 
 % Chromaticity is corrected to chosen target values with two
-% chose sextupole sextupole families. These are chosen when running
+% chosen sextupole sextupole families. These are chosen when running
 % the scripts max4_UpgradeStudies/m4U and are recorded in LattOptData.
 % A full ring is used as the lattice.
 % In case the number of error seeds is set at >0,various lattices

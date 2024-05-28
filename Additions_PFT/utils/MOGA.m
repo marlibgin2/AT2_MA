@@ -17,7 +17,7 @@ function MOGAResults = MOGA(varargin)
 %             optmizer. Otherwise, the lb and ub are calculated from the
 %             initial guess +/- dx*initialguess/100.
 %         dx: relative change of decision variables to define the lb and ub
-%             parameters. Ony relevant if X0 is not []
+%             parameters. Only relevant if X0 is not []
 %         lb: lower bounds (1xnvars) array, where nvars is the number of variable to vary
 %         ub: upper bounds (1xnvars) array, where nvars is the number of variable to vary
 %         PopSize: population size
