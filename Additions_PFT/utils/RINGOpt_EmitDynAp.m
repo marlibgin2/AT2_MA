@@ -19,7 +19,7 @@ function f = RINGOpt_EmitDynAp(x, LatticeOptData)
 % A full ring is used as the lattice.
 % In case the number of error seeds is set at >0,various lattices
 % corresponding with different error seeds are used and the average dynamic
-% aperture is returned. Orbit is corrected for each error seed.
+% aperture is returned. Orbit and tunes are corrected for each error seed.
 % If number of error seeds is set to zero, no errors are applied.
 %
 %% Comments relevant for optmization configured with m4U.m
@@ -28,6 +28,11 @@ function f = RINGOpt_EmitDynAp(x, LatticeOptData)
 %     Optimization mode "Non-linear" intended for SOGA 
 %
 %% Parameters for dynamic aperture calculation
+%
+
+%% History
+% sometime in early 2024, first version
+% 2024/05/29 : added tune corrections
 %
 PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
 PhysConst = PC.PC;      %Load physical constants
@@ -39,6 +44,10 @@ chroms0    = DAoptions.chroms0; % Target chromaticity for the whole ring
 TolChrom   = DAoptions.TolChrom;% Chromaticity tolerances
 Nitchro    = DAoptions.Nitchro; % Max n. iterations of chromaticty correction
 TRmode     = DAoptions.TRmode; % tracking mode is 4d or 6d
+tunefams   = LatticeOptData.ringtune_fams;
+nittune    = LatticeOptData.nittune;
+TolTune    = LatticeOptData.nittune;
+frac       = LatticeOptData.tunfrac; % fraction for quad change in each tune fit iteration
 
 chrom_fams = LatticeOptData.chrom_fams; % list of sextupole families to be used for chromaticity correction
 
@@ -58,6 +67,7 @@ try
     Jx    = rpara.damping(1);
     betax = rpara.beta0(1);
     betay = rpara.beta0(2);
+    Itunes = [rpara.Qx_ring rpara.Qy_ring]; 
     if ( (Emitt>0) && (Jx>0) && (Jx<3) )
        f(1) = Emitt;
        try
@@ -79,11 +89,29 @@ try
        end
        if ((nseeds>0)&&isstruct(ErrorModel))
            DAs=nan(1,nseeds);
-           for i=1:nseeds   
+           RINGGRDc  = cell(nseeds+1,1);
+           if (nseeds>1)
+            parfor i=1:nseeds   
               RINGGRDe = applyErrorModel(RINGGRD,ErrorModel);
-              RINGGRDc = calcOrb(RINGGRDe,'correct');
+              RINGGRDc{i} = calcOrb(RINGGRDe,'correct');
+              RINGGRDc{i} = fittuneRS(RINGGRDc{i}, Itunes,tunefams{1}, tunefams{2},...
+                      'maxits', nittune,'Tol', TolTune,...
+                      'UseIntegerPart',true,'frac',frac,...
+                      'verbose',0);
+            end
+           else
+             for i=1:nseeds   
+              RINGGRDe = applyErrorModel(RINGGRD,ErrorModel);
+              RINGGRDc{i} = calcOrb(RINGGRDe,'correct');
+              RINGGRDc{i} = fittuneRS(RINGGRDc{i}, Itunes,tunefams{1}, tunefams{2},...
+                      'maxits', nittune,'Tol', TolTune,...
+                      'UseIntegerPart',true,'frac',frac,...
+                      'verbose',0);
+             end
+           end
+           for i=1:nseeds
               try
-                 [DAs(i),~]=calcDA_raw(RINGGRDc,DAoptions,etax,betax,betay); 
+                 [DAs(i),~]=calcDA_raw(RINGGRDc{i},DAoptions,etax,betax,betay); 
               catch ME
                  fprintf('Error in LattOpt_EmitDynAp: Dynamic Aperture calculation \n');
                  fprintf('Error message was: %s \n',ME.message);    
