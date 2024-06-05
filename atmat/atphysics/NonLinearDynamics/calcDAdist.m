@@ -152,7 +152,8 @@ function DAdist = calcDAdist(varargin)
 % PFT 2024/05/24: added updated fittuneRS parameters, DA calculation for
 %                 different energies and more detailed info
 %                 on perturbed lattices in the output structure
-% PFT 2024/05/26: added more etailed info for xydp mode in output structure
+% PFT 2024/05/26: added more detailed info for xydp mode in output structure
+% PFT 2024/06/04: added "smart" DA calculation mode
 %
 %% Input argument parsing
 [RING,ErrorModel,DAoptions] = getargs(varargin,[],[],[]);
@@ -416,7 +417,7 @@ for i=1:nseeds+1
   try
    switch mode
        case 'xy'
-            if (strcmpi(DAmode,'border'))
+            if (strcmpi(DAmode,'border')||strcmpi(DAmode,'smart'))
                 [DAs(i), DAVs(:,2*i-1:2*i)] = ...
                     calcDA_raw(RINGe{i},DAoptions,etax,...
                     rpara.beta0(1),rpara.beta0(2));

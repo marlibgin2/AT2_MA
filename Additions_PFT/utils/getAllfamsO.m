@@ -52,7 +52,7 @@ switch nLAT
     case 1
         Ifams  = LatticeOptData.IfamsAllH;
         if (length(LAT)~=length(HACHRO))
-            fprintf('Warning: Incompatible input to getAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getAllfamsO for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nallfams);
             return
         end
@@ -60,7 +60,7 @@ switch nLAT
     case 2
         Ifams  = LatticeOptData.IfamsAllF;
         if (length(LAT)~=length(ACHRO))
-            fprintf('Warning: Incompatible input to getAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getAllfamsO for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nallfams);
             return
         end
@@ -68,7 +68,7 @@ switch nLAT
     case 3
         Ifams  = LatticeOptData.IfamsAllUC;
          if (length(LAT)~=length(UC))
-            fprintf('Warning: Incompatible input to getAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getAllfamsO for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nallfams);
             return
          end
@@ -76,7 +76,7 @@ switch nLAT
     case 4
         Ifams  = LatticeOptData.IfamsAllIMC1;
          if (length(LAT)~=length(IMC1))
-            fprintf('Warning: Incompatible input to getAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getAllfamsO for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nallfams);
             return
          end    
@@ -84,7 +84,7 @@ switch nLAT
     case 5
         Ifams  = LatticeOptData.IfamsAllRING;
         if (length(LAT)~=length(RING))
-            fprintf('Warning: Incompatible input to getAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getAllfamsO for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nallfams);   
             return
         end
@@ -95,7 +95,7 @@ switch nLAT
         nstdfamlist = nstdfamlistO;
         famtype     = famtypeO;
         if (length(LAT)~=length(RINGGRD))
-            fprintf('Warning: Incompatible input to getAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getAllfamsO for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nallfams0);   
             return
         end
@@ -106,7 +106,7 @@ switch nLAT
         nstdfamlist = nstdfamlistO;
         famtype     = famtypeO;
         if (length(LAT)~=length(ACHROGRD))
-            fprintf('Warning: Incompatible input to getAllfams for nLAt = %2d \n',nLAT);
+            fprintf('Warning: Incompatible input to getAllfamsO for nLAt = %2d \n',nLAT);
             DVs=NaN(1,nallfams0);   
             return
         end

@@ -27,7 +27,8 @@ function plotDA(varargin)
 % PFT 2024/05/14 added xp and yp plots
 % PFT 2024/05/25 updated handling of plot limit parameters
 % PFT 2024/05/26 updated handling of verbose output
-
+% PFT 2024/06/04 added handling of 'smart' DA calculation mode
+%
 %% Input argument parsing
 %
 DAS       = getargs(varargin,[]);
@@ -51,7 +52,7 @@ end
 switch DAS.inputs.mode
     case {'xy';'XY'}    
         switch DAmode
-            case 'border'
+            case {'border';'smart'}
                 figure;plot(DAV(:,1)*1000,DAV(:,2)*1000,'-ob');
                 xlabel('X [mm]'); ylabel('Y [mm]');grid;
                 xlim([xminplot xmaxplot]*1000);ylim([0 ymaxplot]*1000);
@@ -78,6 +79,9 @@ switch DAS.inputs.mode
                 xlim([xminplot xmaxplot]*1000);ylim([0 ymaxplot]*1000);grid;  
                 title(sprintf('dp = %3.1f %%', dp*100));
                 grid on;
+
+            otherwise
+                fprintf('%s Error in PlotDA: unknow DAmode ', datetime, DAmode);
         end
 
     case {'xydp';'XYDP'}

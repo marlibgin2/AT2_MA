@@ -7,7 +7,7 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 %% Mandatory input arguments
 % RING: AT2 lattice array
 % DAoptions: Structure containing the following fields:
-%               DAmode   = 'grid' or 'border'
+%               DAmode   = 'grid', 'border' or 'smart'
 %               nturns   : number of turns
 %               betax0   : horizontal beta for normalization - if NaN, no normalization is done
 %               betay0   : vertical beta for normalization - if NaN no normalization is done
@@ -15,7 +15,7 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 %               xmindas  : limits of the range in which the DA border is searched
 %               ymaxdas  : limits of the range in which the DA border is searched
 %
-%           Parameters for "border" DA calculation mode
+%           Parameters for "border" and "smart" DA calculation modes
 %               r0      : initial guess [m]
 %               nang    : number of angular steps
 %               dp      : initial dp/p (6d tracking) or fixed dp/p (4d tracking)
@@ -47,11 +47,12 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 
 %% History 
 % PFT 2024/03/09 
+% PFT 2024/06/03: added 'smart' DA calculation mode
 %
 %% Collects data from DAoptions structure
 betax0     = DAoptions.betax0;  % hor beta for normalization - if NaN no normalizatinis done
 betay0     = DAoptions.betay0;  % ver beta for normalization - if NaN no normalization is done
-DAmode     = DAoptions.DAmode;  % DAmode  = 'border' or 'grid';
+DAmode     = DAoptions.DAmode;  % DAmode  = 'border', 'grid' or 'smart';
 xmaxdas    = DAoptions.xmaxdas;
 xmindas    = DAoptions.xmindas;
 ymaxdas    = DAoptions.ymaxdas;
@@ -104,6 +105,19 @@ try
            DA=DA*sqrt(betax0/betax)*sqrt(betay0/betay);
         end 
         DA=DA*1e6; % converts to mm**2
+
+      case 'smart'
+        DAV = calcDA_smart2(RING, nangs, nturns, dp, z0, res, xmaxdas, xmindas, ymaxdas);
+        if (not(isnan(betax0))&&not(isnan(betay0))&&not(isnan(betax))&&not(isnan(betay))) 
+           DAVN(:,1)=DAV(:,1)*sqrt(betax0/betax);
+           DAVN(:,2)=DAV(:,2)*sqrt(betay0/betay);
+        else
+           DAVN = DAV;
+        end
+        RDA = DAVN.*DAVN*1E6; % converts to mm**2
+        RA  = RDA(:,1)+RDA(:,2);
+        DA  = sum(RA)*dang/2; 
+        
      otherwise
         fprintf('%s Error in calcDA_raw: uknown DA calculation mode %s \n', datetime, DAmode);
         DA=0.0;

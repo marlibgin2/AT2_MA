@@ -267,7 +267,9 @@ try
 
        case {'xydp';'XYDP'}
             DA=nan;
-            DAoptions.DAmode = 'border';
+            if (strcmpi(DAoptions.DAmode,'grid'))
+                DAoptions.DAmode = 'border';
+            end
             DAoptions.nang = 2;
             for i=1:npd
                 if (verboselevel>0)

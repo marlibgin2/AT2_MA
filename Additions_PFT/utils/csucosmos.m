@@ -8,5 +8,9 @@ c.AdditionalProperties.WallTime  = '24:00:00';
 c.AdditionalProperties.QueueName ='lu48';
 c.AdditionalProperties.RequireExclusiveNode=true;
 c.AdditionalProperties.ProcsPerNode=48;
+c.AdditionalProperties.PreferredPoolNumWorkers=960;
+c.AdditionalProperties.EmailAdress='pedro.fernandes_tavares@maxiv.lu.se';
+c.AdditionalProperties.AdditionalSubmitArgs='--mail-type=BEGIN';
+
 c.saveProfile;
 end
