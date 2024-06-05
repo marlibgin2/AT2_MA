@@ -1,5 +1,27 @@
 function [maxAmplitude, IE, Npart0, Npart] = ...
     at_m4U_Injection(Rin, Imik, theta_dk, x0, x0p, N_of_kicks, Nturn, beam_bunch_number,igen)% deltasqfo)
+% ----------------------------------------------------------
+% MA 05/06/2024
+% Input
+% Rin:      at2 full RING file
+% Imik:     MIK current (kA) 
+% theta_dk: DK kicking angle (rad) 
+% x0, x0p:  horizontal position / slope of the injected beam
+% N_of_kicks: 1
+% Nturn:    number of turns to trace
+% beam_bunch_number: typically 1
+% igen:     generation number used to save initial configurations
+%
+% Output:
+% maxAmplitude: maximal oscillation amplitude
+% Npart0: initial number of particles
+% Npart:  final number of particles
+% IE: injection efficiency = Npart/Npart0
+% ---------------------------------------------------------------
+
+% --------------------------------------------------------------
+% CAVEAT EMPTOR! pretty "expert system", to be handled with care 
+% --------------------------------------------------------------
 
 graphic = 1;
 MIK_ON = 1;
