@@ -8,7 +8,7 @@ function CLv = chalevel(varargin)
 % Optional arguments
 % mode: 'X0'   - input is a vector of magnet strengths
 %       'LS' - input is a lattice structure
-%       default is X0
+%       default is LS
 %
 % X0   : (1XN) array of magnet strengths
 % eqfam: (1XN) cell array of strings with 
@@ -50,13 +50,13 @@ function CLv = chalevel(varargin)
 %           'Sfm';       'Sd';         'Sfi_Sfo';...
 %           'Sfi_Sfo';   'Oxx_Oxy';    'Oxx_Oxy';...
 %           'Oyy';       'SextTrimsQ'; 'SextTrimsQ'};
-%  eqscal = [1 1 1 1 (3+4*3.49E-3*180/pi)/3 1 1 1 1 1 1 1 1 1 1 1 1 1];
+%  eqsca = [1 1 1 1 (3+4*3.49E-3*180/pi)/3 1 1 1 1 1 1 1 1 1 1 1 1 1];
 %
 % CLv = chalevel(MagnetStrengthLimits,'mode','X0','X0',X0,'eqfam',...
-%                eqfam, 'eqscal', eqscal )';
+%                eqfam, 'eqsca', eqsca )';
 %
-% cLv = chalevel(MagnetStrengthLimits,'mode','LS','ACHRO',ACHRO_a1,'eqfam',...
-%                eqfam, 'eqscal', eqscal )';
+% CLv = chalevel(MagnetStrengthLimits,'mode','LS','ACHRO',ACHRO_a1,'eqfam',...
+%                eqfam, 'eqsca', eqsca, 'Fams', Fams )';
 %
 
 %% History
@@ -65,7 +65,6 @@ function CLv = chalevel(varargin)
 % PFT 2024/06/03: further documentation
 % PFT 2024/06/05: added possibility of lattice structure input
 %
-%
 %% Input argument parsing
 MagnetStrengthLimits = getargs(varargin,[]);
 if (isempty(MagnetStrengthLimits)||not(isstruct(MagnetStrengthLimits)))
@@ -73,7 +72,7 @@ if (isempty(MagnetStrengthLimits)||not(isstruct(MagnetStrengthLimits)))
     CLv=[];
     return
 end
-mode  = getoption(varargin,'mode','X0');
+mode  = getoption(varargin,'mode','LS');
 eqfam = getoption(varargin, 'eqfam',...
             {'Qfend_Qdend';'Qfend_Qdend';'Qf_Qfm';...
              'dip';      'dip';        'dipm';...
@@ -91,8 +90,6 @@ Fams  = getoption(varargin,'Fams', {'Q1_d1';'Q2_d1';'R1_d1';...
                            'S2_d1';'S3_d1';'S4_d1';...
                            'S5_d1';'O1_d1';'O2_d1';...
                            'O3_d1';'T1_d1';'T2_d1'} );
-
-
 %
 switch mode
     case {'X0';'x0'}
@@ -165,7 +162,7 @@ for i=1:nfams
     CL(i)=min(CLc);
 end
 
-%% Collects outpput structure data
+%% Collects output structure data
 CLv.date=sprintf('%s', datetime);
 CLv.inputs.MagnetStrengthLimits=MagnetStrengthLimits;
 CLv.inputs.mode=mode;

@@ -107,7 +107,7 @@ try
         DA=DA*1e6; % converts to mm**2
 
       case 'smart'
-        DAV = calcDA_smart2(RING, nangs, nturns, dp, z0, res, xmaxdas, xmindas, ymaxdas);
+        DAV = calcDA_smart(RING, nangs, nturns, dp, z0, res, xmaxdas, xmindas, ymaxdas);
         if (not(isnan(betax0))&&not(isnan(betay0))&&not(isnan(betax))&&not(isnan(betay))) 
            DAVN(:,1)=DAV(:,1)*sqrt(betax0/betax);
            DAVN(:,2)=DAV(:,2)*sqrt(betay0/betay);

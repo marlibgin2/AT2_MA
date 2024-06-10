@@ -1,6 +1,6 @@
 function AT_2_OPA_MultClass(AT_ring,linename)
-% function AT_2_OPA(AT_ring,linename)
-% this functions converts the AT lattice AT_ring in OPA format.
+%% function AT_2_OPA(AT_ring,linename)
+% Converts the AT2.0 lattice AT_ring in OPA format.
 % 
 % Elements in the input structure are expected to have an "OPAType" field
 % 
@@ -9,12 +9,16 @@ function AT_2_OPA_MultClass(AT_ring,linename)
 % 
 %
 % OPA may be found here: http://people.web.psi.ch/streun/opa/
-% Types are
+% OPA Types are
 % 'Dipole'
 % 'Quadrupole'
 % 'Sextupole'
 % 'Octupole'
 % 'Multipole'
+
+%% History
+% PFT 2024/06/05 Updated to handle mutipoles in OPA. Added OPAType
+%
 
 outfile=['' linename '_lattice.opa'];
 

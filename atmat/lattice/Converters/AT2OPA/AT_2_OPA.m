@@ -1,14 +1,24 @@
 function AT_2_OPA(AT_ring,linename)
-% function AT_2_OPA(AT_ring,linename)
-% this functions converts the AT lattice AT_ring in OPA format.
+%% function AT_2_OPA(AT_ring,linename)
+% Converts the AT2.0 lattice AT_ring in OPA format.
 % 
+% Elements in the input structure are expected to have an "OPAType" field
 % 
-% file ['' linename '_lattice.opa'] is generated contiaining the lattice
-% elements definitions and the LINE. no other comands introduced
+% file ['' linename '_lattice.opa'] is generated containing the lattice
+% element definitions and the LINE. no other comands introduced
 % 
 %
 % OPA may be found here: http://people.web.psi.ch/streun/opa/
-%
+% OPA Types are
+% 'Dipole'
+% 'Quadrupole'
+% 'Sextupole'
+% 'Octupole'
+% 'Multipole'
+
+%% History
+% PFT 2024/06/05 :updated to handle mutipoles in OPA. Added OPAType
+% PFT 2024/06/08 :updated to read in the periodicity and export to OPA
 
 outfile=['' linename '_lattice.opa'];
 
@@ -16,6 +26,16 @@ outfile=['' linename '_lattice.opa'];
 %elelat=['{com   madX lattice elements: ' linename ' com}\n{com   Created: ' datestr(now) ' com}\n'];
 
 %% get family names for definitions
+%[families,ind_first_oc_ring]=...
+%    unique(getcellstruct(AT_ring,'FamName',1:length(AT_ring)),'first');
+
+[~,nbper]=atenergy(AT_ring);
+for i=1:numel(AT_ring)
+    if (isfield(AT_ring{i},'OPAFam'))
+        AT_ring{i}.FamName=AT_ring{i}.OPAFam;
+    end
+end
+
 [families,ind_first_oc_ring]=...
     unique(getcellstruct(AT_ring,'FamName',1:length(AT_ring)),'first');
 
@@ -30,6 +50,8 @@ for i=1:length(families)
    el= AT_ring{ind_first_oc_ring(i)};
    if isfield(el,'BetaCode')
        type=el.BetaCode;
+   elseif isfield(el,'OPAType')
+       type=el.OPAType;
    elseif isfield(el,'Class')
        type=el.Class;
    else
@@ -115,7 +137,7 @@ for i=1:length(families)
                 'ay = ' num2str(20,format) '; '...
                ];
             elelat=[elelat sx '\n\n'];
-        case {'OC','Octupole'} % sextupole
+        case {'OC','Octupole'} % octupole
             sx=[];
             nslice=2;
             sx=[sx ' ' el.('FamName')   '_dr: drift, L= ' num2str(el.('Length')/2/nslice,format)  ';' '\n'];
@@ -200,6 +222,8 @@ for i=1:length(AT_ring)
         elelat=[elelat '' AT_ring{i}.('FamName') '\n'];
     end
 end
+
+elelat=[elelat ', nper = ' num2str(nbper) '\n'];
 
 elelat=[elelat ';'];
 

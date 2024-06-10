@@ -54,6 +54,9 @@ function tunemap=calcTuneMap(varargin)
 %        3: Windowing + interpolation (default)
 %        4: NAFF (this is always the method in case the mode is "diff"
 %
+% smooth  : if true, selects smooth mode grid calculations - note that this means 
+%           computations are not parallelized. This is only relevant for
+%           method=4 (NAFF), deafult = false
 % plotmode: 'abs' : plots full tune value (inc. integer part) (default)
 %           'rel' : plots tune variations with respect to small amplitude
 %                   tunes.
@@ -108,9 +111,6 @@ function tunemap=calcTuneMap(varargin)
 % Optional flags
 % plot    : plots tune map
 % rate    : chooses rate for diffusion plots
-% smooth  : selects smooth mode grid calculations - note that this means 
-%           computations are not parallelized. This is only relevant for
-%           method=4 (NAFF)
 % 
 %% Outputs
 % Structure with fields
@@ -246,7 +246,7 @@ function tunemap=calcTuneMap(varargin)
 [ACHRO] = getargs(varargin,[]);
 plotf            = any(strcmpi(varargin,'plot'));
 ratef            = any(strcmpi(varargin,'rate'));
-smoothf          = any(strcmpi(varargin,'smooth'));
+smoothf          = getoption(varargin,'smooth',false);
 verbosef         = getoption(varargin,'verbose',0);
 desc             = getoption(varargin,'desc','Tune map calculation');
 nturns           = getoption(varargin,'nturns',128);
