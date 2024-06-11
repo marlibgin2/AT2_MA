@@ -91,7 +91,13 @@ if nargin<5 || isempty(inCOD)
 end
 
 if nargin<6 || isempty(neigSteerer)
-    neigSteerer=ones(10,1)*[length(indHCor)-20 length(indVCor)-20];
+%     neigSteerer=ones(10,1)*[length(indHCor)-20 length(indVCor)-20];
+svhmax = min([numel(indHCor), numel(indBPM)]);
+svvmax = min([numel(indVCor), numel(indBPM)]);
+Niter = 10;
+svh = round(svhmax/2):round((svhmax-round(svhmax/2))/(Niter)):svhmax;
+svv = round(svvmax/2):round((svvmax-round(svvmax/2))/(Niter)):svvmax;
+neigSteerer = [svh; svv]';
 end
 
 if nargin<7 || isempty(correctflags)
@@ -207,7 +213,8 @@ oy0=o(3,:);
 
 % Load or compute response matrix
 % NB! This is done outside the orbit correction loop for speed reasons; the
-% loss of accuracy is generally not an issue.
+% loss of accuracy is generally not an issue as the correction loop can
+% tolerate fairly large errors in the ORM. 
 if isempty(ModelRM)
     % get orbit RM
     if printouttext
@@ -255,6 +262,12 @@ elseif ~correctflags(1) && ~correctflags(2) % no dpp no mean0
     RMV=ormV{3};
 end
 
+% If RF is being corrected, add another singular value to the horizontal
+% plane
+if correctflags(1)
+    neigSteerer(:,1) = neigSteerer(:,1) + 1;
+end
+
 % Get BPM weight information.
 W = cell2mat(atgetfieldvalues(rerr,indBPM,'Weight'));
 W(isnan(W)) = 1;    % Any BPMs without specified weight are assumed to have weight 1.
@@ -265,46 +278,106 @@ for n = 1:numel(indBPM)
     RMV(n,:) = RMV(n,:).*W(n,2);
 end
 
+% Get the SV sizes and truncate the very small values, to avoid unstable
+% correction. 
+SVthreshold = 1e-6;
+[~, sh, ~] = svd(RMH);
+[~, sv, ~] = svd(RMV);
+sh = diag(sh);
+sv = diag(sv);
+shm = find(sh./max(sh) > SVthreshold,1,'last');
+svm = find(sv./max(sv) > SVthreshold,1,'last');
+neigSteerer(neigSteerer(:,1) > shm,1) = shm;
+neigSteerer(neigSteerer(:,2) > svm,1) = svm;
+
 % Compute momentum compaction
 alpha=mcf(rerr);
 
-%% MAIN CORRECTION LOOP
-Niter=size(neigSteerer,1);
-for iter=1:Niter
 
+%% MAIN CORRECTION LOOP
+% Niter=size(neigSteerer,1);
+orbitThreshold = 1e-6;
+convergenceThreshold = orbitThreshold / 2;
+% ox = inf(1,numel(indBPM));
+% oy = inf(1,numel(indBPM));
+iter = 0;
+inCOD = inCOD;
+
+% Loop logic:
+% a) Ramp up 
+% b) Then, if rms orbit above threshold, continue with last set of SVs until:
+%     1. rms orbit below threshold (i.e. orbit is good enough)
+%     2. rms orbit improvement below threshold (i.e. not worth continuing)
+while true  %iter=1:Niter
+    iter = iter + 1;
     if printouttext
-        disp(['Orbit correction iter ' num2str(iter,'%d, ') 'n-eig: ' num2str(neigSteerer(iter,:),'%d, ')]);
+        disp(['Orbit correction iter ' num2str(iter,'%d, ') 'n-eig: ' num2str(neigSteerer(min([iter, size(neigSteerer,1)]),:),'%d, ')]);
     end
 
-    % initial corrector strengths
+    % Store previous orbit and update best corrector settings
+    if iter > 1
+        oxprev = ox;
+        oyprev = oy;
+        corhp = corh0;
+        corvp = corv0;
+    end
+
+    % Get current corrector strengths
     corh0=atgetfieldvalues(rerr,indHCor,xfname,{xfi,xfj});
     corv0=atgetfieldvalues(rerr,indVCor,yfname,{yfi,yfj});
 
-    % get current orbit
+    % Get current orbit at entrance (for later tune computation and guess
+    % for next orbit search) and all BPMs 
     if use6d
-        o=findorbit6Err(rerr,indBPM,inCOD);
+        o=findorbit6Err(rerr,[1; indBPM(:)],inCOD);
     else
-        o=findorbit4Err(rerr,0,indBPM,inCOD);
+        o=findorbit4Err(rerr,0,[1; indBPM(:)],inCOD);
     end
-    ox=o(1,:);
-    oy=o(3,:);
+    inCOD = o(:,1);
+    ox=o(1,2:end);
+    oy=o(3,2:end);
 
-    % subtract reference orbit
+    % Subtract reference orbit
     ox=ox-reforbit(1,:);
     oy=oy-reforbit(2,:);
 
+    if printouttext
+        disp(['  Orbit RMS value:  ' num2str(std(ox)*1e6,'%.2f') ' / ' num2str(std(oy)*1e6,'%.2f µm')]);
+    end
+    if printouttext && iter > 1
+        disp(['  Orbit RMS change: ' num2str((std(ox)-std(oxprev))*1e6,'%.2f µm') ' / ' num2str((std(oy)-std(oyprev))*1e6,'%.2f µm')]);
+    end
+
+    % If threshold requirement is met, exit the loop
+    if std(ox) <= orbitThreshold && std(oy) <= orbitThreshold
+        break;
+    end
+
+    % Temporary increases in orbit error when increasing the SVs
+    % are to be expected, so don't exit during the SV ramp plus a few
+    % iterations
+    if iter > size(neigSteerer,1) + 2
+        % If not enough improvement in rms orbit, exit loop
+        if std(oxprev) - std(ox) < convergenceThreshold && ...
+                std(oyprev) - std(oy) < convergenceThreshold
+
+
+            break;
+        end
+    end
+
     % Apply BPM weights
-    ox = ox.*W(:,1)';
-    oy = oy.*W(:,2)';
+    oxw = ox.*W(:,1)';
+    oyw = oy.*W(:,2)';
 
 
     % Compute correction
     if correctflags(2) % mean 0
-        dch=qemsvd_mod(RMH,[ox';0],neigSteerer(iter,1));
-        dcv=qemsvd_mod(RMV,[oy';0],neigSteerer(iter,2));
+        dch=qemsvd_mod(RMH,[oxw';0],neigSteerer(min([iter, size(neigSteerer,1)]),1));
+        dcv=qemsvd_mod(RMV,[oyw';0],neigSteerer(min([iter, size(neigSteerer,1)]),2));
     else % no constraint on correctors mean
-        dch=qemsvd_mod(RMH,ox',neigSteerer(iter,1));
-        dcv=qemsvd_mod(RMV,oy',neigSteerer(iter,2));
+        dch=qemsvd_mod(RMH,oxw',neigSteerer(min([iter, size(neigSteerer,1)]),1));
+        dcv=qemsvd_mod(RMV,oyw',neigSteerer(min([iter, size(neigSteerer,1)]),2));
     end
 
 
@@ -313,7 +386,7 @@ for iter=1:Niter
         hs=corh0-dch(1:end-1)*scalefactor;
         vs=corv0-dcv(1:end-1)*scalefactor;
         % energy deviation
-        dd=-dch(end);%*scalefactor;
+        dd=-dch(end)*scalefactor;
     else
         hs=corh0-dch*scalefactor;
         vs=corv0-dcv*scalefactor;
@@ -328,20 +401,22 @@ for iter=1:Niter
     rtest=atsetfieldvalues(rerr,indHCor,xfname,{xfi,xfj},hs);
     rtest=atsetfieldvalues(rtest,indVCor,yfname,{yfi,yfj},vs);
 
-
+    % Make an educated guess for the next closed orbit
+    % Comment: will likely not work as well with a non-zero reference
+    inCOD(1:4) = inCOD(1:4)*(1-scalefactor);
+    
     if correctflags(1)
-
         rtest=atsetfieldvalues(rtest,indrfc,'Frequency',f0-alpha*(dd)*f0);
 
         if printouttext
-            disp([' Delta RF: ' num2str(-alpha*(dd)*f0) ' Hz']);
+            disp(['  Delta RF: ' num2str(-alpha*(dd)*f0) ' Hz']);
         end
     end
 
     %[~,t,~]=atlinopt(rtest,0,1);
-    t=tunechrom(rtest);
+    t=tunechrom(rtest,'orbit',o(:,1));
     if printouttext
-        disp([' [nux, nuy]: ' num2str(t(1)) ' / ' num2str(t(2)) ]);
+        disp(['  [nux, nuy]: ' num2str(t(1)) ' / ' num2str(t(2)) ]);
     end
     if not(isnan(t(1)) || isnan(t(2)))
         % apply correction in lattice
