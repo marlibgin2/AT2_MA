@@ -11,6 +11,10 @@ function [maxAmplitude, IE, Npart0, Npart, ieturn, nparturn, lossturn, lossinfot
 % Nturn:    number of turns to trace
 % beam_bunch_number: typically 1
 % igen:     generation number used to save initial configurations
+% Input File: 
+% MIK_KM_EXTENDED_XY.mat (kick map used to model the effect of the MIK)
+% stems from SOLEIL's data with an "analitical" extension to +-12mm horiz.
+%
 %
 % Output:
 % maxAmplitude: maximal oscillation amplitude
@@ -18,12 +22,15 @@ function [maxAmplitude, IE, Npart0, Npart, ieturn, nparturn, lossturn, lossinfot
 % Npart:  final number of particles
 % IE: injection efficiency = Npart/Npart0
 % ---------------------------------------------------------------
+% [maxAmplitude, IE, Npart0, Npart, ieturn, nparturn,lossturn, lossinfoturn] = ...
+% at_m4U_Injection(Rin,-6.0, -0.0e-3,-13.2e-3,-70e-6, 200, 1, 1)
+% 
 
 % --------------------------------------------------------------
 % CAVEAT EMPTOR! pretty "expert system", to be handled with care 
 % --------------------------------------------------------------
 N_of_kicks = 1; 
-graphic = 0;
+graphic = 1;
 MIK_ON = 1;
 DK_ON  = 1;
 
