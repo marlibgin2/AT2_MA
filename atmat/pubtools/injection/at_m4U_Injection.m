@@ -1,5 +1,5 @@
-function [maxAmplitude, IE, Npart0, Npart] = ...
-    at_m4U_Injection(Rin, Imik, theta_dk, x0, x0p, N_of_kicks, Nturn, beam_bunch_number,igen)% deltasqfo)
+function [maxAmplitude, IE, Npart0, Npart, ieturn, nparturn, lossturn, lossinfoturn] = ...
+    at_m4U_Injection(Rin, Imik, theta_dk, x0, x0p, Nturn, beam_bunch_number,igen)% deltasqfo)
 % ----------------------------------------------------------
 % MA 05/06/2024
 % Input
@@ -22,8 +22,8 @@ function [maxAmplitude, IE, Npart0, Npart] = ...
 % --------------------------------------------------------------
 % CAVEAT EMPTOR! pretty "expert system", to be handled with care 
 % --------------------------------------------------------------
-
-graphic = 1;
+N_of_kicks = 1; 
+graphic = 0;
 MIK_ON = 1;
 DK_ON  = 1;
 
@@ -148,6 +148,8 @@ for AF = AmpliFac
 
     for t = 0: Nturn
         nt=nt+1;
+        ieturn(nt)=Npart/Npart0;
+        nparturn(nt)= Npart;
         if nt==2
             % -----------------------------------------------------
             % restore the small aperture at injection (to mimic the
@@ -174,7 +176,7 @@ for AF = AmpliFac
         end
 
 
-        [Rfin, loss, ~]     = linepass(Rin, X0_inj, 1:length(Rin)+1);
+        [Rfin, loss, lossinfo]     = linepass(Rin, X0_inj, 1:length(Rin)+1);
         try 
             A = reshape(Rfin,6,Npart,length(Rin)+1); % extract the Npart coordinates
         catch
@@ -192,12 +194,14 @@ for AF = AmpliFac
         if graphic == 1
             figure(11); hold on;
             if t<1
-                colore = {'c', 'm', 'co', 'mo'};
+                colore = {'c', 'm', 'co', 'mo','k'};
             else
-                colore = {'b', 'r', 'bo', 'ro'};
+                colore = {'b', 'r', 'bo', 'ro','k'};
             end
-            subplot(2,4,[1 3]); plot(S,X,'color',colore{1},'linewidth',1)
+            subplot(2,4,[1 3]); plot(S,X,'color',colore{1},'linewidth',1)%main evolution in the ring
             subplot(2,4,[1 3]); plot(S,Y,'color',colore{2},'linewidth',1)
+            subplot(2,4,[5 7]); hold on; plot(nt,100*ieturn(nt),'o','color',colore{5}); axis([0 Nturn 0 100]); hold off
+
 
             subplot(2,4,4); plot(X(:,7),Xp(:,7),colore{3},'markersize',1,'markerfacecolor',colore{1}); axis([-0.02 0.02 -3.e-3 3.e-3]); hold on
             subplot(2,4,4); plot(Y(:,7),Yp(:,7),colore{4},'markersize',1,'markerfacecolor',colore{2}); axis([-0.02 0.02 -3.e-3 3.e-3]); hold on
@@ -219,6 +223,9 @@ for AF = AmpliFac
         dP(loss==1,:) = [];
         cT(loss==1,:) = [];
         Npart   = Npart - sum(loss);
+        lossturn{nt} = loss; lossinfoturn{nt}=lossinfo;
+        ieturn(nt) = Npart/Npart0; 
+        nparturn(nt) = Npart;
         if Npart <=0 
             Npart = 0;
             IE    = 0;
