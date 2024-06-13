@@ -45,6 +45,7 @@ DAV    = DAS.outputs.DAV;
 npdax  = DAS.outputs.DAoptions.npdax;
 npday  = DAS.outputs.DAoptions.npday;
 
+%% Plots DA
 if (not(isfield(DAS.inputs,'mode')))
     DAS.inputs.mode='xy';
 end
@@ -52,7 +53,7 @@ end
 switch DAS.inputs.mode
     case {'xy';'XY'}    
         switch DAmode
-            case {'border';'smart'}
+            case {'border';'smart_in'; 'smart_out'}
                 figure;plot(DAV(:,1)*1000,DAV(:,2)*1000,'-ob');
                 xlabel('X [mm]'); ylabel('Y [mm]');grid;
                 xlim([xminplot xmaxplot]*1000);ylim([0 ymaxplot]*1000);

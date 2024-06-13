@@ -137,6 +137,15 @@ function LattStruct = cLatt(varargin)
 %
 % LattStruct.LattData.ACHROMAT_ZC : achromat for whih the chromatoicity is
 %                                   set to zero
+% LattStruct.LattData.CentralOrbit: : struncture with fields describing 
+%                                     central orbit for one achromat.
+%                                   % s2d: orbit length
+% LattStruct.LattData.CentralOrbit.x2d: horizotal coordinate [m]
+% LattStruct.LattData.CentralOrbit.y2d: vertical coordinate [m]
+% LattStruct.LattData.CentralOrbit.a2d: angle [rad]
+% LattStruct.LattData.CentralOrbit.baa: change in angle [rad]
+% LattStruct.LattData.CentralOrbit.ban: Element family if bending angle is not zero
+%
 % LattStruct.LattData.MagnetStrengthLimits : Magnet Strength Limits
 %                                            structure
 % LattStruct.LattData.CLv : Challenge Levels
@@ -194,6 +203,7 @@ function LattStruct = cLatt(varargin)
 % PFT 2024/06/04 : updated output structure with new sub-fields
 % PFT 2024/06/08 : updated output structre with empty fields for items to
 %                  be calculated later
+% PFT 2024/06/11 : added calculation of central orbit
 %
 %% Input argument parsing
 
@@ -255,6 +265,12 @@ if (isempty(fieldnames(LattSt)))
     LattStruct.LattData.CLv=[];
     LattStruct.LattData.ACHROMAT_ZC={};
     LattStruct.LattData.RINGGRD={};
+    LattStruct.LattData.CentralOrbit.s2d=[];
+    LattStruct.LattData.CentralOrbit.x2d=[];
+    LattStruct.LattData.CentralOrbit.y2d=[];
+    LattStruct.LattData.CentralOrbit.a2d=[];
+    LattStruct.LattData.CentralOrbit.baa=[];
+    LattStruct.LattData.CentralOrbit.ban={};
     %
     LattStruct.LattPerf.atsummary = struct;
     LattStruct.LattPerf.DA.xy_0   = struct;
@@ -307,6 +323,14 @@ if (isempty(ACHRO))
     return
 end
 
+[s2d,x2d, y2d, a2d,baa, ban] = Survey2D(ACHRO,9.0*pi/180);
+LattStruct.LattData.ClosedOrbit.s2d=s2d;
+LattStruct.LattData.ClosedOrbit.x2d=x2d;
+LattStruct.LattData.ClosedOrbit.y2d=y2d;
+LattStruct.LattData.ClosedOrbit.a2d=a2d;
+LattStruct.LattData.ClosedOrbit.baa=baa;
+LattStruct.LattData.ClosedOrbit.ban=ban;
+
 if (not(isempty(fieldnames(LatticeOptData))))
     LattStruct.LattData.LatticeOptData=LatticeOptData;
 end
@@ -332,7 +356,6 @@ if (isempty(fieldnames(LatticeOptData)))
                              'S2_a1';'S3_a1';'S4_a1';...
                              'S5_a1';'O1_a1';'O2_a1';...
                              'O3_a1'}; 
-
     LatticeOptData.eqfam = {'Qfend_Qdend';'Qfend_Qdend';...
                            'dip';      'dipm';...
                            'Qf_Qfm';    'Qf_Qfm';     'Sdend';...

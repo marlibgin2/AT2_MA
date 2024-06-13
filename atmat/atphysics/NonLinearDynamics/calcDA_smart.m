@@ -1,4 +1,4 @@
-function DAV = calcDA_smart2( RING, nsteps, nturns, dp, z0, res, xmax, xmin, ymax)
+function DAV = calcDA_smart( RING, nsteps, nturns, dp, z0, res, xmax, xmin, ymax)
 %% Calculates Dynamic Aperture by tracking particles alogm radial lines on the XY plane until they are lost.
 
 %% Mandatory input arguments

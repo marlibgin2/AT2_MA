@@ -3,7 +3,7 @@ function [s2d,x2d, y2d, a2d,baa, ban] = Survey2D(LATTICE,STARTANGLE)
 %
 % Mod. by Pedro F. Tavares
 % 2023/02/05
-% to allow for an open lattice, that does not closes on itself, e.g. a 
+% to allow for an open lattice, that does not close on itself, e.g. a 
 % single cell or single achromat
 %
 % outputs:
@@ -12,7 +12,7 @@ function [s2d,x2d, y2d, a2d,baa, ban] = Survey2D(LATTICE,STARTANGLE)
 % y2d: vertical coordinate [m]
 % a2d: angle [rad]
 % baa: change in angle [rad]
-% ban: Element family if bendingangöle is not zero
+% ban: Element family if bending angle is not zero
 %
 NumElements = length(LATTICE);
 x2d = zeros(1,NumElements+1);

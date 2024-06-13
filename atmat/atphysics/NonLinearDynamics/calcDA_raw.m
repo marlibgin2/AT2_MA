@@ -48,7 +48,8 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 %% History 
 % PFT 2024/03/09 
 % PFT 2024/06/03: added 'smart' DA calculation mode
-%
+% PFT 2024/06/13: removed "smart" mode and added "smart_in" and "smart_out"
+%                 modes
 %% Collects data from DAoptions structure
 betax0     = DAoptions.betax0;  % hor beta for normalization - if NaN no normalizatinis done
 betay0     = DAoptions.betay0;  % ver beta for normalization - if NaN no normalization is done
@@ -106,8 +107,20 @@ try
         end 
         DA=DA*1e6; % converts to mm**2
 
-      case 'smart'
-        DAV = calcDA_smart(RING, nangs, nturns, dp, z0, res, xmaxdas, xmindas, ymaxdas);
+     case 'smart_in'
+        DAV = calcDA_smart_in(RING, nangs, nturns, dp, z0, res, xmaxdas, xmindas, ymaxdas);
+        if (not(isnan(betax0))&&not(isnan(betay0))&&not(isnan(betax))&&not(isnan(betay))) 
+           DAVN(:,1)=DAV(:,1)*sqrt(betax0/betax);
+           DAVN(:,2)=DAV(:,2)*sqrt(betay0/betay);
+        else
+           DAVN = DAV;
+        end
+        RDA = DAVN.*DAVN*1E6; % converts to mm**2
+        RA  = RDA(:,1)+RDA(:,2);
+        DA  = sum(RA)*dang/2; 
+
+     case 'smart_out'
+        DAV = calcDA_smart_out(RING, nangs, nturns, dp, z0, res, xmaxdas, xmindas, ymaxdas);
         if (not(isnan(betax0))&&not(isnan(betay0))&&not(isnan(betax))&&not(isnan(betay))) 
            DAVN(:,1)=DAV(:,1)*sqrt(betax0/betax);
            DAVN(:,2)=DAV(:,2)*sqrt(betay0/betay);
