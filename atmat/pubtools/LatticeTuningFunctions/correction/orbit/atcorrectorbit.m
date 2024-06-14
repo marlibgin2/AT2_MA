@@ -198,7 +198,7 @@ if any(isnan(o(:)))
 
     % Attempt to correct the easier case
     % NB! This is a recursive call!
-    RING_RED = atcorrectorbit(RING_RED,indBPM,indHCor,indVCor);
+    RING_RED = atcorrectorbit(RING_RED,indBPM,indHCor,indVCor,[],[],[],[],ModelRM);
 
     % Extract the obtained corrections and scale them up, then use them as
     % the initial guess for the original lattice.
@@ -306,8 +306,8 @@ W(isnan(W)) = 1;    % Any BPMs without specified weight are assumed to have weig
         % neigSteerer(neigSteerer(:,2) > svm,1) = svm;
 
         % Attempt RM regularization instead, i.e. SV rescaling
-        hlambda = max(sh) * 1e-2;
-        vlambda = max(sv) * 1e-2;
+        hlambda = max(sh) * 1e-3;
+        vlambda = max(sv) * 1e-3;
         shn = (sh + hlambda).^2 ./ sh; for n = 1:numel(shn), Sh(n,n) = shn(n); end
         svn = (sv + vlambda).^2 ./ sv; for n = 1:numel(svn), Sv(n,n) = svn(n); end
         RMH = Uh*Sh*Vh';
