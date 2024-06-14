@@ -8,7 +8,7 @@ function [s2d,x2d, y2d, a2d,baa, ban] = Survey2D(LATTICE,STARTANGLE)
 %
 % outputs:
 % s2d: orbit length
-% x2d: horizotal coordinate [m]
+% x2d: horizontal coordinate [m]
 % y2d: vertical coordinate [m]
 % a2d: angle [rad]
 % baa: change in angle [rad]

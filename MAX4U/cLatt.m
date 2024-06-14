@@ -17,12 +17,20 @@ function LattStruct = cLatt(varargin)
 %            or following LatticeOptData.ACHROGRD (octupoles included). If
 %            not given, structure must exist in LattSt.
 %
+% ACHRO_ref: reference lattice cell array for one achromat. This is
+%           typically the MAX IV 3 GeV RING lattice. If the input is given
+%           or is avaialble in LattSt structure,
+%           the deviation of the closed orbit on ACHO wrt to ACHRO_ref is
+%           calculated and added to te output structure
+%
 % RING     : AT2 lattice cell array for the full ring. If not given and
 %            LatticeOptData is available the structure is created by the
 %            function
 %
 % lattname : latttice name, default = '';
 % desc     : lattice description, default = '';
+% split    : factor by which to split elements when calculating the design
+%            orbit, default = 20
 % LatticeOptData : structure with optimization data, default = struct;
 % LatticeOptData is typically created by m4U.m and contains,
 % among others, the following fields: (if not given defaults are set)
@@ -125,6 +133,7 @@ function LattStruct = cLatt(varargin)
 % LattStruct.Description : string with verbose description of how latice was developed
 %
 % LattStruct.ACHROMAT    : AT2 lattice cell array for one achromat (an echo of the input)
+% LattStruct.ACHROMAT_ref: AT2 lattice cell array for one reference achromat (an echo of the input)
 %
 % LattStruc.LattData.LatticeOptData : echo of input.
 %
@@ -137,14 +146,24 @@ function LattStruct = cLatt(varargin)
 %
 % LattStruct.LattData.ACHROMAT_ZC : achromat for whih the chromatoicity is
 %                                   set to zero
-% LattStruct.LattData.CentralOrbit: : struncture with fields describing 
-%                                     central orbit for one achromat.
-%                                   % s2d: orbit length
-% LattStruct.LattData.CentralOrbit.x2d: horizotal coordinate [m]
-% LattStruct.LattData.CentralOrbit.y2d: vertical coordinate [m]
-% LattStruct.LattData.CentralOrbit.a2d: angle [rad]
-% LattStruct.LattData.CentralOrbit.baa: change in angle [rad]
-% LattStruct.LattData.CentralOrbit.ban: Element family if bending angle is not zero
+% LattStruct.LattData.DesignOrbit: structure with the following fields 
+%                          describing the design orbit for one achromat.
+% LattStruct.LattData.DesignOrbit.s2d: orbit length
+% LattStruct.LattData.DesignOrbit.x2d: horizontal coordinate [m]
+% LattStruct.LattData.DesignOrbit.y2d: vertical coordinate [m]
+% LattStruct.LattData.DesignOrbit.a2d: angle [rad]
+% LattStruct.LattData.DesignOrbit.baa: change in angle [rad]
+% LattStruct.LattData.DesignOrbit.ban: Element family if bending angle is not zero
+% LattStruct.LattData.DesignOrbit.s2d_ref: orbit length (reference lattice)
+% LattStruct.LattData.DesignOrbit.x2d_ref: horizontal coordinate [m]
+%                                           (reference lattice)
+% LattStruct.LattData.DesignOrbit.y2d_ref: vertical coordinate [m]
+%                                           (reference lattice)
+% LattStruct.LattData.DesignOrbit.a2d_ref: angle [rad] reference lattice
+%
+% LattStruct.LattData.DesignOrbit.Deviation: Distance between central
+%                                             orbit of the inout achromat
+%                                             and the refeence achromat
 %
 % LattStruct.LattData.MagnetStrengthLimits : Magnet Strength Limits
 %                                            structure
@@ -182,7 +201,7 @@ function LattStruct = cLatt(varargin)
 % First creates the structure, allocating all fields ad sets name and
 % description
 %
-% m4U_240316_b03_01_03_01=cLatt(cLatt('lattname','m4U_230628_b03_01_01_01','desc','blah blah blah');
+% m4U_240316_b03_01_03_01=cLatt('lattname','m4U_230628_b03_01_01_01','desc','blah blah blah');
 %
 % Next, adds the AT2 lattice cell array to the already existing Lattice
 % structure
@@ -196,7 +215,12 @@ function LattStruct = cLatt(varargin)
 %
 % And now adds results of DA calculation with errors (xy plane)
 % m4U_240331_b03_01_04_01=cLatt('LattSt',m4U_240316_b03_01_03_01,'DAdistxy','verbose', 2);
-
+%
+% And now adds a reference lattice to allow calcuyaltion of the deviation of
+% the design orbit
+%
+% m4U_240331_b03_01_04_01=cLatt('LattSt',m4U_240316_b03_01_03_01,'ACHRO_ref',ACHRO_a1);
+%
 %% History
 % PFT 2024/05 first version
 % PFT 2024/06/03 : added info for magnet challenge level calculation
@@ -210,10 +234,12 @@ function LattStruct = cLatt(varargin)
 lattname             = getoption(varargin,'lattname','');
 desc                 = getoption(varargin,'desc','');
 ACHRO                = getoption(varargin,'ACHRO',{});
+ACHRO_ref            = getoption(varargin,'ACHRO_ref',{});
 RING                 = getoption(varargin,'RING',{});
 LattSt               = getoption(varargin,'LattSt',struct);
 LatticeOptData       = getoption(varargin,'LatticeOptData',struct);
 MagnetStrengthLimits = getoption(varargin,'MagnetStrengthLimits',struct);
+split                = getoption(varargin,'split',20);
 
 verboselevel         = getoption(varargin,'verbose',0);
 
@@ -256,7 +282,9 @@ if (isempty(fieldnames(LattSt)))
     LattStruct.Lattice_Name = '';
     LattStruct.Description  = '';
     LattStruct.ACHROMAT = {};
+
     %
+    LattStruct.LattData.ACHROMAT_ref = {};
     LattStruct.LattData.LatticeOptData=struct;
     LattStruct.LattData.XAll=[];
     LattStruct.LattData.XAllO=[];
@@ -265,12 +293,17 @@ if (isempty(fieldnames(LattSt)))
     LattStruct.LattData.CLv=[];
     LattStruct.LattData.ACHROMAT_ZC={};
     LattStruct.LattData.RINGGRD={};
-    LattStruct.LattData.CentralOrbit.s2d=[];
-    LattStruct.LattData.CentralOrbit.x2d=[];
-    LattStruct.LattData.CentralOrbit.y2d=[];
-    LattStruct.LattData.CentralOrbit.a2d=[];
-    LattStruct.LattData.CentralOrbit.baa=[];
-    LattStruct.LattData.CentralOrbit.ban={};
+    LattStruct.LattData.DesignOrbit.s2d=[];
+    LattStruct.LattData.DesignOrbit.x2d=[];
+    LattStruct.LattData.DesignOrbit.y2d=[];
+    LattStruct.LattData.DesignOrbit.a2d=[];
+    LattStruct.LattData.DesignOrbit.baa=[];
+    LattStruct.LattData.DesignOrbit.ban={};
+    LattStruct.LattData.DesignOrbit.s2d_ref=[];
+    LattStruct.LattData.DesignOrbit.x2d_ref=[];
+    LattStruct.LattData.DesignOrbit.y2d_ref=[];
+    LattStruct.LattData.DesignOrbit.a2d_ref=[];
+    LattStruct.LattData.DesignOrbit.Deviation=[];
     %
     LattStruct.LattPerf.atsummary = struct;
     LattStruct.LattPerf.DA.xy_0   = struct;
@@ -310,7 +343,7 @@ if (not(isempty(ACHRO)))
     LattStruct.ACHROMAT = ACHRO;
 end
 
-ACHRO=LattStruct.ACHROMAT ;
+ACHRO = LattStruct.ACHROMAT;
 
 if (not(isempty(RING)))
     LattStruct.LattData.RINGRD = RING;
@@ -323,13 +356,54 @@ if (isempty(ACHRO))
     return
 end
 
-[s2d,x2d, y2d, a2d,baa, ban] = Survey2D(ACHRO,9.0*pi/180);
-LattStruct.LattData.ClosedOrbit.s2d=s2d;
-LattStruct.LattData.ClosedOrbit.x2d=x2d;
-LattStruct.LattData.ClosedOrbit.y2d=y2d;
-LattStruct.LattData.ClosedOrbit.a2d=a2d;
-LattStruct.LattData.ClosedOrbit.baa=baa;
-LattStruct.LattData.ClosedOrbit.ban=ban;
+if (not(isempty(ACHRO_ref)))
+    LattStruct.LattData.ACHROMAT_ref = ACHRO_ref;
+end
+
+ACHRO_ref     = LattStruct.LattData.ACHROMAT_ref;
+
+if (isempty(ACHRO_ref))
+    fprintf('%s Warning: no reference achromat structure available. \n', datetime);
+end
+
+if (split>1)
+    ACHRO_SP=splitlat(ACHRO,split);
+    [s2d, x2d, y2d, a2d, baa, ban] = Survey2D(ACHRO_SP,9.0*pi/180);
+else
+    [s2d, x2d, y2d, a2d, baa, ban] = Survey2D(ACHRO,9.0*pi/180);
+end
+   
+LattStruct.LattData.DesignOrbit.s2d=s2d;
+LattStruct.LattData.DesignOrbit.x2d=x2d;
+LattStruct.LattData.DesignOrbit.y2d=y2d;
+LattStruct.LattData.DesignOrbit.a2d=a2d;
+LattStruct.LattData.DesignOrbit.baa=baa;
+LattStruct.LattData.DesignOrbit.ban=ban;
+
+if (not(isempty(ACHRO_ref)))
+    if (split>1)
+        ACHRO_ref_SP=splitlat(ACHRO_ref,split);
+        [s2d_ref, x2d_ref, y2d_ref, a2d_ref,~,~] = Survey2D(ACHRO_ref_SP,9.0*pi/180);
+    else
+        [s2d_ref, x2d_ref, y2d_ref, a2d_ref,~,~] = Survey2D(ACHRO_ref,9.0*pi/180);
+    end
+    LattStruct.LattData.DesignOrbit.s2d_ref = s2d_ref;
+    LattStruct.LattData.DesignOrbit.x2d_ref = x2d_ref;
+    LattStruct.LattData.DesignOrbit.y2d_ref = y2d_ref;
+    LattStruct.LattData.DesignOrbit.a2d_ref = a2d_ref;
+    [~, ia, ~] = unique(x2d_ref);
+    x2d_refu = x2d_ref(ia);
+    y2d_refu = y2d_ref(ia);
+    dist  = zeros(length(x2d),1);
+    for i = 1:length(x2d)
+        yinter=interp1(x2d_refu,y2d_refu,x2d(i));
+        dist(i)    = abs(yinter - y2d(i));
+    end
+else
+    dist=nan(length(x2d));
+end
+
+LattStruct.LattData.DesignOrbit.Deviation = dist;
 
 if (not(isempty(fieldnames(LatticeOptData))))
     LattStruct.LattData.LatticeOptData=LatticeOptData;
@@ -670,6 +744,21 @@ end
 fprintf('%s Lattice structure creation/update/evaluation completed. \n', datetime);
 fprintf(' ************* \n');
 
-
-
-
+%% Auxiliary functions
+function ACHRO_SP=splitlat(ACHRO,split)
+    splits=1/split*ones(1,split);
+    k=1;
+%    ACHRO_SP = cell(numel(ACHRO)*split,1);
+    for i=1:numel(ACHRO)
+        if (ACHRO{i}.Length>0.0)
+            element=atdivelem(ACHRO{i},splits);
+            for l=1:numel(element)
+                ACHRO_SP{k}=element{l};
+                k=k+1;
+            end
+        else
+            ACHRO_SP{k}=ACHRO{i};
+            k=k+1;
+        end
+    end
+   
