@@ -50,10 +50,10 @@ Ifam1=find(atgetcells(LAT, 'FamName', fam1),1);
 Ifam2=find(atgetcells(LAT, 'FamName', fam2),1);
 if (isempty(Ifam1)||isempty(Ifam2))
     if (isempty(Ifam1))
-         fprintf('%s Error in fittuneRS qpole family %s not in lattice %s \n', datetime, fam1);
+         fprintf('%s Error in fittuneRS qpole family %s not in lattice \n', datetime, fam1);
     end
     if (isempty(Ifam2))
-        fprintf('%s Error in fittuneRS qpole family %s not in lattice %s \n', datetime, fam2);
+        fprintf('%s Error in fittuneRS qpole family %s not in lattice \n', datetime, fam2);
     end
     NewLAT=LAT;
     its=nan;

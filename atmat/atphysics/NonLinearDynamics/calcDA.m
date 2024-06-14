@@ -8,7 +8,7 @@ function DAS=calcDA(varargin)
 % Mandatory arguments
 % RING : AT2 lattice array
 % DAoptions :Structure containing the following fields:
-%               DAmode   = 'grid' or 'border'
+%               DAmode   = 'grid', 'border', 'smart_in' or 'smart_out'
 %               nturns   : number of turns
 %               betax0   : horizontal beta for normalization - if NaN, no normalization is done
 %               betay0   : vertical beta for normalization - if NaN no normalization is done
@@ -22,12 +22,13 @@ function DAS=calcDA(varargin)
 %               dpmax    : maximum energy deviation, default = +0.04
 %
 %
-% Parameters for "border" DA calculation mode
-%               r0      : initial guess [m]
+% Parameters for "border", "smart_in" or "smart_out" DA calculation modes
+%               r0      : initial guess [m] (only for "border " mode)
 %               nang    : number of angular steps
 %               z0      : initial longitudinal coordinate (6d tracking). Nan uses synchrnous phase
 %               res     : resolution [m]
-%               alpha   : da enlargement factor for border search
+%               alpha   : da enlargement factor for border search (only for "border" mode)
+% 
 %
 % Parameters for "grid" DA calculation mode
 %               XmaxDA  : Horizontal range is -Xmax to Xmax [m]
@@ -89,8 +90,9 @@ function DAS=calcDA(varargin)
 % PFT 2024/05/01 : updated documentation,changed output parameter 
 %                  structure and separated calculation from plotting
 % PFT 2024/05/13 : added xydp calculation mode
-% PFT 2024/05/25 : changed gandlign of xdp and ydo input parameters, which
+% PFT 2024/05/25 : changed input of xdp and ydp input parameters, which
 %                  are now part of the DAoptions structure
+%
 %% Input argument parsing
 [RING,DAoptions] = getargs(varargin,[],[]);
 DAS.inputs.RING=RING;
@@ -267,7 +269,9 @@ try
 
        case {'xydp';'XYDP'}
             DA=nan;
-            DAoptions.DAmode = 'border';
+            if (strcmpi(DAoptions.DAmode,'grid'))
+                DAoptions.DAmode = 'border';
+            end
             DAoptions.nang = 2;
             for i=1:npd
                 if (verboselevel>0)

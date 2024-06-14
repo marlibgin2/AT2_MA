@@ -1,6 +1,6 @@
 function DAV = calcDA_border( RING, r0, nsteps, nturns, dp, z0, etax, res, alpha, xmax, xmin, ymax)
 %
-% Calculates Dynamic Aperture by tracking particles alogm radial lines
+% Calculates Dynamic Aperture by tracking particles along radial lines
 % on the XY plane until they are lost.
 % Tracking can be 6d or 4d as defined by the input lattice. 
 % This is a low level function called by calcDA_raw, which in turn is

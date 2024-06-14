@@ -9,7 +9,7 @@ function plotDAdist(varargin)
 % xmaxplot : maximum horizontal limit for DA plot [m]
 % ymaxplot : maximum vertical limits for DA plots are (0,ymaxplot) [m]
 %            If not given, the two values above are taken from
-%            DAS.outputs.DAoptions
+%            DAdist.outputs.DAoptions
 %
 % dpminplot : minimum energy deviation for xdp and ydp plots
 % dpmaxplot : maximum energy deviation for xdp and ydp plots

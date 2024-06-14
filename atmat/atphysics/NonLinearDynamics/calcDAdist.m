@@ -16,8 +16,8 @@ function DAdist = calcDAdist(varargin)
 %                                 'bpmran', 0.0, 'strran', 0.0);
 %
 % DAoptions: Structure containing the following fields:
-%               DAmode   = 'grid' or 'border' (plots are only produced if
-%                           DAmode is 'border'
+%               DAmode   = 'grid','border' or 'smart' (plots are only produced if
+%                           DAmode is 'border' or 'smart'
 %               nturns   : number of turns
 %               betax0   : horizontal beta for normalization - if NaN, no normalization is done
 %               betay0   : vertical beta for normalization - if NaN no normalization is done
@@ -56,9 +56,9 @@ function DAdist = calcDAdist(varargin)
 %       'xy'  : calculates DA in the xy plane for a given initial energy
 %               deviation. Tracking may be 4d + energy or 6d as defined by
 %               the input lattice.
-%       'xydp':  calculates DA in the xp plane. 
-%               tracking is 4d plus fixed
-%               energy deviation.
+%       'xydp':  calculates DA in the xyp planes. Tracking may be 4d + 
+%               energy or 6d as defined by the input lattice.
+%
 %
 %   nseeds: number of seeds, default = 10
 %   tunfams : list of magnet families used for ring tun matching, default = {'Q1_b3','Q2_b3'}
@@ -66,7 +66,7 @@ function DAdist = calcDAdist(varargin)
 %   TolTune : tolerance for tune matching, default = 1E-3
 %   frac    : fraction for quad change in each tune fit iteration, defaut = 1.0
 %
-%   verbose : defines level of verbose output, default=0, i.e. no output
+%   verboselevel : defines level of verbose output, default=0, i.e. no output
 %
 % Optional flags
 % plot : plots DA distribution;
@@ -137,7 +137,7 @@ function DAdist = calcDAdist(varargin)
 % DAdist.outputs.telapsed: calculation time [s]
 %
 %% Usage examples
-% DAdist = calcDAdist(RING,ErrorModel,DAoptions,'plot','corrorb','verbose');
+% DAdist = calcDAdist(RING,ErrorModel,DAoptions,'plot','corrorb','verbose', 1);
 % DAdist = calcDAdist(RING,ErrorModel,[],'nturns',1024,'corrorb');
 % calcDAdist(RING,ErrorModel,[],'nturns',1024,'nseeds',10,'plot','corrorb');
 % DAdist = calcDAdist(RING,ErrorModel,[],'nturns',810,'corrorb','corrtun','tunfams',{'Q1','Q2'},'frac',0.5);
@@ -152,7 +152,9 @@ function DAdist = calcDAdist(varargin)
 % PFT 2024/05/24: added updated fittuneRS parameters, DA calculation for
 %                 different energies and more detailed info
 %                 on perturbed lattices in the output structure
-% PFT 2024/05/26: added more etailed info for xydp mode in output structure
+% PFT 2024/05/26: added more detailed info for xydp mode in output structure
+% PFT 2024/06/04: added "smart" DA calculation mode
+% PFT 2024/06/08: fixed description of verboselevel input
 %
 %% Input argument parsing
 [RING,ErrorModel,DAoptions] = getargs(varargin,[],[],[]);
@@ -416,7 +418,7 @@ for i=1:nseeds+1
   try
    switch mode
        case 'xy'
-            if (strcmpi(DAmode,'border'))
+            if (strcmpi(DAmode,'border')||strcmpi(DAmode,'smart'))
                 [DAs(i), DAVs(:,2*i-1:2*i)] = ...
                     calcDA_raw(RINGe{i},DAoptions,etax,...
                     rpara.beta0(1),rpara.beta0(2));
