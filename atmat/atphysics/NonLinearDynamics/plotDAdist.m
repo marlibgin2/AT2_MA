@@ -63,7 +63,7 @@ DAydps   = DAdist.outputs.DAydps;
 DAydpav  = DAdist.outputs.DAydpav;
 DAydpst  = DAdist.outputs.DAydpst;
 
-
+%% Plots DA distribution
 switch mode
     case {'xy';'XY'}
         if (strcmpi(DAmode,'border'))
