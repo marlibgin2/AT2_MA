@@ -222,6 +222,8 @@ oy0=o(3,:);
 W = cell2mat(atgetfieldvalues(rerr,indBPM,'Weight'));
 W(isnan(W)) = 1;    % Any BPMs without specified weight are assumed to have weight 1.
 
+% Compute momentum compaction
+alpha=mcf(rerr);
 
 % Load or compute response matrix
 % NB! This is done outside the orbit correction loop for speed reasons; the
@@ -298,14 +300,16 @@ W(isnan(W)) = 1;    % Any BPMs without specified weight are assumed to have weig
         sh = diag(Sh);
         sv = diag(Sv);
 
-        % % and truncate the very small values, to avoid unstable correction.
-        % SVthreshold = 1e-6;
-        % shm = find(sh./max(sh) > SVthreshold,1,'last');
-        % svm = find(sv./max(sv) > SVthreshold,1,'last');
-        % neigSteerer(neigSteerer(:,1) > shm,1) = shm;
-        % neigSteerer(neigSteerer(:,2) > svm,1) = svm;
+%         % Then truncate the very small singular values, as these represent
+%         % a mode that cannot be corrected
+%         SVthreshold = 1e-8;
+%         shm = find(sh./max(sh) > SVthreshold,1,'last');
+%         svm = find(sv./max(sv) > SVthreshold,1,'last');
+%         neigSteerer(neigSteerer(:,1) > shm,1) = shm;
+%         neigSteerer(neigSteerer(:,2) > svm,1) = svm;
 
-        % Attempt RM regularization instead, i.e. SV rescaling
+        % Then apply RM regularization, i.e. rescale the SVs for better
+        % numerical behaviour
         hlambda = max(sh) * 1e-3;
         vlambda = max(sv) * 1e-3;
         shn = (sh + hlambda).^2 ./ sh; for n = 1:numel(shn), Sh(n,n) = shn(n); end
@@ -314,53 +318,19 @@ W(isnan(W)) = 1;    % Any BPMs without specified weight are assumed to have weig
         RMV = Uv*Sv*Vv';
     end
 
-% ormH=ModelRM.OrbHCor;
-% ormV=ModelRM.OrbVCor;
-% 
-% 
-% % Re-format the calculated ORM for the orbit correction calculations
-% if correctflags(1) && correctflags(2) % dpp and mean0
-%     dppH=ModelRM.OrbHDPP;
-%     dppV=ModelRM.OrbVDPP;
-%     RMH=[ [ormH{1};ones(size(indHCor(:)))'] [dppH(:);0] ];
-%     RMV=[ [ormV{3};ones(size(indVCor(:)))'] [dppV(:);0] ];
-% elseif correctflags(1) && ~correctflags(2)% dpp no mean 0
-%     dppH=ModelRM.OrbHDPP;
-%     dppV=ModelRM.OrbVDPP;
-%     RMH=[ ormH{1} dppH(:) ];
-%     RMV=[ ormV{3} dppV(:) ];
-% elseif ~correctflags(1) && correctflags(2) % mean0 no dpp
-%     RMH=[ormH{1};ones(size(indHCor(:)))'];
-%     RMV=[ormV{3};ones(size(indVCor(:)))'];
-% elseif ~correctflags(1) && ~correctflags(2) % no dpp no mean0
-%     RMH=ormH{1};
-%     RMV=ormV{3};
-% end
-
-% % Get BPM weight information.
-% W = cell2mat(atgetfieldvalues(rerr,indBPM,'Weight'));
-% W(isnan(W)) = 1;    % Any BPMs without specified weight are assumed to have weight 1.
-
-
-% Compute momentum compaction
-alpha=mcf(rerr);
-
 
 %% MAIN CORRECTION LOOP
-% Niter=size(neigSteerer,1);
 orbitThreshold = 1e-6;
 convergenceThreshold = orbitThreshold / 2;
-% ox = inf(1,numel(indBPM));
-% oy = inf(1,numel(indBPM));
 iter = 0;
 
-    % Get starting orbit at entrance (for later tune computation and guess
-    % for next orbit search) and all BPMs 
-    if use6d
-        o=findorbit6Err(rerr,[1; indBPM(:)],inCOD);
-    else
-        o=findorbit4Err(rerr,0,[1; indBPM(:)],inCOD);
-    end
+% Get starting orbit at entrance (for later tune computation and guess
+% for next orbit search) and all BPMs
+if use6d
+    o=findorbit6Err(rerr,[1; indBPM(:)],inCOD);
+else
+    o=findorbit4Err(rerr,0,[1; indBPM(:)],inCOD);
+end
 
 % Loop logic:
 % a) Ramp up 
@@ -377,8 +347,6 @@ while true  %iter=1:Niter
     if iter > 1
         oxprev = ox;
         oyprev = oy;
-        corhp = corh0;
-        corvp = corv0;
     end
 
     % Get current corrector strengths
@@ -412,8 +380,6 @@ while true  %iter=1:Niter
         % If not enough improvement in rms orbit, exit loop
         if std(oxprev) - std(ox) < convergenceThreshold && ...
                 std(oyprev) - std(oy) < convergenceThreshold
-
-
             break;
         end
     end
