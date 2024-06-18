@@ -22,7 +22,7 @@ function CLv = chalevel(varargin)
 % ACHRO : Lattice structure from whihcv magnet stregths are to be taken
 % Fams  : (1XN) cell array of strings with the names of families in the
 %
-%
+% verbose :defines level of verbose output, default=0, i.e. no output
 %% Outputs
 % CLv : structure with fields
 %   CLv.date = calculation date;
@@ -64,14 +64,12 @@ function CLv = chalevel(varargin)
 % PFT 2024/06/02: documentation
 % PFT 2024/06/03: further documentation
 % PFT 2024/06/05: added possibility of lattice structure input
-%
+% PFT 2024/06/18: added hablidng of case without MagnetStrengthLimist
+%                 structure (for use with the cLatt function). added verbose
+%                 level parameter
 %% Input argument parsing
 MagnetStrengthLimits = getargs(varargin,[]);
-if (isempty(MagnetStrengthLimits)||not(isstruct(MagnetStrengthLimits)))
-    fprintf('%s Error: MagnetStregthLimits Structure not present, abortiong...\n',datetime);
-    CLv=[];
-    return
-end
+
 mode  = getoption(varargin,'mode','LS');
 eqfam = getoption(varargin, 'eqfam',...
             {'Qfend_Qdend';'Qfend_Qdend';'Qf_Qfm';...
@@ -90,12 +88,14 @@ Fams  = getoption(varargin,'Fams', {'Q1_d1';'Q2_d1';'R1_d1';...
                            'S2_d1';'S3_d1';'S4_d1';...
                            'S5_d1';'O1_d1';'O2_d1';...
                            'O3_d1';'T1_d1';'T2_d1'} );
-%
+
+verboselevel = getoption(varargin,'verbose',0);
+%% Extacts magnet strengths
 switch mode
     case {'X0';'x0'}
         if (isempty(X0))
-            fprintf('%s Error: empty X0 array for mode X0, aborting...\n',datetime);
-            CLv=[];
+            fprintf('%s chalevel Error: empty X0 array for mode X0, aborting...\n',datetime);
+            CLv=struct;
             return
         end
         CLv.inputs.X0=X0;
@@ -103,13 +103,13 @@ switch mode
     case {'LS';'ls'}
         
         if (isempty(ACHRO)||not(iscell(ACHRO)))
-            fprintf('%s Error: invalid ACHRO input for mode LS, aborting...\n',datetime);
-            CLv=[];
+            fprintf('%s chalevel Error:invalid ACHRO input for mode LS, aborting...\n',datetime);
+            CLv=struct;
             return
         end
         if ( (numel(Fams)~=numel(eqfam))||(numel(Fams)~=numel(eqsca)))
-            fprintf('%s Error: invalid ACHRO input for mode LS, Check that number of elements in Fams, eqfam and eqsca are the same, aborting...\n',datetime);
-            CLv=[];
+            fprintf('%s chalevel Error:invalid ACHRO input for mode LS, Check that number of elements in Fams, eqfam and eqsca are the same, aborting...\n',datetime);
+            CLv=struct;
             return
         end
 
@@ -145,23 +145,32 @@ nfams=numel(X0);
 
 X0scal=abs(X0./eqsca);
 CL=zeros(1,nfams);
-for i=1:nfams
-    MagStr=MagnetStrengthLimits.(eqfam{i});
-    Mins= MagStr.Mins;
-    Maxs= MagStr.Maxs;
-    CLs = MagStr.CLs; 
-    ncl = numel(Mins);
-    CLa = repmat(X0scal(i),1,ncl);
-    CLb = (CLa>=Mins).*(CLa<Maxs);
-    CLc = repmat(1000,1,ncl);
-    for j=1:ncl
-        if(CLb(j))
-            CLc(j)=CLs(j);
-        end
-    end
-    CL(i)=min(CLc);
-end
 
+
+%% Calculate challenge levels
+if (isempty(fieldnames(MagnetStrengthLimits)))
+    if (verboselevel>0)
+        fprintf('%s chlevel Warning: MagnetStrengthLimits Structure not available\n',datetime);
+    end
+    CL=[];
+else
+    for i=1:nfams
+        MagStr=MagnetStrengthLimits.(eqfam{i});
+        Mins= MagStr.Mins;
+        Maxs= MagStr.Maxs;
+        CLs = MagStr.CLs; 
+        ncl = numel(Mins);
+        CLa = repmat(X0scal(i),1,ncl);
+        CLb = (CLa>=Mins).*(CLa<Maxs);
+        CLc = repmat(1000,1,ncl);
+        for j=1:ncl
+            if(CLb(j))
+                CLc(j)=CLs(j);
+            end
+        end
+        CL(i)=min(CLc);
+    end
+end
 %% Collects output structure data
 CLv.date=sprintf('%s', datetime);
 CLv.inputs.MagnetStrengthLimits=MagnetStrengthLimits;
@@ -170,7 +179,6 @@ CLv.inputs.eqfam=eqfam;
 CLv.inputs.eqsca=eqsca;
 CLv.inputs.Fams=Fams;
 CLv.inputs.ACHRO=ACHRO;
-
 
 CLv.outputs.X0=X0;
 CLv.outputs.CL = CL;

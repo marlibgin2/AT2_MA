@@ -1,8 +1,8 @@
 function LattStruct = cLatt(varargin)
-% Generates or updates a structure containing lattice data and
-% is evaluation. This function can be used as a high-level wrapper
-% to the calcDA/calcDAdist and calTunemap packages and its output may be used
-% as inpout to the lattice2LaFH function.
+% Generates or updates a structure containing lattice description and 
+% lattice performance data. This function can be used as a high-level wrapper
+% to the calcDA/calcDAdist, calcLMA/calLMAdist and calcTunemap packages 
+% and its output may be used as input to the lattice2LaHF function.
 %
 %% Inputs
 % Optional arguments
@@ -25,18 +25,17 @@ function LattStruct = cLatt(varargin)
 %
 % RING     : AT2 lattice cell array for the full ring. If not given and
 %            LatticeOptData is available the structure is created by the
-%            function
+%            function using the achromat2ring function
 %
 % lattname : latttice name, default = '';
 % desc     : lattice description, default = '';
 % split    : factor by which to split elements when calculating the design
 %            orbit, default = 1
+% V0       : total cavity volatge [V], defaut = 1.8E6
+%
 % LatticeOptData : structure with optimization data, default = struct;
 % LatticeOptData is typically created by m4U.m and contains,
-% among others, the following fields: (if not given defaults are set)
-%
-%   LatticeOptData.All_fams   : cell array of string with the names of 
-%                               all magnet families, excluding octupoles
+% among others, the following fields: (if not given, defaults are set)
 %
 %   LatticeOptData.All_famsO  : cell array of string with the names of 
 %                               all families including octupoles
@@ -122,6 +121,7 @@ function LattStruct = cLatt(varargin)
 %
 % MagnetStrengthLimits :structure with magnet strength Limits, defaut =
 %                                                                struct
+%
 % verbose              :defines level of verbose output, default=0, i.e. no output 
 %
 % Optional flags
@@ -155,10 +155,10 @@ function LattStruct = cLatt(varargin)
 % LattStruct.ACHROMAT    : AT2 lattice cell array for one achromat (an echo of the input)
 % LattStruct.ACHROMAT_ref: AT2 lattice cell array for one reference achromat (an echo of the input)
 %
+% LattStruct.V0          : total Rf voltage (echo of input)
 % LattStruc.LattData.LatticeOptData : echo of input.
 %
-% LattStruc.LattData.XAll : strengths of all families (not including octupoles)
-% LattStruc.LattData.XAllO : strengths of all families (not including octupoles)
+% LattStruc.LattData.XAllO : strengths of all families (includes octupoles)
 %
 % LattStruc.LattData.RINGGRD  : Full ring latice 6d enabled with same magnet strengths as
 %            ACHROMAT. Octupoles are the same as in ACHRO (if they exist
@@ -187,7 +187,8 @@ function LattStruct = cLatt(varargin)
 %
 % LattStruct.LattData.MagnetStrengthLimits : Magnet Strength Limits
 %                                            structure
-% LattStruct.LattData.CLv : Challenge Levels
+% LattStruct.LattData.CLv : Challenge Levels structure, output from
+%                           chalevel.
 %
 % LattStruct.LattPerf.atsummary : output of atsummary run on RINGGRD
 %
@@ -250,7 +251,9 @@ function LattStruct = cLatt(varargin)
 % PFT 2024/06/08 : updated output structre with empty fields for items to
 %                  be calculated later
 % PFT 2024/06/11 : added calculation of central orbit
-% PFT 2024/06/16 : added calculatin of LMA and LMA distributionwith errors
+% PFT 2024/06/16 : added calculatin of LMA and LMA distribution with errors
+% PFT 2024/06/18 : upadated extraction of magnet strengths to a more 
+%                  general method built into the chalevel function
 %
 %% Input argument parsing
 
@@ -263,6 +266,7 @@ LattSt               = getoption(varargin,'LattSt',struct);
 LatticeOptData       = getoption(varargin,'LatticeOptData',struct);
 MagnetStrengthLimits = getoption(varargin,'MagnetStrengthLimits',struct);
 split                = getoption(varargin,'split',1);
+V0                   = getoption(varargin,'V0',1.8E6);
 
 verboselevel         = getoption(varargin,'verbose',0);
 
@@ -307,15 +311,14 @@ if (isempty(fieldnames(LattSt)))
     LattStruct.Lattice_Name = '';
     LattStruct.Description  = '';
     LattStruct.ACHROMAT = {};
-
     %
     LattStruct.LattData.ACHROMAT_ref = {};
+    LattStruct.LattData.V0 = V0;
     LattStruct.LattData.LatticeOptData=struct;
-    LattStruct.LattData.XAll=[];
     LattStruct.LattData.XAllO=[];
     %
     LattStruct.LattData.MagnetStrengthLimits=struct;
-    LattStruct.LattData.CLv=[];
+    LattStruct.LattData.CLv=struct;
     LattStruct.LattData.ACHROMAT_ZC={};
     LattStruct.LattData.RINGGRD={};
     LattStruct.LattData.DesignOrbit.s2d=[];
@@ -375,13 +378,13 @@ end
 ACHRO = LattStruct.ACHROMAT;
 
 if (not(isempty(RING)))
-    LattStruct.LattData.RINGRD = RING;
+    LattStruct.LattData.RINGGRD = RING;
 end
 
 RING=LattStruct.LattData.RINGGRD;
 
 if (isempty(ACHRO))
-    fprintf('%s Warning: no achromat structure available. \n', datetime);
+    fprintf('%s cLatt Warning: no achromat structure available. Interrupting...\n', datetime);
     return
 end
 
@@ -392,7 +395,9 @@ end
 ACHRO_ref     = LattStruct.LattData.ACHROMAT_ref;
 
 if (isempty(ACHRO_ref))
-    fprintf('%s Warning: no reference achromat structure available. \n', datetime);
+    if (verboselevel>0)
+        fprintf('%s cLatt Warning: no reference achromat structure available. \n', datetime);
+    end
 end
 
 if (split>1)
@@ -440,7 +445,9 @@ end
 LatticeOptData=LattStruct.LattData.LatticeOptData;
 
 if (isempty(fieldnames(LatticeOptData)))
-    fprintf('%s Warning: LattOptData structure not available. Using defaults... \n', datetime);
+    if (verboselevel>0)
+        fprintf('%s cLatt Warning: LattOptData structure not available. Using defaults... \n', datetime);
+    end
     
     LatticeOptData.nittune      = 5; % max n. of iterations for tune mtaching
     LatticeOptData.TolTune      = 1E-3;% tolerance for tune matching
@@ -448,17 +455,13 @@ if (isempty(fieldnames(LatticeOptData)))
     LatticeOptData.chrom_fams   = {'S2_a1';'S5_a1'}; % chromaticty correction
     LatticeOptData.ringtune_fams= {'Q1_a1';'Q2_a1'};% ring tunes matching
 
-    LatticeOptData.All_fams = {'Q1_a1';'Q2_a1';...
-                             'D2_a1';'D1_a1';...
-                             'Q3_a1';'Q4_a1';'S1_a1';...
-                             'S2_a1';'S3_a1';'S4_a1';...
-                             'S5_a1'};
     LatticeOptData.All_famsO = {'Q1_a1';'Q2_a1';...
                              'D2_a1';'D1_a1';...
                              'Q3_a1';'Q4_a1';'S1_a1';...
                              'S2_a1';'S3_a1';'S4_a1';...
                              'S5_a1';'O1_a1';'O2_a1';...
                              'O3_a1'}; 
+
     LatticeOptData.eqfam = {'Qfend_Qdend';'Qfend_Qdend';...
                            'dip';      'dipm';...
                            'Qf_Qfm';    'Qf_Qfm';     'Sdend';...
@@ -496,42 +499,48 @@ end
 MagnetStrengthLimits=LattStruct.LattData.MagnetStrengthLimits;
 
 if (isempty(fieldnames(MagnetStrengthLimits)))
-    fprintf('%s Warning: MagnetStrengthLimits structure not available. \n', datetime);
+    if (verboselevel>0)
+        fprintf('%s cLatt Warning: MagnetStrengthLimits structure not available. \n', datetime);
+    end
 end
 
 if not(isempty(fieldnames(LatticeOptData)))
     eqfam = LatticeOptData.eqfam;
     eqsca = LatticeOptData.eqsca;
     All_famsO = LatticeOptData.All_famsO;
-    if (length(ACHRO)==length(LatticeOptData.ACHRO))
-        LattStruct.LattData.XAll  = getAllfams(2,ACHRO,LatticeOptData);
-        LattStruct.LattData.XAllO = cat(2,LattStruct.LattData.XAll,[0.0 0.0 0.0]);
-    end
-    if (length(ACHRO)==length(LatticeOptData.ACHROGRD))
-        LattStruct.LattData.XAll  = getAllfams(7,ACHRO,LatticeOptData);
-        LattStruct.LattData.XAllO = getAllfamsO(7,ACHRO,LatticeOptData);
-    end
-    if ( (length(ACHRO)~=length(LatticeOptData.ACHRO))&&...
-        (length(ACHRO)~=length(LatticeOptData.ACHROGRD)) )
-        fprintf('%s Warning: Input lattice does not match LatticeOptData. Interrupting...\n',datetime);
-        return
-    end
-    RINGGRD = setAllfamsO(6,LatticeOptData.RINGGRD,LatticeOptData,LattStruct.LattData.XAllO);
-    LattStruct.LattData.RINGGRD=RINGGRD;
-
-    if (not(isempty(fieldnames(MagnetStrengthLimits))))
-        LattStruct.LattData.CLv = chalevel(MagnetStrengthLimits,'mode','LS',...
+    CLv = chalevel(MagnetStrengthLimits,'mode','LS',...
                               'ACHRO',ACHRO,'eqfam', eqfam,'eqsca',...
-                              eqsca,'Fams',All_famsO)';
-    end
+                              eqsca,'Fams',All_famsO,'verbose',verboselevel-1)';  
+    LattStruct.LattData.CLv=CLv;
+    XAllO=CLv.outputs.X0;
+    LattStruct.LattData.XAllO=XAllO;
 
+    if (isempty(RING))
+        if (verboselevel>0)
+            fprintf('%s cLatt Warning: Full ring input not available, creating ring from achromat...\n',datetime);
+        end
+        RING = atenable_6d(achromat2ring(ACHRO));
+        cavpts  = find(atgetcells(RING, 'FamName', 'CAVITY'));
+        if (isempty(cavpts))
+            cavpts  = find(atgetcells(RING, 'FamName', 'CAV'));
+        end
+        RING = atSetRingProperties(RING,'rf_frequency','nominal',...
+              'cavpts',cavpts,...
+              'rf_voltage',V0*6);
+    else
+        V0=nan;
+        LattStruct.LattData.V0=V0;
+    end
+    RINGGRD=calculateGirderMaps(RING);
+    LattStruct.LattData.RINGGRD=RING;
+    
     TolChrom     = LatticeOptData.DAoptions.TolChrom;% Chromaticity tolerances
     Nitchro      = LatticeOptData.DAoptions.Nitchro; % Max n. iterations of chromaticity correction
     chrom_fams   = LatticeOptData.chrom_fams;
     try 
         [ACHRO_zc, ~, ~]=fitchroit(ACHRO, chrom_fams, [0 0], Nitchro, TolChrom); 
     catch ME
-        fprintf('%s Error in fitting zero chromaticity: ', datetime);
+        fprintf('%s cLatt Error in fitting zero chromaticity: ', datetime);
         fprintf('Error message was:%s \n',ME.message);
         ACHRO_zc={};
     end
@@ -544,12 +553,22 @@ if (isempty(RINGGRD))
     end
 end
 
-%% Calculates atsummary for full ring
+if(isempty(RINGGRD))
+    if (verboselevel>0)
+        fprintf('%s cLatt Warning: full ring cell array not available\n', datetime);
+    end
+end
+
+%% Calculates atsummary for full ring (or achrom,at of ring not available
 if (basicf||allf)
     if (verboselevel>0)
         fprintf('%s AT summary calculation. \n', datetime);
     end
-    LattStruct.LattPerf.atsummary = atsummary(LattStruct.LattData.RINGGRD);
+    if (isempty(RINGGRD))
+        LattStruct.LattPerf.atsummary = atsummary(LattStruct.LattData.ACHRO);
+    else
+        LattStruct.LattPerf.atsummary = atsummary(LattStruct.LattData.RINGGRD);
+    end
 end
 
 %% Evaluates DAs and for full RING
@@ -604,7 +623,9 @@ if (not(isempty(RINGGRD)))
     LattStruct.LattPerf.DAdist.xydp = DAdist;
   end
 else
-    fprintf('%s Error : RINGRD structure not available. \n', datetime);
+    if (verboselevel>0)
+        fprintf('%s cLatt Warning : RINGRD structure not available. \n', datetime);
+    end
 end
 %% Evaluates tune maps for an achromat
 if (not(isempty(ACHRO_zc)))
@@ -772,7 +793,7 @@ if (not(isempty(ACHRO_zc)))
     LattStruct.LattPerf.TM.chro=tunemap;
   end
 else
-   fprintf('%s Error: ACHRO_zc structure not available. \n', datetime);
+   fprintf('%s cLatt Warning: ACHRO_zc structure not available. \n', datetime);
 end
 %% Evaluates LMA for a single achromat without errors
 if (not(isempty(ACHRO)))
@@ -781,7 +802,9 @@ if (not(isempty(ACHRO)))
         LattStruct.LattPerf.LMA=LMA;
     end
 else
-    fprintf('%s Error: ACHRO structure not available. \n', datetime);
+    if (verboselevel>0)
+        fprintf('%s cLatt Warning: ACHRO structure not available for LMA calculation. \n', datetime);
+    end
 end
 %% Evaluates LMA for a full ring with errors
 if (not(isempty(RINGGRD)))
@@ -792,7 +815,9 @@ if (not(isempty(RINGGRD)))
         LattStruct.LattPerf.LMAdist=LMAdist;
     end
 else
-    fprintf('%s Error: RING structure not available. \n', datetime);
+    if (verboselevel>0)
+        fprintf('%s Error: RING structure not available for LMAdist calcualtion. \n', datetime);
+    end
 end
 
 fprintf('%s Lattice structure creation/update/evaluation completed. \n', datetime);
