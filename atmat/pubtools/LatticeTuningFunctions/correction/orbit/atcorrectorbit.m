@@ -222,6 +222,7 @@ oy0=o(3,:);
 W = cell2mat(atgetfieldvalues(rerr,indBPM,'Weight'));
 W(isnan(W)) = 1;    % Any BPMs without specified weight are assumed to have weight 1.
 
+
 % Compute momentum compaction
 alpha=mcf(rerr);
 

@@ -1,6 +1,7 @@
 function DAdist = calcDAdist(varargin)
 % Calculates and plots Dynamic Aperture of a number of 
 % lattice variants that differ only through the application of a given error model
+% (and possibly correspondin corrections)
 % Tracking can be 6d or 4d
 % as defined by the input lattice. 
 % This is a higher level wrapper function

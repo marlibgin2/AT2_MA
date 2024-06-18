@@ -51,7 +51,7 @@ function DAS=calcDA(varargin)
 %       'xydp': calculate DA in the xp and yp planes. 
 %               Tracking is 4d plus fixed
 %               energy deviation.
-%   verbose : defines level of verbose output, default=0, i.e. no output
+% verbose : defines level of verbose output, default=0, i.e. no output
 %
 % Optional flags
 % plot : plots DA
