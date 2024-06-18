@@ -469,7 +469,7 @@ if (isempty(fieldnames(LatticeOptData)))
                            'Sfi_Sfo';   'Oxx_Oxy';    'Oxx_Oxy';...
                            'Oyy'};
 
-    LatticeOptData.eqsca = [1 1 1 1 (tuc+2*rbk*180/pi)/tuc 1 1 1 1 1 1 1 1 1 1 1];
+    LatticeOptData.eqsca = [1 1 1 1 (1.5+2*3.49E-3*180/pi)/1.5 1 1 1 1 1 1 1 1 1 1 1];
   
     LatticeOptData.DAoptions.DAmode   = 'border';
     LatticeOptData.DAoptions.nturns   = 1024;
