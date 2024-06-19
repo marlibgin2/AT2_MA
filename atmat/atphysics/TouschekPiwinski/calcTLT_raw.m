@@ -1,4 +1,4 @@
-function TLT = TLT(varargin)
+function TLT = calcTLT_raw(varargin)
 % Calculates Touscheck lifetime following Piwinskys formalism
 % Based on the AT2.0 TouschekPiwinskiLifeTime function, removing all
 % optics calculations for speed
@@ -27,7 +27,7 @@ spl = PhysConstant.speed_of_light_in_vacuum.value; %299792458; % speed of ligth
 %% input argument parsing
 [lindata,lmap] = getargs(varargin,[],[]);
 Ib = getoption(varargin,'Ib',0.5/176);
-verbosef  = any(strcmpi(varargin,'verbose'));
+verboselevel  = getoption(varargin,'verbose',0);
 circumference = getoption(varargin,'circumference',528);
 E0 = getoption(varargin,'energy',3.0e9);
 emitx = getoption(varargin,'emitx', 328E-12/(1+0.025));
@@ -39,7 +39,7 @@ abstol = getoption(varargin, 'AbsTol', 1.0e-16);
 reltol = getoption(varargin, 'Relol', 1.0e-16);
 tol = {'AbsTol', abstol, 'RelTol', reltol};
 
-if (verbosef)
+if (verboselevel>0)
     fprintf('*** Calculating Touschek lifetime with: \n');
     fprintf('emitx: %.3e [m]\n', emitx);
     fprintf('emity: %.3e [m]\n', emity);
@@ -164,6 +164,6 @@ for dppcolnum=1:size(dppinput,2)
 end
 
 TLT=length(Tlcol)/(sum(1./Tlcol));
-if (verbosef)
+if (verboselevel>0)
     toc;
 end

@@ -145,7 +145,8 @@ function LattStruct = cLatt(varargin)
 % 'LMA'       : calculates Local Momentum Aperture for one achromat wihtout
 %               errors
 % 'LMAdist'   : calculates Local Momentum Aperture for whole ring with errors 
-
+% 'TLT'       : calculates Touschek lifetime for one achromat wihtout
+%               errors
 
 %% Outputs
 % LattStruct is a structure with fields
@@ -286,6 +287,7 @@ TM_difydpf  = any(strcmpi(varargin,'TM_difydp'));
 TM_chrof    = any(strcmpi(varargin,'TM_chro'));
 LMAf        = any(strcmpi(varargin,'LMA'));
 LMAdistf    = any(strcmpi(varargin,'LMAdist'));
+TLTf        = any(strcmpi(varargin,'TLT'));
 
 
 %% Constructs output structure template
@@ -822,6 +824,17 @@ end
 
 fprintf('%s Lattice structure creation/update/evaluation completed. \n', datetime);
 fprintf(' ************* \n');
+%% Evaluates Touschek lifetime for a single achromat without errors
+if (not(isempty(ACHRO)))
+    if (TLTf)
+        TLT=calcTLT(RINGGRD_a1,LatticeOptData.MAoptions,'LMAPeriods',1,'verbose',verboselevel-1);
+        LattStruct.LattPerf.TLT.TLT=TLT;
+    end
+else
+    if (verboselevel>0)
+        fprintf('%s cLatt Warning: ACHRO structure not available for TLT calculation. \n', datetime);
+    end
+end
 
 %% Auxiliary functions
 function ACHRO_SP=splitlat(ACHRO,split)

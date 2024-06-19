@@ -1,46 +1,45 @@
 function Fams = findFams(LAT)
-% generates a cell array of strings containign all magnet families in 
-% a AT2 lattice
+% generates a structure containign info various typoes oe 
+% element families in an AT2.0 cell array
 %
-Fams.Dipoles={};
-Fams.Multipoles={};
-Fams.Correctors={};
-Fams.BPMs={};
-kd=0;
-km=0;
-kc=0;
-kb=0;
+FamTypes={'Dipoles';'Multipoles';'Correctors';'BPMs'};
+nfamtypes=numel(FamTypes);
+k=zeros(nfamtypes,1);
+for i=1:nfamtypes
+    Fams.(FamTypes{i})={};
+end
 
 for i=1:numel(LAT)
     EL=LAT{i};
     PassMethod = atgetfieldvalues(LAT, i, 'PassMethod');
     switch PassMethod{1}
         case 'BndMPoleSymplectic4Pass'
-            kd=kd+1;
-            Fams.Dipoles{kd}=EL.FamName;
+            k(1)=k(1)+1;
+            Fams.Dipoles{k(1),1}=EL.FamName;
 
         case 'StrMPoleSymplectic4Pass'
-            km=km+1;
-            Fams.Multipoles{km}=EL.FamName;
+            k(2)=k(2)+1;
+            Fams.Multipoles{k(2),1}=EL.FamName;
             
         case 'CorrectorPass'
-            kc=kc+1;
-            Fams.Correctors{kc}=EL.FamName;
+            k(3)=k(3)+1;
+            Fams.Correctors{k(3),1}=EL.FamName;
+
         case 'IdentityPass'
             Class=EL.Class;
             if (strcmpi(Class,'Monitor'))
-                kb=kb+1;
-                Fams.BPMs{kb}=EL.FamName;
+                k(4)=k(4)+1;
+                Fams.BPMs{k(4),1}=EL.FamName;
             end
         otherwise
     end
 end
-    
-Fams.Dipoles=unique(Fams.Dipoles);
-Fams.Multipoles=unique(Fams.Multipoles);
-Fams.Correctors=unique(Fams.Correctors);
-Fams.BPMs=unique(Fams.BPMs);
-Fams.ndipoles=nd;
-Fams.nmultipoles=nm;
-Fams.ncorrectors=nc;
-Fams.bpms=nb;
+
+for i=1:nfamtypes
+    Fams.(FamTypes{i})=unique(Fams.(FamTypes{i}));
+    Fams.nelems.(FamTypes{i})=zeros(k(i),1);
+    for j=1:k(i)
+        I_fam = find(atgetcells(LAT, 'FamName', Fams.(FamTypes{i}){j}));
+        Fams.nelems.(FamTypes{i})(j)=numel(I_fam);
+    end
+end
