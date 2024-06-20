@@ -9,7 +9,7 @@ function plotLMA(varargin)
 % verbose : defines level of verbose output, default=0, i.e. no output
 %
 %% Usage examples
-% plotDLMA(LMA);
+% plotLMA(LMA);
 
 
 %% History
@@ -17,8 +17,8 @@ function plotLMA(varargin)
 %
 %% Input argument parsing
 %
-LMA       = getargs(varargin,[]);
-verbosef  = getoption(varargin,'verbose',0);
+LMA           = getargs(varargin,[]);
+verboselevel  = getoption(varargin,'verbose',0);
 
 
 %% Plots LMA

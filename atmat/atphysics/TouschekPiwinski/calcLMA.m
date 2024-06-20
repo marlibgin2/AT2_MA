@@ -1,8 +1,8 @@
 function LMA = calcLMA(varargin)
-% Calculates and Plots Local Momentum Acceptance. Tracking can be 6d or 4d
+% Calculates and plots Local Momentum Acceptance. Tracking can be 6d or 4d
 % as defined by the input lattice. This is intended as a higher level 
-% wrapper function that in turn calls the lower level function
-% "calcLMA_raw"
+% wrapper function that in turn calls the lower level functions
+% "calcLMA_raw" and "plotLMA"
 %
 %% Inputs 
 % Mandatory input arguments
@@ -224,6 +224,7 @@ LMA.outputs.MAoptions=MAoptions;
 LMA.outputs.Spos  = Spos;
 LMA.outputs.map_l = map_l;
 LMA.outputs.map_h = map_h;
+LMA.outputs.Ipos  = Ipos;
 LMA.outputs.PeridoDev = PeriodDev;
 LMA.outputs.telapsed = telapsed;
 
