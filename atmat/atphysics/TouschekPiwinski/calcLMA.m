@@ -8,18 +8,18 @@ function LMA = calcLMA(varargin)
 % Mandatory input arguments
 % RING : AT2 lattice array
 % MAoptions :Structure containing the following fields:
-%            lmafams: cell array of strings with names of magnet families at which LMA
+%  MAoptions.lmafams: cell array of strings with names of magnet families at which LMA
 %                     is to be calculated. If = 'all' then all non-zero length elements are included
-%            stepfam: specifies only one every stepfam elements are included
-%            deltalimit: maximum momentum deviation to be searched. Used to establish the rf bucket height.
-%            initcoord: initial coordinates [x0 x0p y0 x0p delta z0]'
-%            delta: initial guess for momentum aperture 
-%            deltastepsize: step size for LMA search;
-%            splits : number of iterations of step division
-%            split_step_divisor: factor to reduce step size at each iteration
-%            nturns: numbr of turns. If nan then number of turns is chosen as 1.2/Qs           
-%            S0max: maximum longitudinal position at which to calculate LMA
-%            S0min: minimum longitudinal position at which to calculate LMA
+%  MAoptions.stepfam: specifies only one every stepfam elements are included
+%  MAoptions.deltalimit: maximum momentum deviation to be searched. Used to establish the rf bucket height.
+%  MAoptions.initcoord: initial coordinates [x0 x0p y0 x0p delta z0]'
+%  MAoptions.delta: initial guess for momentum aperture 
+%  MAoptions.deltastepsize: step size for LMA search;
+%  MAoptions.splits : number of iterations of step division
+%  MAoptions.split_step_divisor: factor to reduce step size at each iteration
+%  MAoptions.nturns: number of turns. If nan then number of turns is chosen as 1.2/Qs           
+%  MAoptions.S0max: maximum longitudinal position at which to calculate LMA
+%  MAoptions.S0min: minimum longitudinal position at which to calculate LMA
 %  
 %            If MAoptions = [], hard-coded defaults are used.
 %            Values of MAoptions fields are overridden if given explicitly 
@@ -27,23 +27,12 @@ function LMA = calcLMA(varargin)
 % 
 % Optional input parameters
 %
-% nperiods: number of periods - used to determine the period length for
-%           periodicity checks. RING is assumed to contain the whole ring in this case
-% lmafams: cell array of strings with names of magnet families at which LMA
-%          is to be calculated. If = 'all' then all non-zero length
-%          elements are included
-% stepfam: specifies only one every stepfam elements are included
-% deltalimit: maximum momentum deviation to be searched. Used to establish the rf bucket height.
-% initcoord: initial coordinates [x0 x0p y0 x0p delta z0]'
-% delta: initial guess for momentum aperture 
-% deltastepsize: step size for LMA search;
-% splits : number of iterations of step division
-% split_step_divisor: factor to reduce step size at each iteration
-% nturns: numbr of turns. If nan then number of turns is chosen as 1.2/Qs
-%                         this is handled by the momentum:aperture_at
-%                         function
-% S0max: maximum longitudinal position at which to calculate LMA
-% S0min: minimum longitudinal position at which to calculate LMA
+% all fields in MAoptions
+%
+% nperiods: number of periods contained in the input lattice. Ssed to 
+%           determine the period length for periodicity checks. 
+%           RING is assumed to contain the whole ring in this case, 
+%           default = 20
 %
 % verbose : defines level of verbose output, default=0, i.e. no output
 %
@@ -65,7 +54,7 @@ function LMA = calcLMA(varargin)
 %   LMA.outputs.PeriodDev : if periodicity check was requested, this contains the
 %                           deviation from periodicity
 %   LMA.outputs.MAoptions: LMA calculation options
-%   LMA.outputs.telapsed: elapsed calcualtion time [s]
+%   LMA.outputs.telapsed: elapsed calculation time [s]
 %
 %% Usage examples
 % LMA = calcLMA(RING_a1,MAoptions,'nperiods',20,'S0min',0.0,'S0max',528,'checkperiodicity');
@@ -82,6 +71,7 @@ function LMA = calcLMA(varargin)
 %% Input argument parsing
 [RING,MAoptions] = getargs(varargin,[],[]);
 if (isempty(MAoptions))
+    MAoptions.nperiods=20;
     MAoptions.lmafams='all';
     MAoptions.stepfam=1;
     MAoptions.stepfam=1;
@@ -148,18 +138,22 @@ nSpos = numel(Spos);
 tstart = tic;
 if (verboselevel>0)
     fprintf('**** \n');
-    fprintf('%s CalcLMA : Calculating LMA at %3d points \n', datetime, length(Spos));
+    fprintf('%s calcLMA: LMA at %3d points \n', datetime, length(Spos));
 end
 
 if (isnan(nturns))
     if (verboselevel>0)
-        fprintf('%s CalcLMA: calculating atsummary \n', datetime);
+        fprintf('%s calcLMA: nturns=nan, calculating atsummary \n', datetime);
     end
     ats=atsummary(RING);
     nturns = 1.2/ats.synctune;
     MAoptions.nturns=nturns;
 end
- 
+
+if (verboselevel>0)
+        fprintf('%s calcLMA: calculating LMA \n', datetime);
+end
+
 if (not(isnan(nturns)))
     [map_l,map_h]=calcLMA_raw(RING,Ipos,...
                'deltalimit',deltalimit, ...

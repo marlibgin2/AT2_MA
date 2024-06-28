@@ -1,8 +1,29 @@
 function Fams = findFams(LAT)
-% generates a structure containign info various typoes oe 
+% generates a structure containing info on the various types oe 
 % element families in an AT2.0 cell array
+%% Inputs
+% LAT : AT2.0 lattice cell array
 %
-FamTypes={'Dipoles';'Multipoles';'Correctors';'BPMs'};
+%% Outputs
+% Fams: struncture with the fields
+% Fams.Dipoles    : cell array of strings with names of dipole families
+% Fams.Multipoles : cell aray of stris with names of multipole families
+% Fams.Correctors : cell array of strings with names of orbit cOrrector
+%                   families
+% Fams.BPMs       : cell array of strings with names of monitor families
+%                   
+% Fams.nelem.Dipoles : array with number of elements belonging to eachoneof
+%                      the dipole families
+% Fams.nelem.Multipoles : array with number of elements belonging to each one of
+%                      the multipole families
+% Fams.nelem.Correctos : array with number of elements belonging to each one of
+%                      the corrector families
+% Fams.nelem.Correctos : array with number of elements belonging to each one of
+%                      the corrector families
+% Fams.nelem.BPMs : array with number of elements belonging to each one of
+%                      the monitor families
+%
+FamTypes={'Dipoles';'Multipoles';'Correctors';'BPMs'}; 
 nfamtypes=numel(FamTypes);
 k=zeros(nfamtypes,1);
 for i=1:nfamtypes
@@ -37,6 +58,7 @@ end
 
 for i=1:nfamtypes
     Fams.(FamTypes{i})=unique(Fams.(FamTypes{i}));
+    k(i)=numel(Fams.(FamTypes{i}));
     Fams.nelems.(FamTypes{i})=zeros(k(i),1);
     for j=1:k(i)
         I_fam = find(atgetcells(LAT, 'FamName', Fams.(FamTypes{i}){j}));

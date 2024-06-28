@@ -1,9 +1,8 @@
 function DAdist = calcDAdist(varargin)
 % Calculates and plots Dynamic Aperture of a number of 
-% lattice variants that differ only through the application of a given error model
-% (and possibly correspondin corrections)
-% Tracking can be 6d or 4d
-% as defined by the input lattice. 
+% lattice variants that differ only through the application of a given 
+% error model (and possibly correspondin corrections).
+% Tracking can be 6d or 4d as defined by the input lattice. 
 % This is a higher level wrapper function
 % that in turn calls the lower level function "calcDA_raw"
 % 
@@ -14,43 +13,42 @@ function DAdist = calcDAdist(varargin)
 %              if empty default is 
 %              errormodel_DDRchallenging('gdran',0.0,'magalran',1.0,...
 %                                'mulsys',0.0, 'mulran',1.0,...
-%                                 'bpmran', 0.0, 'strran', 0.0);
+%                                'bpmran', 0.0, 'strran', 0.0);
 %
 % DAoptions: Structure containing the following fields:
-%               DAmode   = 'grid','border' or 'smart' (plots are only produced if
-%                           DAmode is 'border' or 'smart'
-%               nturns   : number of turns
-%               betax0   : horizontal beta for normalization - if NaN, no normalization is done
-%               betay0   : vertical beta for normalization - if NaN no normalization is done
-%               xmaxdas  : limits of the range in which the DA border is searched
-%               xmindas  : limits of the range in which the DA border is searched
-%               ymaxdas  : limits of the range in which the DA border is searched
-%               npd      : number of points along the energy axis for xdp and ydp 
-%                          calculation modes
-%               dpmin    : minimum energy deviation
-%               dpmax    : maximum energy deviation
+%     DAoptions.DAmode   = 'grid','border', 'smart_in' or 'smart_out'(plots are only produced if
+%                           DAmode is NOT 'grid')
+%      DAoptions.nturns   : number of turns
+%      DAoptions.betax0   : horizontal beta for normalization - if NaN, no normalization is done
+%      DAoptions.betay0   : vertical beta for normalization - if NaN no normalization is done
+%      DAoptions.xmaxdas  : limits of the range in which the DA border is searched
+%      DAoptions.xmindas  : limits of the range in which the DA border is searched
+%      DAoptions.ymaxdas  : limits of the range in which the DA border is searched
+%      DAoptions.npd      : number of points along the energy axis for xdp and ydp 
+%                           calculation modes
+%      DAoptions.dpmin    : minimum energy deviation
+%      DAoptions.dpmax    : maximum energy deviation
 %
 % Parameters for "border" DA calculation mode
-%               r0      : initial guess [m]
-%               nang    : number of angular steps
-%               dp      : initial dp/p (6d tracking) or fixed dp/p (4d tracking)
-%               z0      : initial longitudinal coordinate (6d tracking). Nan uses synchrnous phase
-%               res     : resolution [m]
-%               alpha   : da enlargement factor for border search
+%      DAoptions.r0      : initial guess [m]
+%      DAoptions.nang    : number of angular steps
+%      DAoptions.dp      : initial dp/p (6d tracking) or fixed dp/p (4d tracking)
+%      DAoptions.z0      : initial longitudinal coordinate (6d tracking). Nan uses synchrnous phase
+%      DAoptions.res     : resolution [m]
+%      DAoptions.alpha   : da enlargement factor for DA border search
 %
 % Parameters for "grid" DA calculation mode
-%               XmaxDA  : Horizontal range is -Xmax to Xmax [m]
-%               YmaxDA  : Vertical range is 0 to Ymax [m]
-%               npdax   : number of grid points in x direction is 2*npdax+1
-%               npday   : number of grid points in y direction is  npday+
-%
+%      DAoptions.XmaxDA  : Horizontal range is -Xmax to Xmax [m]
+%      DAoptions.YmaxDA  : Vertical range is 0 to Ymax [m]
+%      DAoptions.npdax   : number of grid points in x direction is 2*npdax+1
+%      DAoptions.npday   : number of grid points in y direction is  npday+
 %
 %            If DAoptions = [], hard-coded defaults are used.
 %            Values of DAoptions fields are overridden if given explicitly 
 %            as input in the form ('parameter', value)
 %
 % Optional arguments
-%   all fields in DAoptions listed above
+%   all fields in DAoptions
 %
 %   desc: descriptive string
 %   mode : calculation mode, default = 'xy'. Possible values are
@@ -60,6 +58,8 @@ function DAdist = calcDAdist(varargin)
 %       'xydp':  calculates DA in the xyp planes. Tracking may be 4d + 
 %               energy or 6d as defined by the input lattice.
 %
+%   corrorb: if true, perform orbit correction
+%   corrtun: if true, perform tune correction
 %
 %   nseeds: number of seeds, default = 10
 %   tunfams : list of magnet families used for ring tun matching, default = {'Q1_b3','Q2_b3'}
@@ -71,71 +71,70 @@ function DAdist = calcDAdist(varargin)
 %
 % Optional flags
 % plot : plots DA distribution;
-% corrorb: perform orbit correction
-% corrtun: perform tune correction
+
 %
 %% Outputs
 % DAdist structure with fields
-% DAdist.inputs echoes the inputs
-% DAdist.inputs.RING : input ring array
-% DAdist.inputs.ErrorModel 
-% DAdist.inputs.mode
-% DAdist.inputs.nseeds 
-% DAdist.inputs.tunfams 
-% DAdist.inputs.nittune 
-% DAdist.inputs.TolTune 
-% DAdist.inputs.frac
-% DAdist.inputs.corrorbf : correct orbit flag
-% DAdist.inputs.corrtunf : correct tune flag
+%   DAdist.inputs echoes the inputs
+%   DAdist.inputs.RING : input ring array
+%   DAdist.inputs.ErrorModel 
+%   DAdist.inputs.mode
+%   DAdist.inputs.nseeds 
+%   DAdist.inputs.tunfams 
+%   DAdist.inputs.nittune 
+%   DAdist.inputs.TolTune 
+%   DAdist.inputs.frac
+%   DAdist.inputs.corrorbf : correct orbit flag
+%   DAdist.inputs.corrtunf : correct tune flag
 %
-% DAdist.outputs.desc : : datetime + input description
-% DAdist.outputs.DAoptions : DAoptions actually used for the calculations
-% DAdist.outputs.DAs: (1Xnseeds+1) array of dynamic apertures for all seeds. 
+%   DAdist.outputs.desc : : datetime + input description
+%   DAdist.outputs.DAoptions : DAoptions actually used for the calculations
+%   DAdist.outputs.DAs: (1Xnseeds+1) array of dynamic apertures for all seeds. 
 %                     First point is the unperturbed lattice [mm**2]
-% DAdist.outputs.DAav: Average Dynamic aperture [mm**2]
-% DAdist.outputs.DAstd: DAStandard Deviation of Dynamics Apertures [mm**2]
-% DAdist.outputs.DAVs=DAVs: (nang+1X2*(nseeds+1)) array of dynamic aperture 
+%   DAdist.outputs.DAav: Average Dynamic aperture [mm**2]
+%   DAdist.outputs.DAstd: DAStandard Deviation of Dynamics Apertures [mm**2]
+%   DAdist.outputs.DAVs=DAVs: (nang+1X2*(nseeds+1)) array of dynamic aperture 
 %                           border coordinates for all seeds
 %                           (only for DAMode='border')
-% DAdist.outputs.orb0_stds: (6Xnseeds+1) array of close orbit standadr
+%   DAdist.outputs.orb0_stds: (6Xnseeds+1) array of close orbit standadr
 %                           deviations for perturbed lattices before 
 %                           correction. First point is the unperturbed
 %                           lattice.
-% DAdist.outputsorb_stds  = (6Xnseeds+1) array of close orbit standard
+%   DAdist.outputsorb_stds  = (6Xnseeds+1) array of close orbit standard
 %                           deviations for perturbed lattices after 
 %                           correction. First point is the unperturbed
 %                           lattice.
-% DAdist.outputs.RINGe:  (nseeds+1Xsize of RING) cell array of perturbed 
+%   DAdist.outputs.RINGe:  (nseeds+1Xsize of RING) cell array of perturbed 
 %                        lattices after correction. first is the
 %                        unperturbed lattice.
-% DAdist.outputs.rparae: (nseeds+1X1) cell array of atsummaries for
+%   DAdist.outputs.rparae: (nseeds+1X1) cell array of atsummaries for
 %                        perturbed lattices after correction. 
 %                        First is the unperturbed lattice.
-% DAdist.outputs.Itunese:(nseeds+1X1) cell array of tunes for the 
+%   DAdist.outputs.Itunese:(nseeds+1X1) cell array of tunes for the 
 %                         perturbed lattices before correction
 %                         First is the unperturbed lattice.
-% DAdist.outputs.Ftunese: (nseeds+1X1) cell array of tunes for the 
+%   DAdist.outputs.Ftunese: (nseeds+1X1) cell array of tunes for the 
 %                         perturbed lattices after correction
 %                         First is the unperturbed lattice.
-% DAdist.outputs.dps    : (npd X 1) array of momentum deviations
-% DAdist.outputs.DAxdppav:(npd X 1) array of average positive horizontal
+%   DAdist.outputs.dps    : (npd X 1) array of momentum deviations
+%   DAdist.outputs.DAxdppav:(npd X 1) array of average positive horizontal
 %                          DA [m]
-% DAdist.outputs.DAxdppst:(npd X 1) array of standard deviation of 
+%   DAdist.outputs.DAxdppst:(npd X 1) array of standard deviation of 
 %                          positive horizontal DA [m]
-% DAdist.outputs.DAxdpmav:(npd x 1) array of average negative horizontal
+%   DAdist.outputs.DAxdpmav:(npd x 1) array of average negative horizontal
 %                          DA [m]
-% DAdist.outputs.DAxdpmst:(npd x 1) array of standard deviation of 
+%   DAdist.outputs.DAxdpmst:(npd x 1) array of standard deviation of 
 %                          negative horizontal DA [m]
-% DAdist.outputs.DAydpav: (npd x 1) array of average vertical DA [m]
-% DAdist.outputs.DAydpst: (npd x 1) array of standard devitation of 
+%   DAdist.outputs.DAydpav: (npd x 1) array of average vertical DA [m]
+%   DAdist.outputs.DAydpst: (npd x 1) array of standard devitation of 
 %                         average vertical DA [m]
-% DAdist.outputs.DAxdpsp = (npd X nseeds+1) array of positive horizontal
+%   DAdist.outputs.DAxdpsp = (npd X nseeds+1) array of positive horizontal
 %                           DA [m]
-% DAdist.outputs.DAxdpsm = (npd X nseeds+1) array of negative horizontal
+%   DAdist.outputs.DAxdpsm = (npd X nseeds+1) array of negative horizontal
 %                           DA [m]
-% DAdist.outputs.DAydps  = (npd X nseeds+1) array of vertical DA [m]
+%   DAdist.outputs.DAydps  = (npd X nseeds+1) array of vertical DA [m]
 %
-% DAdist.outputs.telapsed: calculation time [s]
+%   DAdist.outputs.telapsed: calculation time [s]
 %
 %% Usage examples
 % DAdist = calcDAdist(RING,ErrorModel,DAoptions,'plot','corrorb','verbose', 1);
@@ -194,9 +193,9 @@ if (isempty(DAoptions))
 end
 
 plotf            = any(strcmpi(varargin,'plot'));
-corrorbf         = any(strcmpi(varargin,'corrorb'));
-corrtunf         = any(strcmpi(varargin,'corrtun'));
 plotorbrmsf      = any(strcmpi(varargin,'plotorbrms'));
+corrorbf         = getoption(varargin,'corrorb',true);
+corrtunf         = getoption(varargin,'corrtun',true);
 desc             = getoption(varargin,'desc','calcDAdist:');
 verboselevel     = getoption(varargin,'verbose',0);
 mode             = getoption(varargin,'mode','xy');

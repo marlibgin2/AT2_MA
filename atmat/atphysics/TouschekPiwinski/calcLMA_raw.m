@@ -14,7 +14,7 @@ function [map_l,map_h]=calcLMA_raw(RING,points,varargin)
 % deltalimit: maximum momentum deviation to be searched. Used to establish the rf bucket height.
 % initcoord: initial coordinates [x0 y0]
 % delta: initial guess for momentum aperture 
-% deltastepsize: step size for LMA sereach;
+% deltastepsize: step size for LMA search;
 % splits : number of iterations of step division
 % split_step_divisor: factor to reduce step size at each iteration
 % nturns: number of turns. If nan then number of turns is chosen as 1.2/Qs

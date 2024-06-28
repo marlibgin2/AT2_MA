@@ -1,6 +1,6 @@
 function tunemap=calcTuneMap(varargin)
-% Calculates and plots betatron tunes maps
-% as a function of position or energy.
+% Calculates and plots betatron tunes maps as a function of position 
+% or energy.
 % Calculates an plots frequency maps and tune diffusion maps
 %
 % This is a high level wrapper to the function calcTune. 

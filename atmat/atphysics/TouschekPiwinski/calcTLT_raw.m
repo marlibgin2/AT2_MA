@@ -24,7 +24,7 @@ e0 = PhysConstant.elementary_charge.value; %1.60217646e-19; %Coulomb
 r0 = PhysConstant.classical_electron_radius.value; %2.817940327e-15; %m %  classical electron radius
 spl = PhysConstant.speed_of_light_in_vacuum.value; %299792458; % speed of ligth
 
-%% input argument parsing
+%% Input argument parsing
 [lindata,lmap] = getargs(varargin,[],[]);
 Ib = getoption(varargin,'Ib',0.5/176);
 verboselevel  = getoption(varargin,'verbose',0);
@@ -46,7 +46,6 @@ if (verboselevel>0)
     fprintf('energy spread: %.3e\n', sigp);
     fprintf('bunch length:  %.5g [m]\n', sigs);
     fprintf('integration method: "%s"\n', integrationmethod);
-    tic;
 end
 %% Preamble and calculations
 % if dpp is a scalar assume constant momentum aperture.
@@ -164,6 +163,3 @@ for dppcolnum=1:size(dppinput,2)
 end
 
 TLT=length(Tlcol)/(sum(1./Tlcol));
-if (verboselevel>0)
-    toc;
-end
