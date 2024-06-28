@@ -31,7 +31,7 @@ function FG = calcFields(varargin)
 %% Usage examples
 % All_fams = {'Q1';'Q2';'R1'; 'D2';'D3';'D1';'Q3';...
 % 'Q4'; 'S1';'S2';'S3';'S4';'S5';'O1';'O2'; 'O3'};
-% FG=calcFields(ACHR,Allfams,'verbose',1);
+% FG=calcFields(ACHR,All_fams,'verbose',1);
 
 %% History
 % SJ  2024/06/26: first version
