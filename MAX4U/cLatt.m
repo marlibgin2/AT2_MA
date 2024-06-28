@@ -210,7 +210,6 @@ function LattStruct = cLatt(varargin)
 % 'TLT'       : calculates Touschek lifetime for one achromat without
 %               errors
 % 'TLTdist'   : calculates Touschek lifetime for ring with errors
-
 %% Outputs
 % LattStruct is a structure with fields
 % LattStruct.Lattice_Name: string with lattice name following naming convention
