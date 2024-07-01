@@ -43,6 +43,7 @@ function LMAdist = calcLMAdist(varargin)
 %
 % Optional flags
 % plot : plots LMAdist
+% fulloutput : includes detailed data all data on each one of seeds.
 
 
 %% Outputs
@@ -79,6 +80,8 @@ function LMAdist = calcLMAdist(varargin)
 %                           deviations for perturbed lattices after 
 %                           correction. First point is the unperturbed
 %                           lattice.
+% Note: the outptus (RINGe,raparae,Itunese and Ftunese) below are empty 
+%       unless the 'fulloutput' option is on
 %   LMAdist.outputs.RINGe:  (nseeds+1Xsize of RING) cell array of perturbed 
 %                        lattices after correction. first is the
 %                        unperturbed lattice.
@@ -129,6 +132,7 @@ plotf              = any(strcmpi(varargin,'plot'));
 plotorbrmsf        = any(strcmpi(varargin,'plotorbrms'));
 corrorbf           = getoption(varargin,'corrorb',true);
 corrtunf           = getoption(varargin,'corrtun',true);
+fulloutputf        = any(strcmpi(varargin,'fulloutput'));
 verboselevel       = getoption(varargin,'verbose',0);
 desc               = getoption(varargin,'desc','calcLMAdist:');
 lmafams            = getoption(varargin,'lmafams',MAoptions.lmafams);
@@ -345,10 +349,17 @@ LMAdist.outputs.map_h_std=map_h_std;
 
 LMAdist.outputs.orb0_stds=orb0_stds;
 LMAdist.outputs.orb_stds=orb_stds;
-LMAdist.outputs.RINGe=RINGe;
-LMAdist.outputs.rparae=rparae;
-LMAdist.outputs.Itunese=Itunese;
-LMAdist.outputs.Ftunese=Ftunese;
+if (fulloutputf)
+    LMAdist.outputs.RINGe=RINGe;
+    LMAdist.outputs.rparae=rparae;
+    LMAdist.outputs.Itunese=Itunese;
+    LMAdist.outputs.Ftunese=Ftunese;
+else
+    LMAdist.outputs.RINGe={};
+    LMAdist.outputs.rparae={};
+    LMAdist.outputs.Itunese={};
+    LMAdist.outputs.Ftunese={};
+end
 
 LMAdist.outputs.telapsed=telapsed;
 

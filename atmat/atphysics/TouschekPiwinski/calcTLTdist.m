@@ -74,6 +74,7 @@ function TLdist = calcTLTdist(varargin)
 % Optional flags
 % corrorb: perform orbit correction
 % corrtun: perform tune correction
+% fulloutput : includes detailed data all data on each one of seeds.
 %
 %% Outputs
 % TLdist : structure with the fields
@@ -216,11 +217,17 @@ if (verboselevel>0)
     fprintf('%s CalcTLTdist: Starting LMA distribuition calculation \n', datetime);
 end
 
-
-LMAdist = calcLMAdist(RING,ErrorModel,MAoptions,'corrorb',corrorbf,...
+if (fulloutputf)
+    LMAdist = calcLMAdist(RING,ErrorModel,MAoptions,'corrorb',corrorbf,...
+                      'corrtun',corrtunf,'S0max',S0max,'S0min',S0min,...
+                      'deltalimit',deltalimit,'tunfams',tunfams,...
+                      'nseeds',nseeds,'verbose', verboselevel-1,'fulloutput');
+else
+    LMAdist = calcLMAdist(RING,ErrorModel,MAoptions,'corrorb',corrorbf,...
                       'corrtun',corrtunf,'S0max',S0max,'S0min',S0min,...
                       'deltalimit',deltalimit,'tunfams',tunfams,...
                       'nseeds',nseeds,'verbose', verboselevel-1);
+end
 if (verboselevel>0)
     fprintf('%s CalcTLTdist: Starting Touschek lifetime caculation \n', datetime);
 end

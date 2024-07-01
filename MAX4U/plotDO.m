@@ -26,7 +26,7 @@ plotdevf = any(strcmpi(varargin,'dev'));
 
 
 %% Plots DO
-lattname=LattStruct.Lattice_Name;
+lattname= LattStruct.Lattice_Name;
 x2d     = LattStruct.LattData.DesignOrbit.x2d;
 y2d     = LattStruct.LattData.DesignOrbit.y2d;
 x2d_ref = LattStruct.LattData.DesignOrbit.x2d_ref;

@@ -71,7 +71,7 @@ function DAdist = calcDAdist(varargin)
 %
 % Optional flags
 % plot : plots DA distribution;
-
+% fulloutput : includes detailed data all data on each one of seeds.
 %
 %% Outputs
 % DAdist structure with fields
@@ -104,6 +104,8 @@ function DAdist = calcDAdist(varargin)
 %                           deviations for perturbed lattices after 
 %                           correction. First point is the unperturbed
 %                           lattice.
+% Note: the outptus (RINGe,raparae,Itunese and Ftunese) below are empty 
+%       unless the 'fulloutput' option is on
 %   DAdist.outputs.RINGe:  (nseeds+1Xsize of RING) cell array of perturbed 
 %                        lattices after correction. first is the
 %                        unperturbed lattice.
@@ -116,6 +118,7 @@ function DAdist = calcDAdist(varargin)
 %   DAdist.outputs.Ftunese: (nseeds+1X1) cell array of tunes for the 
 %                         perturbed lattices after correction
 %                         First is the unperturbed lattice.
+%
 %   DAdist.outputs.dps    : (npd X 1) array of momentum deviations
 %   DAdist.outputs.DAxdppav:(npd X 1) array of average positive horizontal
 %                          DA [m]
@@ -194,6 +197,7 @@ end
 
 plotf            = any(strcmpi(varargin,'plot'));
 plotorbrmsf      = any(strcmpi(varargin,'plotorbrms'));
+fulloutputf      = any(strcmpi(varargin,'fulloutput'));
 corrorbf         = getoption(varargin,'corrorb',true);
 corrtunf         = getoption(varargin,'corrtun',true);
 desc             = getoption(varargin,'desc','calcDAdist:');
@@ -486,10 +490,17 @@ DAdist.outputs.DAav=DAav;
 DAdist.outputs.DAstd=DAstd;
 DAdist.outputs.orb0_stds=orb0_stds;
 DAdist.outputs.orb_stds=orb_stds;
-DAdist.outputs.RINGe=RINGe;
-DAdist.outputs.rparae=rparae;
-DAdist.outputs.Itunese=Itunese;
-DAdist.outputs.Ftunese=Ftunese;
+if (fulloutputf)
+    DAdist.outputs.RINGe=RINGe;
+    DAdist.outputs.rparae=rparae;
+    DAdist.outputs.Itunese=Itunese;
+    DAdist.outputs.Ftunese=Ftunese;
+else
+    DAdist.outputs.RINGe={};
+    DAdist.outputs.rparae={};
+    DAdist.outputs.Itunese={};
+    DAdist.outputs.Ftunese={};
+end
 DAdist.outputs.DAxdpsp  = DAxdpsp;
 DAdist.outputs.DAxdppav = DAxdppav;
 DAdist.outputs.DAxdppst = DAxdppst;
