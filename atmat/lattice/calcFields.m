@@ -58,7 +58,7 @@ split         = getoption(varargin,'split',1);
 B_rho=atGetRingProperties(RING,'BRho');
 
 % Initialize structure fields
-FG.desc=desc;
+FG.desc = desc;
 FG.fams = {};
 FG.Spos = [];
 FG.Field = [];

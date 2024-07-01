@@ -1,5 +1,5 @@
 function plotDA(varargin)
-% plots the Dynamic aperture
+% plots the dynamic aperture
 %   
 %% Inputs
 % Mandatory argument

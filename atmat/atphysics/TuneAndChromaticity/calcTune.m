@@ -77,7 +77,7 @@ function tunes=calcTune(RING,Rin,varargin)
 %                 for fixing n. of turns, even for NAFF.
 % PFT 2024/05/24: Updated use of verbose flag in call to 
 %                 findtune
-% PFT 2024/05/26: Updted the handlig of verbose output
+% PFT 2024/05/26: Updted the handling of verbose output
 %                
 
 %% Input argument parsing

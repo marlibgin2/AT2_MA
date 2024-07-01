@@ -182,6 +182,10 @@ for i=1:length(lindata)
     lindata(i).Length = RING{Ipos(i)}.Length;
 end
 
+if (verboselevel>0)
+    fprintf('%s calcTLT: calculating TLT \n', datetime);
+end
+
 TousLT = calcTLT_raw(lindata,lmap,'Ib',Ib,'circumference',circumference,'energy',energy,'emitx',emitx,'emity',emity,...
           'sig',sigp,'sigs',sigs,'abstol',abstol,'reltol', reltol, 'integrationmethod', integrationmethod,'verbose',verboselevel-1);
 

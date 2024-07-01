@@ -26,8 +26,9 @@ function [RINGc,orb0,orb] = calcOrb(varargin)
 % calcOrb(RING,'plot');
 
 %% History
-% PFT 2024/03/02
-% 2024/03/10: Bug fix to get the correct output lattice
+% PFT 2024/03/02, first version
+% PFT 2024/03/10: Bug fix to get the correct output lattice
+% PFT 2024/06/30: added search for corrector indices based on family names
 %
 %% Input argument parsing
 RING           = getargs(varargin,[]);
@@ -57,10 +58,19 @@ end
 
 % Correct the orbit
 if (correctf)
+    indHCor=find(atgetcells(RING,'iscorH','H'));
+    if (isempty(indHCor))
+        indHCor=findcells(RING,'FamName','ch');
+    end
+    indVCor=find(atgetcells(RING,'iscorV','V'));
+    if (isempty(indHCor))
+        indVCor=findcells(RING,'FamName','ch');
+    end
+
 %    RINGc = atcorrectorbit(RING,[],[],[],[],[140 120; 160 140; 180 160; ...
 %                           ones(10,1)*[200 180]],[true true],0.75,...
 %                           [],[],[0.38, 0.38]*1e-3,verbosef);
-     RINGc = atcorrectorbit(RING,[],[],[],[],[],[true true],0.75,...
+     RINGc = atcorrectorbit(RING,iBPM,indHCor,indVCor,[],[],[true true],0.75,...
                            [],[],[0.38, 0.38]*1e-3,verbosef);
     % Calculate the new orbit and plot in the former figure
     orb = findorbit6Err(RINGc,iBPM);

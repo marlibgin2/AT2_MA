@@ -103,8 +103,8 @@ function LattStruct = cLatt(varargin)
 %                                     caculation, defaule = +0.04
 % cLoptions.DAoptions.npd      : number of points along momentum deviation axis
 %
-% cLoptions.DAoptions.r0       : initial guess for border DA saerh, defalt = 0.02 m
-% cLoptions.DAoptions.nang     : number of angular steps in DA border search, defaule = 40
+% cLoptions.DAoptions.r0       : initial guess for border DA search, default = 0.02 m
+% cLoptions.DAoptions.nang     : number of angular steps in DA border search, default = 40
 % cLoptions.DAoptions.z0       : initial longitudinal coordinate (6d tracking). nan uses synchrnous phase
 % cLoptions.DAoptions.res      : resolution for DA border search,
 %                                     default = 5E-4 m
@@ -186,7 +186,7 @@ function LattStruct = cLatt(varargin)
 %                                                               struct
 % verbose              :defines level of verbose output, default=0, i.e. no output 
 %
-% Optional flags
+%% Optional flags
 %
 % 'basic'     : calculates basic lattice performance data - atsummary
 % 'all'       : performs all calculations
@@ -347,7 +347,7 @@ function LattStruct = cLatt(varargin)
 %                  added Touschek lifetime for achromat without errors 
 %                  and full ring with errors
 % PFT 2024/06/28 : added calculation of fields and gradients
-%
+% PFT 2024/06/30 : changed handling of 'basic' calculation mode
 %% Input argument parsing
 LattSt               = getargs(varargin,[]);
 
@@ -402,19 +402,19 @@ if (isempty(LattSt))
             return
     end
     
-    LattStruct.Lattice_Name = '';
-    LattStruct.Description  = '';
-    LattStruct.ACHROMAT = {};
-    LattStruct.cLoptions=struct;
+    LattStruct.Lattice_Name = lattname;
+    LattStruct.Description  = desc;
+    LattStruct.ACHROMAT     = ACHRO;
+    LattStruct.cLoptions    = cLoptions;
     %
-    LattStruct.LattData.ACHROMAT_ref = {};
+    LattStruct.LattData.ACHROMAT_ref = ACHRO_ref;
     LattStruct.LattData.V0 = V0;
     LattStruct.LattData.XAllO=[];
     %
-    LattStruct.LattData.MagnetStrengthLimits=struct;
+    LattStruct.LattData.MagnetStrengthLimits=MagnetStrengthLimits;
     LattStruct.LattData.CLv=struct;
     LattStruct.LattData.ACHROMAT_ZC={};
-    LattStruct.LattData.RINGGRD={};
+    LattStruct.LattData.RINGGRD=RING;
     LattStruct.LattData.DesignOrbit.s2d=[];
     LattStruct.LattData.DesignOrbit.x2d=[];
     LattStruct.LattData.DesignOrbit.y2d=[];
@@ -465,9 +465,13 @@ end
 if (not(isempty(lattname)))
     LattStruct.Lattice_Name = lattname;
 end
+lattname = LattStruct.Lattice_Name;
+
 if (not(isempty(desc)))
     LattStruct.Description = desc;
 end
+desc = LattStruct.Description;
+
 if (not(isempty(ACHRO)))
     LattStruct.ACHROMAT = ACHRO;
 end
@@ -489,7 +493,6 @@ if (isempty(ACHRO_ref))
         fprintf('%s cLatt Warning: no reference achromat structure available. \n', datetime);
     end
 end
-
 
 if (not(isempty(fieldnames(MagnetStrengthLimits))))
     LattStruct.LattData.MagnetStrengthLimits=MagnetStrengthLimits;
@@ -634,62 +637,64 @@ if (isempty(fieldnames(cLoptions)))
 end
 
 %% Calculates design orbit 
-if (verboselevel>0)
-    fprintf('%s cLatt: calculating design orbit \n', datetime);
-end
-if (split>1)
-    ACHRO_SP=splitlat(ACHRO,split);
-    [s2d, x2d, y2d, a2d, baa, ban] = Survey2D(ACHRO_SP,9.0*pi/180);
-else
-    [s2d, x2d, y2d, a2d, baa, ban] = Survey2D(ACHRO,9.0*pi/180);
-end
-   
-LattStruct.LattData.DesignOrbit.s2d=s2d;
-LattStruct.LattData.DesignOrbit.x2d=x2d;
-LattStruct.LattData.DesignOrbit.y2d=y2d;
-LattStruct.LattData.DesignOrbit.a2d=a2d;
-LattStruct.LattData.DesignOrbit.baa=baa;
-LattStruct.LattData.DesignOrbit.ban=ban;
-
-if (not(isempty(ACHRO_ref)))
+if (basicf||allf)
+    if (verboselevel>0)
+        fprintf('%s cLatt: calculating design orbit \n', datetime);
+    end
     if (split>1)
-        ACHRO_ref_SP=splitlat(ACHRO_ref,split);
-        [s2d_ref, x2d_ref, y2d_ref, a2d_ref,~,~] = Survey2D(ACHRO_ref_SP,9.0*pi/180);
+        ACHRO_SP=splitlat(ACHRO,split);
+        [s2d, x2d, y2d, a2d, baa, ban] = Survey2D(ACHRO_SP,9.0*pi/180);
     else
-        [s2d_ref, x2d_ref, y2d_ref, a2d_ref,~,~] = Survey2D(ACHRO_ref,9.0*pi/180);
+        [s2d, x2d, y2d, a2d, baa, ban] = Survey2D(ACHRO,9.0*pi/180);
     end
-    LattStruct.LattData.DesignOrbit.s2d_ref = s2d_ref;
-    LattStruct.LattData.DesignOrbit.x2d_ref = x2d_ref;
-    LattStruct.LattData.DesignOrbit.y2d_ref = y2d_ref;
-    LattStruct.LattData.DesignOrbit.a2d_ref = a2d_ref;
-    [~, ia, ~] = unique(x2d_ref);
-    x2d_refu = x2d_ref(ia);
-    y2d_refu = y2d_ref(ia);
-    dist  = zeros(length(x2d),1);
-    for i = 1:length(x2d)
-        yinter=interp1(x2d_refu,y2d_refu,x2d(i));
-        dist(i)    = abs(yinter - y2d(i));
+   
+    LattStruct.LattData.DesignOrbit.s2d=s2d;
+    LattStruct.LattData.DesignOrbit.x2d=x2d;
+    LattStruct.LattData.DesignOrbit.y2d=y2d;
+    LattStruct.LattData.DesignOrbit.a2d=a2d;
+    LattStruct.LattData.DesignOrbit.baa=baa;
+    LattStruct.LattData.DesignOrbit.ban=ban;
+
+    if (not(isempty(ACHRO_ref)))
+        if (split>1)
+            ACHRO_ref_SP=splitlat(ACHRO_ref,split);
+            [s2d_ref, x2d_ref, y2d_ref, a2d_ref,~,~] = Survey2D(ACHRO_ref_SP,9.0*pi/180);
+        else
+            [s2d_ref, x2d_ref, y2d_ref, a2d_ref,~,~] = Survey2D(ACHRO_ref,9.0*pi/180);
+        end
+        LattStruct.LattData.DesignOrbit.s2d_ref = s2d_ref;
+        LattStruct.LattData.DesignOrbit.x2d_ref = x2d_ref;
+        LattStruct.LattData.DesignOrbit.y2d_ref = y2d_ref;
+        LattStruct.LattData.DesignOrbit.a2d_ref = a2d_ref;
+        [~, ia, ~] = unique(x2d_ref);
+        x2d_refu = x2d_ref(ia);
+        y2d_refu = y2d_ref(ia);
+        dist  = zeros(length(x2d),1);
+        for i = 1:length(x2d)
+            yinter=interp1(x2d_refu,y2d_refu,x2d(i));
+            dist(i)    = abs(yinter - y2d(i));
+        end
+    else
+        dist=nan(length(x2d));
     end
-else
-    dist=nan(length(x2d));
+
+    LattStruct.LattData.DesignOrbit.Deviation = dist;
 end
-
-LattStruct.LattData.DesignOrbit.Deviation = dist;
-
 %% Calculates magnet challenge levels
-
-if (verboselevel>0)
-    fprintf('%s cLatt: calculating magnet challenge levels \n', datetime);
+if ((basicf||allf)&&not(isempty(fieldnames(MagnetStrengthLimits))))
+    if (verboselevel>0)
+        fprintf('%s cLatt: calculating magnet challenge levels \n', datetime);
+    end
+    eqfam = cLoptions.eqfam;
+    eqsca = cLoptions.eqsca;
+    All_famsO = cLoptions.All_famsO;
+    CLv = chalevel(MagnetStrengthLimits,'mode','LS',...
+                   'ACHRO',ACHRO,'eqfam', eqfam,'eqsca',...
+                    eqsca,'Fams',All_famsO,'verbose',verboselevel-1)';  
+    LattStruct.LattData.CLv=CLv;
+    XAllO=CLv.outputs.X0;
+    LattStruct.LattData.XAllO=XAllO;
 end
-eqfam = cLoptions.eqfam;
-eqsca = cLoptions.eqsca;
-All_famsO = cLoptions.All_famsO;
-CLv = chalevel(MagnetStrengthLimits,'mode','LS',...
-               'ACHRO',ACHRO,'eqfam', eqfam,'eqsca',...
-                eqsca,'Fams',All_famsO,'verbose',verboselevel-1)';  
-LattStruct.LattData.CLv=CLv;
-XAllO=CLv.outputs.X0;
-LattStruct.LattData.XAllO=XAllO;
 
 %% Creates full ring structure if not yet available
 if (isempty(RING))
@@ -719,28 +724,32 @@ end
 
 %
 %% Generates lattice at zero chromaticity
-if (verboselevel>0)
-     fprintf('%s cLatt: creating zero chromaticity latice...\n',datetime);
+if (basicf||allf)
+    if (verboselevel>0)
+         fprintf('%s cLatt: creating zero chromaticity latice...\n',datetime);
+    end
+    TolChrom     = cLoptions.DAoptions.TolChrom; % Chromaticity tolerances
+    Nitchro      = cLoptions.DAoptions.Nitchro;  % Max n. iterations of chromaticity correction
+    chrom_fams   = cLoptions.chrom_fams;
+    try 
+        [ACHRO_zc, ~, ~]=fitchroit(ACHRO, chrom_fams, [0 0], Nitchro, TolChrom); 
+    catch ME
+        fprintf('%s cLatt: Error in fitting zero chromaticity: ', datetime);
+        fprintf('Error message was:%s \n',ME.message);
+        ACHRO_zc={};
+    end
+    LattStruct.LattData.ACHROMAT_ZC = ACHRO_zc;
 end
-TolChrom     = cLoptions.DAoptions.TolChrom; % Chromaticity tolerances
-Nitchro      = cLoptions.DAoptions.Nitchro;  % Max n. iterations of chromaticity correction
-chrom_fams   = cLoptions.chrom_fams;
-try 
-    [ACHRO_zc, ~, ~]=fitchroit(ACHRO, chrom_fams, [0 0], Nitchro, TolChrom); 
-catch ME
-    fprintf('%s cLatt: Error in fitting zero chromaticity: ', datetime);
-    fprintf('Error message was:%s \n',ME.message);
-    ACHRO_zc={};
-end
-LattStruct.LattData.ACHROMAT_ZC = ACHRO_zc;
-
+ACHRO_zc=LattStruct.LattData.ACHROMAT_ZC;
 
 %% Calculates field and gradient profiles
-if (verboselevel>0)
+if (basicf||allf)
+    if (verboselevel>0)
         fprintf('%s cLatt: calculating field and gradient profiles \n', datetime);
+    end
+    FG = calcFields(ACHRO,cLoptions.All_famsO,'desc',lattname,'split',split);
+    LattStruct.LattData.FG=FG;
 end
-FG = calcFields(ACHRO,All_famsO,'desc',desc,'split',split);
-LattStruct.LattData.FG=FG;
 
 %% Calculates atsummary for full ring (or an achromat if ring not available)
 if (basicf||allf)
@@ -753,35 +762,36 @@ if (basicf||allf)
         LattStruct.LattPerf.atsummary = atsummary(LattStruct.LattData.RINGGRD);
     end
 end
-
-%% Evaluates DAs and for full RING
+%% Evaluates DAs for full RING
 if (not(isempty(RINGGRD)))
 %% Dynamic aperture for full ring without errors on (x,y) plane
   if (DAxyf||allf)
     if (verboselevel>0)
-      fprintf('%s DA calculation: on-momentum. \n', datetime);
+      fprintf('%s DA calculation without errors: on-momentum. \n', datetime);
     end
     DAS_0 = calcDA(RINGGRD,cLoptions.DAoptions, 'mode', 'xy', 'dp', 0.00, 'verbose', verboselevel-1);
     if (verboselevel>0)
-      fprintf('%s DA calculation: +3 %%. \n', datetime);
+      fprintf('%s DA calculation without errors: +3 %%. \n', datetime);
     end
     DAS_p3 = calcDA(RINGGRD,cLoptions.DAoptions,'mode', 'xy', 'dp',+0.03, 'verbose', verboselevel-1);
     if (verboselevel>0)
-      fprintf('%s DA calculation: -3 %%. \n', datetime);
+      fprintf('%s DA calculation without errors: -3 %%. \n', datetime);
     end
     DAS_m3 = calcDA(RINGGRD,cLoptions.DAoptions,'mode', 'xy', 'dp',-0.03, 'verbose', verboselevel-1);
     LattStruct.LattPerf.DA.xy_0=DAS_0;
     LattStruct.LattPerf.DA.xy_p3=DAS_p3;   
     LattStruct.LattPerf.DA.xy_m3=DAS_m3;
   end
+  
 %% Dynamic aperture for full ring without errors on (x,dp) and (y,dp) planes
   if (DAxydpf||allf)
     if (verboselevel>0)
-      fprintf('%s DA calculation: (x,dp) plane \n', datetime);
+      fprintf('%s DA calculation without errors: (xy,dp) planes \n', datetime);
     end
     DAS = calcDA(RINGGRD,cLoptions.DAoptions, 'mode', 'xydp','verbose', verboselevel-1);
     LattStruct.LattPerf.DA.xydp=DAS;
   end
+  
 %% Dynamic aperture for full ring with errors on xy plane
   if (DAdistxyf||allf)
     if (verboselevel>0)
@@ -838,7 +848,7 @@ if (not(isempty(ACHRO_zc)))
 %% Tune map on a grid of points in (x,y) plane.
   if (TM_gridxyf||allf)
        if (verboselevel>0)
-        fprintf('%s Tune Map grid (x,y) (ADTS). \n', datetime);
+            fprintf('%s Tune Map grid (x,y) (ADTS). \n', datetime);
        end
        tunemap = calcTuneMap(ACHRO_zc,'mode','gridxy',...
                  'npx',cLoptions.TMoptions.npx,...
@@ -855,7 +865,7 @@ if (not(isempty(ACHRO_zc)))
                  'plottype','gridxy');
        LattStruct.LattPerf.TM.gridxy=tunemap;
   end
-%% Tune map on a gri    d of points in (x,dp) plane
+%% Tune map on a grid of points in (x,dp) plane
   if (TM_gridxdpf||allf)
     if (verboselevel>0)
         fprintf('%s Tune Map grid (x,dp). \n', datetime);
@@ -981,8 +991,12 @@ else
    fprintf('%s cLatt Warning: ACHRO_zc (zero chromaticty achromat) structure not available. \n', datetime);
 end
 %% Evaluates LMA for a single achromat without errors
+
 if (not(isempty(ACHRO)))
     if (LMAf||allf)
+        if (verboselevel>0)
+            fprintf('%s Local Momentum Aperture without errors \n', datetime);
+        end
         LMA=calcLMA(ACHRO,cLoptions.MAoptions,'verbose',verboselevel-1);
         LattStruct.LattPerf.LMA=LMA;
     end
@@ -994,6 +1008,9 @@ end
 %% Evaluates LMA for a full ring with errors
 if (not(isempty(RINGGRD)))
     if (LMAdistf||allf)
+        if (verboselevel>0)
+            fprintf('%s Local Momentum Aperture with errors \n', datetime);
+        end
         LMAdist=calcLMAdist(RINGGRD,cLoptions.ErrorModel,...
              cLoptions.MAoptions,'verbose',verboselevel-1,...
              'corrorb',cLoptions.corrorb,'corrtun',cLoptions.corrtun,...
@@ -1007,20 +1024,26 @@ else
 end
 
 %% Evaluates Touschek lifetime for a ring without errors
-if (not(isempty(ACHRO)))
+if (not(isempty(RINGGRD)))
     if (TLTf||allf)
+        if (verboselevel>0)
+            fprintf('%s Touschek lifetime without errors \n', datetime);
+        end
         TL=calcTLT(RINGGRD,cLoptions.TLoptions,cLoptions.MAoptions,'LMAPeriods',1,'verbose',verboselevel-1);
         LattStruct.LattPerf.TL=TL;
     end
 else
     if (verboselevel>0)
-        fprintf('%s cLatt Warning: ACHRO structure not available for Touschek lifetime calculation. \n', datetime);
+        fprintf('%s cLatt Warning: RING structure not available for Touschek lifetime calculation. \n', datetime);
     end
 end
 %% Evaluates Touschek lifetime for a full ring with errors
 %
 if (not(isempty(RINGGRD)))
     if (TLTdistf||allf)
+         if (verboselevel>0)
+            fprintf('%s Touchek lifetime with errors \n', datetime);
+        end
         TLTdist=calcTLTdist(RINGGRD,cLoptions.ErrorModel,...
            cLoptions.TLoptions,cLoptions.MAoptions,...
           'verbose',verboselevel-1,'corrorb',cLoptions.corrorb,...
@@ -1033,8 +1056,6 @@ else
         fprintf('%s Error: RING structure not available for TLTdist calculation. \n', datetime);
     end
 end
-
-
 
 fprintf('%s Lattice structure creation/update/evaluation completed. \n', datetime);
 fprintf(' ************* \n');

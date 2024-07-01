@@ -52,7 +52,7 @@ parfor i=1:length(points)
      RING_cycl=[RING(points(i):end); RING(1:points(i)-1)];
         try
             if (verboselevel>0)
-                fprintf('%s calcDA_raw: calculating positive LMA \n', datetime);
+                fprintf('%s calcLMA_raw: calculating positive LMA \n', datetime);
             end
             if (not(isnan(nturns)))
                 map_h(i)=momentum_aperture_at(RING_cycl,deltalimit,initcoord,...
@@ -67,7 +67,7 @@ parfor i=1:length(points)
         
         try
             if (verboselevel>0)
-                 fprintf('%s calcDA_raw: calculating negative LMA \n', datetime);
+                 fprintf('%s calcLMA_raw: calculating negative LMA \n', datetime);
             end
             if (not(isnan(nturns)))
                 map_l(i)=momentum_aperture_at(RING_cycl,-deltalimit,initcoord,...

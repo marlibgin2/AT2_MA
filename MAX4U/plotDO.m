@@ -17,8 +17,8 @@ function plotDO(LattStruct,varargin)
 % plotDO(m4_standard);
 
 %% History
-% PFT 2024/06/13
-%
+% PFT 2024/06/13, first version
+% PFT 2024/06/30 : added latice title
 %% Input argument parsing
 %
 plotdof  = any(strcmpi(varargin,'do'));
@@ -26,6 +26,7 @@ plotdevf = any(strcmpi(varargin,'dev'));
 
 
 %% Plots DO
+lattname=LattStruct.Lattice_Name;
 x2d     = LattStruct.LattData.DesignOrbit.x2d;
 y2d     = LattStruct.LattData.DesignOrbit.y2d;
 x2d_ref = LattStruct.LattData.DesignOrbit.x2d_ref;
@@ -37,12 +38,14 @@ if (plotdof)
     figure;plot(x2d, y2d, '-ob');hold; plot(x2d_ref, y2d_ref, '-or');
     xlabel('X[m]');ylabel('Y[m]');legend({'design orbit';'reference orbit'});
     grid on; 
+    title(lattname);
 end
 
 if(plotdevf)
     figure;plot(x2d, dev*1000, '-o'); 
     xlabel('X[m]');ylabel('dZ[mm]');
-    grid on
+    grid on;
+    title(lattname);
 end
 
 
