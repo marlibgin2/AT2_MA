@@ -63,8 +63,8 @@ if (correctf)
         indHCor=findcells(RING,'FamName','ch');
     end
     indVCor=find(atgetcells(RING,'iscorV','V'));
-    if (isempty(indHCor))
-        indVCor=findcells(RING,'FamName','ch');
+    if (isempty(indVCor))
+        indVCor=findcells(RING,'FamName','cv');
     end
 
 %    RINGc = atcorrectorbit(RING,[],[],[],[],[140 120; 160 140; 180 160; ...
