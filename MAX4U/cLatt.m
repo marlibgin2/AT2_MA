@@ -555,6 +555,8 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.DAoptions.xmindas  = -0.015;
     cLoptions.DAoptions.xmaxdas  = 0.015;
     cLoptions.DAoptions.ymaxdas  = 0.007;
+    cLoptions.DAoptions.XmaxDA   = 0.015;
+    cLoptions.DAoptions.YmaxDA   = 0.007;
     cLoptions.DAoptions.dpmin    = -0.04;
     cLoptions.DAoptions.dpmax    = 0.04;
     cLoptions.DAoptions.npd      = 11;
@@ -706,6 +708,9 @@ end
 cavpts  = find(atgetcells(RING, 'FamName', 'CAVITY'));
 if (isempty(cavpts))
     cavpts  = find(atgetcells(RING, 'FamName', 'CAV'));
+end
+if (isempty(cavpts))
+    cavpts  = find(atgetcells(RING, 'FamName', 'cav'));
 end
 if (not(isempty(cavpts)))
    RING = atSetRingProperties(RING,'rf_frequency','nominal',...
