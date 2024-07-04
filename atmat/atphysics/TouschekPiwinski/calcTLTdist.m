@@ -184,6 +184,7 @@ MAoptions.S0min              = S0min;
 
 corrorbf        = getoption(varargin,'corrorb',true);
 corrtunf        = getoption(varargin,'corrtun',true);
+fulloutputf     = any(strcmpi(varargin,'fulloutput'));
 
 nseeds           = getoption(varargin,'nseeds',10);
 tunfams          = getoption(varargin,'tunfams',{'Q1_b3','Q2_b3'});

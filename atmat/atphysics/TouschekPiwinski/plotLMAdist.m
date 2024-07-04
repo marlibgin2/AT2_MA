@@ -7,6 +7,8 @@ function plotLMAdist(varargin)
 % Optional flags
 % plotorbrms: plots the rms of the uncorrected and corrected orbits for all
 %             seeds
+% dpmaxplot : maximum of energy deviation axis, default =  LMA.deltalimit
+% dpminplot : minimum of energy deviation axis, default = -LMA.deltalimit
 %% Usage examples
 % plotLMAdist(LMAdist);
 % plotLMAdist(LMAdist,'plotorbrms');
@@ -16,11 +18,14 @@ function plotLMAdist(varargin)
 
 %% History
 % PFT 2024/06/16
+% PFT 2024/07/03 added vertical scale control
 
 %% Input argument parsing
 %
 LMAdist      = getargs(varargin,[]);
 plotorbrmsf  = any(strcmpi(varargin,'plotorbrms'));
+dpmaxplot     = getoption(varargin,'dpmaxplot', LMAdist.outputs.MAoptions.deltalimit);
+dpminplot     = getoption(varargin,'dpminplot',-LMAdist.outputs.MAoptions.deltalimit);
 verboselevel = getoption(varargin,'verbose',0);
 
 %% Preamble
@@ -37,7 +42,7 @@ hold;errorbar(Spos,map_h_av*100,map_h_std*100 ,'o-');
 xlabel('S[m]');
 ylabel('Local Momentum Aperture [%]');
 grid on;
-ylim([-15,15]);
+ylim([dpminplot,dpmaxplot]);
 
 if (plotorbrmsf)
    figure; 

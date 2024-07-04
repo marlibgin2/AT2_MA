@@ -5,7 +5,7 @@ function Fams = findFams(LAT)
 % LAT : AT2.0 lattice cell array
 %
 %% Outputs
-% Fams: struncture with the fields
+% Fams: structure with the fields
 % Fams.Dipoles    : cell array of strings with names of dipole families
 % Fams.Multipoles : cell aray of stris with names of multipole families
 % Fams.Correctors : cell array of strings with names of orbit cOrrector
