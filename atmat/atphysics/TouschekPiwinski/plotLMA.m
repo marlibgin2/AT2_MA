@@ -30,7 +30,7 @@ Spos  = LMA.outputs.Spos;
 map_l = LMA.outputs.map_l;
 map_h = LMA.outputs.map_h;
 
-figure;plot(Spos, map_l*100, '-o');hold;plot(Spos,map_h*100,'o-');
+figure;plot(Spos, map_l*100, '-o');hold on;plot(Spos,map_h*100,'o-');
 xlabel('S[m]');
 ylabel('Local Momentum Aperture [%]');
 grid on;

@@ -29,7 +29,7 @@ function LMA = calcLMA(varargin)
 %
 % all fields in MAoptions
 %
-% nperiods: number of periods contained in the input lattice. Ssed to 
+% nperiods: number of periods contained in the input lattice. Used to 
 %           determine the period length for periodicity checks. 
 %           RING is assumed to contain the whole ring in this case, 
 %           default = 20
@@ -115,6 +115,7 @@ MAoptions.S0max              = S0max;
 MAoptions.S0min              = S0min;
 
 %% Locate points at which LMA is to be calculated
+tstart = tic;
 if (strcmpi(lmafams,'all'))
     Ipos = (1:size(RING,1))'; %(first element is assumed to be RingPAram)
 else
@@ -135,7 +136,6 @@ Spos = findspos(RING,Ipos);
 nSpos = numel(Spos);
 
 %% Calculate LMA
-tstart = tic;
 if (verboselevel>0)
     fprintf('**** \n');
     fprintf('%s calcLMA: LMA at %3d points \n', datetime, length(Spos));
@@ -163,7 +163,7 @@ if (not(isnan(nturns)))
                'splits',splits,...
                'split_step_divisor',split_step_divisor,...
                'nturns',nturns,...
-               'verbose',verboselevel-1);
+               'verbose',verboselevel-2);
 else
     fprintf('%s calcLMA: nturns not defined \n', datetime);
     map_l=zeros(nSpos,1);

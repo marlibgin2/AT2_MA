@@ -11,7 +11,7 @@ for i=1:nelem
         RApertures(i,1:4) = nan(1,4);
     end
 end
-figure;plot(Spos,RApertures(:,1)*1000,'-b');hold;xlabel('S[m]');ylabel('Aperture[mm]');
+figure;plot(Spos,RApertures(:,1)*1000,'-b');hold on;xlabel('S[m]');ylabel('Aperture[mm]');
 plot(Spos,RApertures(:,3)*1000,'-r');
 plot(Spos,RApertures(:,2)*1000,'-b');
 plot(Spos,RApertures(:,4)*1000,'-r');

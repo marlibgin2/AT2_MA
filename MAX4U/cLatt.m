@@ -1,7 +1,7 @@
 function LattStruct = cLatt(varargin)
 % Generates or updates a structure containing lattice description and 
 % lattice performance data. This function can be used as a high-level wrapper
-% to the calcDA/calcDAdist, calcLMA/calLMAdist and calcTunemap packages 
+% to the calcDA/calcDAdist,calcLMA/calLMAdist, calTuneMap and calcTLT packages 
 % and its output may be used as input to the lattice2LaHF function.
 %
 %% Inputs
@@ -42,14 +42,14 @@ function LattStruct = cLatt(varargin)
 % cLoptions.All_famsO  : cell array of string with the names of 
 %                               all families including octupoles
 %
-% cLoptions.eqfam      : cell array of strings with the names of 
+% cLoptions.eqfam      : (NX1) cell array of strings with the names of 
 %                               magnet families listed in the structure 
 %                               MagnetStrengthLimits corresponding to 
 %                               the All_famsO for checking 
 %                               "challenge levels" with the 
 %                               "chalevel.m" function
 %
-% cLoptions.eqscal      : (1xN) array of scaling factors,useful to 
+% cLoptions.eqscal      : (1XN) array of scaling factors,useful to 
 %                                scale the dipole gradients before
 %                                comparison to MagnetStrengthLimits, 
 %                                when the dipole bending angle has been 
@@ -134,6 +134,7 @@ function LattStruct = cLatt(varargin)
 % cLoptions.TMoptions.xmax  : max horizontal amplitude [m]
 % cLoptions.TMoptions.ymax  : max vertical amplitude [m]
 % cLoptions.TMoptions.ymin  : min vertical amplitude [m]
+% cLoptions.TMoptions.dp    : momentum deviation
 % cLoptions.TMoptions.dpmax : max energy deviation for chromatic tune footprint
 % cLoptions.TMoptions.dpmin : min energy deviation for chromatic tune footprint
 % cLoptions.TMoptions.nturns: number of turns for tune calculation
@@ -147,7 +148,7 @@ function LattStruct = cLatt(varargin)
 %                                   to avoid unphysical jumps
 %
 % ********************************************************************************
-% cloptions.MAoptions: structure with ocal momentm aperture calculation
+% cloptions.MAoptions: structure with local momentm aperture calculation
 %                         options, with fields:
 %
 % cLoptions.MAoptions.lmafams: cell array of strings with names of magnet families at which LMA
@@ -190,6 +191,8 @@ function LattStruct = cLatt(varargin)
 %
 % 'basic'     : calculates basic lattice performance data - atsummary
 % 'all'       : performs all calculations
+% 'DAs'       : performs dynamic aperture calculations calculations
+% 'TMs'       : performs tunemap calculations calculations
 % 'DAxy'      : calculates dynamic aperture on the (x,y) plane on-energy 
 %               and off-energy without errors.
 % 'DAxydp'    : calculates dynamic aperture on the (x,dp) and (y,dp) planes  
@@ -224,7 +227,8 @@ function LattStruct = cLatt(varargin)
 %
 % *******************************************************************
 %
-% LattStruc.LattData.XAllO : strengths of all families (includes octupoles)
+% LattStruc.LattData.XAllO   :strengths of all families (includes octupoles)
+
 % LattStruc.LattData.RINGGRD  : Full ring latice 6d enabled with same magnet strengths as
 %            ACHROMAT. Octupoles are the same as in ACHRO (if they exist
 %            there). Otehrwise they are zero.
@@ -348,6 +352,10 @@ function LattStruct = cLatt(varargin)
 %                  and full ring with errors
 % PFT 2024/06/28 : added calculation of fields and gradients
 % PFT 2024/06/30 : changed handling of 'basic' calculation mode
+% PFT 2024/07/06 : added choice of calculation subsets (DAs, TMs)
+% PFT 2024/07/07 : added checks for unavailable cLoption fields
+%                  changed SetBPMWeights( to handle lattice without BPMs
+%
 %% Input argument parsing
 LattSt               = getargs(varargin,[]);
 
@@ -369,6 +377,7 @@ DAxyf       = any(strcmpi(varargin,'DAxy'));
 DAxydpf     = any(strcmpi(varargin,'DAxydp'));
 DAdistxyf   = any(strcmpi(varargin,'DAdistxy'));
 DAdistxydpf = any(strcmpi(varargin,'DAdistxydp'));
+DAsf        = any(strcmpi(varargin,'DAs'));
 TM_xyf      = any(strcmpi(varargin,'TM_xy'));
 TM_gridxyf  = any(strcmpi(varargin,'TM_gridxy'));
 TM_gridxdpf = any(strcmpi(varargin,'TM_gridxdp'));
@@ -381,6 +390,7 @@ LMAf        = any(strcmpi(varargin,'LMA'));
 LMAdistf    = any(strcmpi(varargin,'LMAdist'));
 TLTf        = any(strcmpi(varargin,'TLT'));
 TLTdistf    = any(strcmpi(varargin,'TLTdist'));
+TMsf        = any(strcmpi(varargin,'TMs'));
 
 %% Constructs output structure template
 fprintf(' ************* \n');
@@ -551,7 +561,7 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.DAoptions.DAmode   = 'border';
     cLoptions.DAoptions.nturns   = 1024;
     cLoptions.DAoptions.betax0   = NaN; 
-    cLoptions.DAoptions.betax0   = NaN;
+    cLoptions.DAoptions.betay0   = NaN;
     cLoptions.DAoptions.xmindas  = -0.015;
     cLoptions.DAoptions.xmaxdas  = 0.015;
     cLoptions.DAoptions.ymaxdas  = 0.007;
@@ -599,7 +609,8 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.TMoptions.ymax = 0.004;
     cLoptions.TMoptions.dpmin = -0.04;
     cLoptions.TMoptions.dpmax = +0.04;
-    cLoptions.TMoptions.nturns = 100;
+    cLoptions.TMoptions.dp    = 0.0;
+    cLoptions.TMoptions.nturns = 1024;
     cLoptions.TMoptions.minampx = 30E-6;
     cLoptions.TMoptions.minampy = 30E-6;
     cLoptions.TMoptions.method = 4;
@@ -607,7 +618,7 @@ if (isempty(fieldnames(cLoptions)))
 %
     cLoptions.MAoptions.lmafams            = 'all';
     cLoptions.MAoptions.stepfam            = 1;
-    cLoptions.MAoptions.deltalimit         = 0.1;
+    cLoptions.MAoptions.deltalimit         = 0.3;
     cLoptions.MAoptions.initcoord          = [0 0];
     cLoptions.MAoptions.delta              = 0.01;
     cLoptions.MAoptions.deltastepsize      = 0.001;
@@ -683,7 +694,9 @@ if (basicf||allf)
     LattStruct.LattData.DesignOrbit.Deviation = dist;
 end
 %% Calculates magnet challenge levels
-if ((basicf||allf)&&not(isempty(fieldnames(MagnetStrengthLimits))))
+if ((basicf||allf)&&not(isempty(fieldnames(MagnetStrengthLimits)))...
+                  &&(not(isempty(cLoptions.eqfam)))...
+                  &&(not(isempty(cLoptions.eqsca))))
     if (verboselevel>0)
         fprintf('%s cLatt: calculating magnet challenge levels \n', datetime);
     end
@@ -729,7 +742,7 @@ end
 
 %
 %% Generates lattice at zero chromaticity
-if (basicf||allf)
+if ( (basicf||allf)&&not(isempty(cLoptions.chrom_fams)))
     if (verboselevel>0)
          fprintf('%s cLatt: creating zero chromaticity latice...\n',datetime);
     end
@@ -770,7 +783,7 @@ end
 %% Evaluates DAs for full RING
 if (not(isempty(RINGGRD)))
 %% Dynamic aperture for full ring without errors on (x,y) plane
-  if (DAxyf||allf)
+  if (DAxyf||allf||DAsf)
     if (verboselevel>0)
       fprintf('%s DA calculation without errors: on-momentum. \n', datetime);
     end
@@ -789,7 +802,7 @@ if (not(isempty(RINGGRD)))
   end
   
 %% Dynamic aperture for full ring without errors on (x,dp) and (y,dp) planes
-  if (DAxydpf||allf)
+  if (DAxydpf||allf||DAsf)
     if (verboselevel>0)
       fprintf('%s DA calculation without errors: (xy,dp) planes \n', datetime);
     end
@@ -798,7 +811,7 @@ if (not(isempty(RINGGRD)))
   end
   
 %% Dynamic aperture for full ring with errors on xy plane
-  if (DAdistxyf||allf)
+  if ((DAdistxyf||allf||DAsf)&&(not(isempty(cLoptions.ringtune_fams))))
     if (verboselevel>0)
       fprintf('%s DA calculation with errors: on-momentum. \n', datetime);
     end
@@ -811,7 +824,7 @@ if (not(isempty(RINGGRD)))
   end
 
 %% Dynamic aperture for full ring with errors on xdp an ydp planes
-  if (DAdistxydpf||allf)
+  if ((DAdistxydpf||allf||DAsf)&&(not(isempty(cLoptions.ringtune_fams))))
     if (verboselevel>0)
       fprintf('%s DA calculation with errors: off-momentum. \n', datetime);
     end
@@ -829,166 +842,98 @@ else
 end
 %% Evaluates tune maps for an achromat
 if (not(isempty(ACHRO_zc)))
+  TMoptions=cLoptions.TMoptions;  
 %% Tune map along x and y axes
-  if(TM_xyf||allf)
+  if(TM_xyf||allf||TMsf)
       if (verboselevel>0)
         fprintf('%s Tune Map xy (ADTS) \n', datetime);
       end
-      tunemap = calcTuneMap(ACHRO_zc,'mode','xy', ...
-                'npx',cLoptions.TMoptions.npx,...
-                'npy', cLoptions.TMoptions.npy,...
-                'xmin',cLoptions.TMoptions.xmin,...
-                'xmax',cLoptions.TMoptions.xmax,...
-                'ymin',cLoptions.TMoptions.ymin,...
-                'ymax',cLoptions.TMoptions.ymax,...
-                'nturns', cLoptions.TMoptions.nturns,...
-                'minampx',cLoptions.TMoptions.minampx, ...
-                'minampy',cLoptions.TMoptions.minampy,...
-                'method',cLoptions.TMoptions.method,...;
-                'smooth',cLoptions.TMoptions.smooth,...;
+      
+      TMoptions.mode='xy';
+      tunemap = calcTuneMap(ACHRO_zc,TMoptions,...
                 'plottype','xy');
       LattStruct.LattPerf.TM.xy=tunemap;
   end
 
 %% Tune map on a grid of points in (x,y) plane.
-  if (TM_gridxyf||allf)
+  if (TM_gridxyf||allf||TMsf)
        if (verboselevel>0)
             fprintf('%s Tune Map grid (x,y) (ADTS). \n', datetime);
        end
-       tunemap = calcTuneMap(ACHRO_zc,'mode','gridxy',...
-                 'npx',cLoptions.TMoptions.npx,...
-                 'npy', cLoptions.TMoptions.npy,...
-                 'xmin',cLoptions.TMoptions.xmin,...
-                 'xmax',cLoptions.TMoptions.xmax,...
-                 'ymin',cLoptions.TMoptions.ymin,...
-                 'ymax',cLoptions.TMoptions.ymax,...
-                 'nturns', cLoptions.TMoptions.nturns,...
-                 'minampx',cLoptions.TMoptions.minampx, ...
-                 'minampy',cLoptions.TMoptions.minampy,...
-                 'method',cLoptions.TMoptions.method,...;
-                 'smooth',cLoptions.TMoptions.smooth,...;
+       
+       TMoptions.mode='gridxy';
+       tunemap = calcTuneMap(ACHRO_zc,TMoptions,...
                  'plottype','gridxy');
        LattStruct.LattPerf.TM.gridxy=tunemap;
   end
 %% Tune map on a grid of points in (x,dp) plane
-  if (TM_gridxdpf||allf)
+  if (TM_gridxdpf||allf||TMsf)
     if (verboselevel>0)
         fprintf('%s Tune Map grid (x,dp). \n', datetime);
     end
-    tunemap = calcTuneMap(ACHRO_zc,'mode','gridxdp',...
-               'npx',cLoptions.TMoptions.npx,...
-               'npd', cLoptions.TMoptions.npd,...
-               'xmin',cLoptions.TMoptions.xmin,...
-               'xmax',cLoptions.TMoptions.xmax,...
-               'dpmin',cLoptions.TMoptions.dpmin,...
-               'dpmax',cLoptions.TMoptions.dpmax,...
-               'nturns', cLoptions.TMoptions.nturns,...
-               'minampx',cLoptions.TMoptions.minampx, ...
-               'minampy',cLoptions.TMoptions.minampy,...
-               'method',cLoptions.TMoptions.method,...;
-               'smooth',cLoptions.TMoptions.smooth,...;
+
+    TMoptions.mode='gridxdp';
+    tunemap = calcTuneMap(ACHRO_zc,TMoptions,...
                'plottype','gridxdp');
     LattStruct.LattPerf.TM.gridxdp=tunemap;
   end
 
 %% Tune map on a grid of points in (y,dp) plane
-  if (TM_gridydpf||allf)
+  if (TM_gridydpf||allf||TMsf)
     if (verboselevel>0)
         fprintf('%s Tune Map grid (y,dp). \n', datetime);
     end
-    tunemap = calcTuneMap(ACHRO_zc,'mode','gridydp',...
-               'npy',cLoptions.TMoptions.npy,...
-               'npd', cLoptions.TMoptions.npd,...
-               'ymin',cLoptions.TMoptions.ymin,...
-               'ymax',cLoptions.TMoptions.ymax,...
-               'dpmin',cLoptions.TMoptions.dpmin,...
-               'dpmax',cLoptions.TMoptions.dpmax,...
-               'nturns', cLoptions.TMoptions.nturns,...
-               'minampx',cLoptions.TMoptions.minampx, ...
-               'minampy',cLoptions.TMoptions.minampy,...
-               'method',cLoptions.TMoptions.method,...;
-               'smooth',cLoptions.TMoptions.smooth,...;
+    
+    TMoptions.mode='gridydp';
+    tunemap = calcTuneMap(ACHRO_zc,TMoptions,...
                'plottype','gridydp');
     LattStruct.LattPerf.TM.gridydp=tunemap;
   end
 
 %% Tune diffusion map on a grid of points in (x,y) plane
-  if (TM_difxyf||allf)
+  if (TM_difxyf||allf||TMsf)
     if (verboselevel>0)
         fprintf('%s Tune diffusion map (x,y). \n', datetime);
     end
-    tunemap = calcTuneMap(ACHRO_zc,'mode','difxy',...
-               'npx',cLoptions.TMoptions.npx,...
-               'npy', cLoptions.TMoptions.npy,...
-               'xmin',cLoptions.TMoptions.xmin,...
-               'xmax',cLoptions.TMoptions.xmax,...
-               'ymin',cLoptions.TMoptions.ymin,...
-               'ymax',cLoptions.TMoptions.ymax,...
-               'nturns', cLoptions.TMoptions.nturns,...
-               'minampx',cLoptions.TMoptions.minampx, ...
-               'minampy',cLoptions.TMoptions.minampy,...
-               'method',cLoptions.TMoptions.method,...;
-               'smooth',cLoptions.TMoptions.smooth,...;
+
+    TMoptions.mode='difxy';
+    tunemap = calcTuneMap(ACHRO_zc,TMoptions,...
                'plottype','difxy');
     LattStruct.LattPerf.TM.difxy=tunemap;
   end
 
 %% Tune diffusion map on a grid of points in (x,dp) plane
-  if (TM_difxdpf||allf)
+  if (TM_difxdpf||allf||TMsf)
     if (verboselevel>0)
         fprintf('%s Tune diffusion map (x,dp). \n', datetime);
     end
-    tunemap = calcTuneMap(ACHRO_zc,'mode','difxdp',...
-               'npx',cLoptions.TMoptions.npx,...
-               'npd', cLoptions.TMoptions.npd,...
-               'xmin',cLoptions.TMoptions.xmin,...
-               'xmax',cLoptions.TMoptions.xmax,...
-               'dpmin',cLoptions.TMoptions.dpmin,...
-               'dpmax',cLoptions.TMoptions.dpmax,...
-               'nturns', cLoptions.TMoptions.nturns,...
-               'minampx',cLoptions.TMoptions.minampx, ...
-               'minampy',cLoptions.TMoptions.minampy,...
-               'method',cLoptions.TMoptions.method,...;
-               'smooth',cLoptions.TMoptions.smooth,...;
+
+    TMoptions.mode='difxdp';
+    tunemap = calcTuneMap(ACHRO_zc,TMoptions,...
                'plottype','difxdp');
     LattStruct.LattPerf.TM.difxdp=tunemap;
   end
 
 %% Tune diffusion map on a grid of points in (y,dp) plane
-  if (TM_difydpf||allf)
+  if (TM_difydpf||allf||TMsf)
     if (verboselevel>0)
         fprintf('%s Tune diffusion map (y,dp). \n', datetime);
     end
-    tunemap = calcTuneMap(ACHRO_zc,'mode','difydp',...
-               'npy',cLoptions.TMoptions.npy,...
-               'npd', cLoptions.TMoptions.npd,...
-               'ymin',cLoptions.TMoptions.ymin,...
-               'ymax',cLoptions.TMoptions.ymax,...
-               'dpmin',cLoptions.TMoptions.dpmin,...
-               'dpmax',cLoptions.TMoptions.dpmax,...
-               'nturns', cLoptions.TMoptions.nturns,...
-               'minampx',cLoptions.TMoptions.minampx, ...
-               'minampy',cLoptions.TMoptions.minampy,...
-               'method',cLoptions.TMoptions.method,...;
-               'smooth',cLoptions.TMoptions.smooth,...;
+
+    TMoptions.mode='difydp';
+    tunemap = calcTuneMap(ACHRO_zc,TMoptions,...
                'plottype','difydp');
     LattStruct.LattPerf.TM.difydp=tunemap;
   end
 
 %% Chromatic tune map
-  if (TM_chrof||allf)
+  if (TM_chrof||allf||TMsf)
     if (verboselevel>0)
         fprintf('%s Chromatic tune map. \n', datetime);
     end
-    tunemap = calcTuneMap(ACHRO_zc,'mode','chro',...
-               'npd', cLoptions.TMoptions.npd,...
-               'dpmin',cLoptions.TMoptions.dpmin,...
-               'dpmax',cLoptions.TMoptions.dpmax, ...
-               'nturns', cLoptions.TMoptions.nturns,...
-               'minampx',cLoptions.TMoptions.minampx, ...
-               'minampy',cLoptions.TMoptions.minampy,...
-               'method',cLoptions.TMoptions.method,...;
-               'smooth',cLoptions.TMoptions.smooth,...;
+
+    TMoptions.mode='chro';
+    tunemap = calcTuneMap(ACHRO_zc,TMoptions,...
                'plottype','chro');
     LattStruct.LattPerf.TM.chro=tunemap;
   end
@@ -1012,7 +957,7 @@ else
 end
 %% Evaluates LMA for a full ring with errors
 if (not(isempty(RINGGRD)))
-    if (LMAdistf||allf)
+    if ((LMAdistf||allf)&&(not(isempty(cLoptions.ringtune_fams))))
         if (verboselevel>0)
             fprintf('%s Local Momentum Aperture with errors \n', datetime);
         end
@@ -1045,7 +990,7 @@ end
 %% Evaluates Touschek lifetime for a full ring with errors
 %
 if (not(isempty(RINGGRD)))
-    if (TLTdistf||allf)
+    if ((TLTdistf||allf)&&(not(isempty(cLoptions.ringtune_fams))))
          if (verboselevel>0)
             fprintf('%s Touchek lifetime with errors \n', datetime);
         end
@@ -1075,12 +1020,14 @@ function ringW=SetBPMWeights(ring)
 %
     ringW=ring;
     I = findcells(ringW,'FamName','BPM');
-    ringW{I(1)}.Weight = [0 0]; I = I(2:end);
-    for n = 1:numel(I)
-        if mod(n-2,10) == 0
-            ringW{I(n)}.Weight = [1 1e-3];
-        else
-            ringW{I(n)}.Weight = [1 1];
+    if (not(isempty(I)))
+        ringW{I(1)}.Weight = [0 0]; I = I(2:end);
+        for n = 1:numel(I)
+            if mod(n-2,10) == 0
+                ringW{I(n)}.Weight = [1 1e-3];
+            else
+                ringW{I(n)}.Weight = [1 1];
+            end
         end
     end
 

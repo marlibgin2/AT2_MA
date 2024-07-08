@@ -28,6 +28,7 @@ function plotDA(varargin)
 % PFT 2024/05/25 updated handling of plot limit parameters
 % PFT 2024/05/26 updated handling of verbose output
 % PFT 2024/06/04 added handling of 'smart' DA calculation mode
+% PFT 2024/07/06 changed hold statement to avoid clutter
 %
 %% Input argument parsing
 %
@@ -37,7 +38,7 @@ xminplot  = getoption(varargin,'xminplot',-DAS.outputs.DAoptions.XmaxDA);
 xmaxplot  = getoption(varargin,'xmaxplot', DAS.outputs.DAoptions.XmaxDA);
 ymaxplot  = getoption(varargin,'ymaxplot',DAS.outputs.DAoptions.YmaxDA);
 dpminplot = getoption(varargin,'dpminplot',DAS.outputs.DAoptions.dpmin);
-dpmaxplot = getoption(varargin,'dpminplot',DAS.outputs.DAoptions.dpmax);
+dpmaxplot = getoption(varargin,'dpmaxplot',DAS.outputs.DAoptions.dpmax);
 
 DAmode = DAS.outputs.DAoptions.DAmode;
 dp     = DAS.outputs.DAoptions.dp;
@@ -92,7 +93,7 @@ switch DAS.inputs.mode
         DAYp=DAS.outputs.DAYp;
         DAXm=DAS.outputs.DAXm;
 
-        figure;plot(dps*100,DAXp*1000,'-ob');hold;plot(dps*100,DAXm*1000,'-or');
+        figure;plot(dps*100,DAXp*1000,'-ob');hold on;plot(dps*100,DAXm*1000,'-or');
         xlabel('dp[%]');ylabel('X[mm]');
         xlim([dpminplot dpmaxplot]*100);ylim([xminplot xmaxplot]*1000);
         grid on;

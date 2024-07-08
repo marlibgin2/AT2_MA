@@ -106,8 +106,10 @@ function TLdist = calcTLTdist(varargin)
 % TLTdist=calcTLTdist(RINGGRD_a1,[],TLoptions,MAoptions,'verbose',2,'tunfams',{'Q1_a1';'Q2_a1'},'nseeds',10);
 
 %% History
-% PFT 2024/006/26 first version
-% TLdist = alcTLdist(RING,[],TLoptions
+% PFT 2024/06/26 first version
+% PFT 2024/07/05 cleanup/documentation
+% 
+%
 %% Input argument parsing
 [RING,ErrorModel,TLoptions,MAoptions]= getargs(varargin,[],[],[],[]);
 
@@ -240,6 +242,9 @@ map_hT=LMAdist.outputs.map_h;
 
 %% Calculates Touschek lifetimes
 parfor i=1:nseeds+1
+    if (verboselevel>0)
+        fprintf('%s CalcTLTdist: Seed n %3d \n', datetime, i-1);
+    end
     map_l = map_lT(i,:);
     map_h = map_hT(i,:);
     lmap=cat(2,map_h',map_l');
@@ -249,7 +254,8 @@ parfor i=1:nseeds+1
     end
 
     TLs(i) = calcTLT_raw(lindata,lmap,'Ib',Ib,'circumference',circumference,'energy',energy,'emitx',emitx,'emity',emity,...
-          'sig',sigp,'sigs',sigs,'abstol',abstol,'reltol', reltol, 'integrationmethod', integrationmethod,'verbose',verboselevel-1);
+          'sig',sigp,'sigs',sigs,'abstol',abstol,'reltol', reltol, 'integrationmethod', ...
+          integrationmethod,'verbose',verboselevel-2);
 end
 TLav  = mean(TLs);
 TLstd = std(TLs);

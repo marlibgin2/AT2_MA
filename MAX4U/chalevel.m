@@ -12,12 +12,13 @@ function CLv = chalevel(varargin)
 %
 % X0   : (1XN) array of magnet strengths
 % eqfam: (1XN) cell array of strings with 
-%              the names in the MagnetStrengthLmits structure thta are to
+%              the names in the MagnetStrengthLmits structure that are to
 %              be compared with X0, default ={}
 %
-% eqsca: scaling factors - useful to scale the dipole gradients before
-%         comparison, when the dipole bending angle has been changed to
-%         compensate for the introduction of reverse bends, default =
+% eqsca: (1XN) array of scaling factors: useful to scale the dipole 
+%         gradients before comparison, when the dipole bending angle 
+%         has been changed to compensate for the introduction of 
+%         reverse bends, default = ones(1,n)
 % 
 % ACHRO : Lattice structure from whihcv magnet stregths are to be taken
 % Fams  : (1XN) cell array of strings with the names of families in the

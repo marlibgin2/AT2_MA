@@ -8,11 +8,12 @@ function tunemap=calcTuneMap(varargin)
 %   
 %% Inputs 
 % Mandatory arguments
-% ACHRO : AT2 lattice array. 
-%
-% Optional arguments
-% desc: descriptive string
-% mode (default is 'x'):
+% ACHRO: AT2 lattice array. 
+% TMoptions: structure with fields (if TMoptions is empty, defaults are
+%                                   used. any specific fields may be
+%                                   changed by entering an optional
+%                                   argument)
+%  TMoptions.mode: (default is 'x'):
 %  'x'      calculates only tunes vs horizontal position at minimum
 %           vertical position (minampy)
 %  'y'      calculates only tunes vs vertical position at minimum
@@ -28,35 +29,40 @@ function tunemap=calcTuneMap(varargin)
 %  'difydp' calculates tune diffusion map in the ydp plane 
 %               tune calculation method is 4 (NAFF). 
 %  'chrom' calculates chromatic tune footprint.
-%
-% minampx: minimum absolute value of amplitude in horizontal direction,
+%  TMoptions.minampx: minimum absolute value of amplitude in horizontal direction,
 %            default=30 microm
-% minampy: minimum absolute value of amplitude in horizontal direction,
+%  TMoptions.minampy: minimum absolute value of amplitude in horizontal direction,
 %            default=30 microm
-% xmax: max horizontal amplitude [m], default = 0.005 
-% xmin: min horizontal amplitude [m], default = 0.0 
+%  TMoptions.xmax: max horizontal amplitude [m], default = 0.005 
+%  TMoptions.xmin: min horizontal amplitude [m], default = 0.0 
 %       
-% ymax: max vertical amplitude [m], default = 0.004
-% ymin: min vertical amplitude [m], default = 0.0
+%  TMoptions.ymax: max vertical amplitude [m], default = 0.004
+%  TMoptions.ymin: min vertical amplitude [m], default = 0.0
 % 
-% dpmax: max energy deviation for chromatic tune footprint,default = +0.03
-% dpmin: min energy deviation for chromatic tune footprint,default = -0.03
+%  TMoptions.dpmax: max energy deviation for chromatic tune footprint,default = +0.03
+%  TMoptions.dpmin: min energy deviation for chromatic tune footprint,default = -0.03
 %
-% dp: initial energy deviation, default = 0.0
+%  TMoptions.dp: initial energy deviation, default = 0.0
 %
-% npx: number of points along horizontal direction; default = 11
-% npy: number of points along vertical direction: default = 11
-% npd: number of points along energy axis: default = 11
-% nturns : number of turns, default = 128
+%  TMoptions.npx: number of points along horizontal direction; default = 11
+%  TMoptions.npy: number of points along vertical direction: default = 11
+%  TMoptions.npd: number of points along energy axis: default = 11
+%  TMoptions.nturns : number of turns, default = 128
 %
-% method 1: Highest peak in fft
-%        2: Interpolation on fft results
-%        3: Windowing + interpolation (default)
-%        4: NAFF (this is always the method in case the mode is "diff"
+%  TMoptions.method 1: Highest peak in fft
+%                   2: Interpolation on fft results
+%                   3: Windowing + interpolation (default)
+%                   4: NAFF (this is always the method in case the mode is "diff"
 %
-% smooth  : if true, selects smooth mode grid calculations - note that this means 
+%  TMoptions.smooth  : if true, selects smooth mode grid calculations - note that this means 
 %           computations are not parallelized. This is only relevant for
 %           method=4 (NAFF), deafult = false
+%
+% Optional arguments
+% Any of the fields in the TMoptions structure
+% desc: descriptive string
+%
+% Optional ploting options 
 % plotmode: 'abs' : plots full tune value (inc. integer part) (default)
 %           'rel' : plots tune variations with respect to small amplitude
 %                   tunes.
@@ -87,6 +93,7 @@ function tunemap=calcTuneMap(varargin)
 %   'chro'  : tunes vs energy deviation
 %   'chrotd': chromatic tune footprint on a tune diagram
 %
+%
 % resorder: resonance order for tune diagram, default = 5
 % qxrange=[qxmin qymin]: horizontal plot range in tune diagram,  default =[0 1]
 % qyrange=[qymin qymax]: vertical plot range in tune diagram, default= [0 1]
@@ -116,21 +123,6 @@ function tunemap=calcTuneMap(varargin)
 % Structure with fields
 % tunemap.inputs echoes the inputs given to the function 
 %   tunemap.inputs.ACHRO
-%   tunemap.inputs.mode
-%   tunemap.inputs.xmin 
-%   tunemap.inputs.xmax
-%   tunemap.inputs.ymax
-%   tunemap.inputs.dp
-%   tunemap.inputs.dpmin
-%   tunemap.inputs.dpmax
-%   tunemap.inputs.npx
-%   tunemap.inputs.npy
-%   tunemap.inputs.ndp
-%   tunemap.inputs.nturns 
-%   tunemap.inputs.method 
-%   tunemap.inputs.minampx
-%   tunemap.inputs.minampy
-%   tunemap.inputs.smoothf
 %   tunemap.inputs.plotargs.plottype
 %   tunemap.inputs.plotargs.plotmode
 %   tunemap.inputs.plotargs.resorder
@@ -150,11 +142,8 @@ function tunemap=calcTuneMap(varargin)
 %
 % tunemap.outputs contains subfields
 %   tunemap.outputs.desc          : datetime + input description
-%   tunemap.outputs.method        : method (may be differen from input
-%                                   as diffusion map modes always set
-%                                   method=4
+%   tunemap.outputs.TMoptions     : echo of input with possible changes
 %   tunemap.outputs.nped          : lattice periodicity
-%   tunemap.outputs.nturns        : number of turns (may be different from input value)
 %   tunemap.outputs.Qxx           : (1Xnpx) array of horizontal tune values
 %   tunemap.outputs.dQxx          : (1Xnpx) array of horizonal tune change values 
 %   tunemap.outputs.Qxxfrac       : (1Xnpx) array of fractional horizonal tune values
@@ -222,14 +211,14 @@ function tunemap=calcTuneMap(varargin)
 %
 %
 %% Usage examples
-% tunemap = calcTuneMap(ACHRO,'plot','desc','Testing...');
-% calcTuneMap(ACHRO,'nturns',1024,'plot');
-% tunemap = calcTuneMap(ACHRO,'plot','xmax',0.007,'mode','x','npx',128);
-% tunemap = calcTuneMap(ACHRO,'plot','xmin',-0.007,'xmax',0.004,'mode','x');
-% tunemap = calcTuneMap(ACHRO,'xmin',-0.007,'xmax',0.004,'ymin',0.0,'ymax',0.002,'mode','grid');
-% tunemap = calcTuneMap(ACHRO,'mode','chro','npd',121,'dpmin',-0.050,'dpmax',0.050);
-% tunemap = calcTuneMap(ACHRO,'mode','difxdp','npd',121,'npx', 121, dpmin',-0.050,'dpmax',0.050);
-% tunemap = calcTuneMap(ACHRO,'mode','difxy','npx',64+1,'npy',2*64+1,'xmin',-0.005,'xmax',0.005);
+% tunemap = calcTuneMap(ACHRO,[]'plot','desc','Testing...');
+% calcTuneMap(ACHRO,[],'nturns',1024,'plot');
+% tunemap = calcTuneMap(ACHRO,TMoptions,'plot','xmax',0.007,'mode','x','npx',128);
+% tunemap = calcTuneMap(ACHRO,TMoptions,'plot','xmin',-0.007,'xmax',0.004,'mode','x');
+% tunemap = calcTuneMap(ACHRO,TMoptions,'xmin',-0.007,'xmax',0.004,'ymin',0.0,'ymax',0.002,'mode','grid');
+% tunemap = calcTuneMap(ACHRO,TMoptions,'mode','chro','npd',121,'dpmin',-0.050,'dpmax',0.050);
+% tunemap = calcTuneMap(ACHRO,TMoptions,'mode','difxdp','npd',121,'npx', 121, dpmin',-0.050,'dpmax',0.050);
+% tunemap = calcTuneMap(ACHRO,TMoptions,'mode','difxy','npx',64+1,'npy',2*64+1,'xmin',-0.005,'xmax',0.005);
 
 %% History
 % PFT 2024/04/27: first version, based on calcADTS
@@ -239,31 +228,71 @@ function tunemap=calcTuneMap(varargin)
 % PFT 2024/05/10: added tune calculation on grids in (x,dp) and (y,dp)
 %                 planes
 % PFT 2024/05/12: added lattice periodicty check
-% PFT 2024/05/19: added checl that number of turns is larger than 66 for
+% PFT 2024/05/19: added check that number of turns is larger than 66 for
 %                 NAFF
+% PFT 2024/07/05: changed input to use a single structure TMoptions
 %
 %% Input argument parsing
-[ACHRO] = getargs(varargin,[]);
+[ACHRO,TMoptions] = getargs(varargin,[],[]);
+
+if (isempty(TMoptions))
+   TMoptions.mode='x';
+   TMoptions.npx = 11;
+   TMoptions.npy = 11;
+   TMoptions.npd = 11;
+   TMoptions.xmin = -0.006;
+   TMoptions.xmax = +0.006;
+   TMoptions.ymin = 0.0;
+   TMoptions.ymax = 0.004;
+   TMoptions.dp   = 0.0;
+   TMoptions.dpmin = -0.04;
+   TMoptions.dpmax = +0.04;
+   TMoptions.nturns = 1024;
+   TMoptions.minampx = 30E-6;
+   TMoptions.minampy = 30E-6;
+   TMoptions.method = 4;
+   TMoptions.smooth = false;
+end
+
 plotf            = any(strcmpi(varargin,'plot'));
 ratef            = any(strcmpi(varargin,'rate'));
-smoothf          = getoption(varargin,'smooth',false);
 verbosef         = getoption(varargin,'verbose',0);
 desc             = getoption(varargin,'desc','Tune map calculation');
-nturns           = getoption(varargin,'nturns',128);
-mode             = getoption(varargin,'mode','x');
-minampx          = getoption(varargin,'minampx',30E-6);
-minampy          = getoption(varargin,'minampy',30E-6);
-xmax             = getoption(varargin,'xmax', 0.005);
-xmin             = getoption(varargin,'xmin',-0.005);
-ymax             = getoption(varargin,'ymax',0.004);
-ymin             = getoption(varargin,'ymin',0.000);
-dp               = getoption(varargin,'dp',0.0);
-dpmin            = getoption(varargin,'dpmin',-0.03);
-dpmax            = getoption(varargin,'dpmax',+0.03);
-npx              = getoption(varargin,'npx',11);
-npy              = getoption(varargin,'npy',11);
-npd              = getoption(varargin,'npd',11);
-method           = getoption(varargin,'method',3);
+smooth           = getoption(varargin,'smooth',TMoptions.smooth);
+nturns           = getoption(varargin,'nturns',TMoptions.nturns);
+mode             = getoption(varargin,'mode',TMoptions.mode);
+minampx          = getoption(varargin,'minampx',TMoptions.minampx);
+minampy          = getoption(varargin,'minampy',TMoptions.minampy);
+xmax             = getoption(varargin,'xmax', TMoptions.xmax);
+xmin             = getoption(varargin,'xmin',TMoptions.xmin);
+ymax             = getoption(varargin,'ymax',TMoptions.ymax);
+ymin             = getoption(varargin,'ymin',TMoptions.ymin);
+dp               = getoption(varargin,'dp',TMoptions.dp);
+dpmin            = getoption(varargin,'dpmin',TMoptions.dpmin);
+dpmax            = getoption(varargin,'dpmax',TMoptions.dpmax);
+npx              = getoption(varargin,'npx',TMoptions.npx);
+npy              = getoption(varargin,'npy',TMoptions.npy);
+npd              = getoption(varargin,'npd',TMoptions.npd);
+method           = getoption(varargin,'method',TMoptions.method);
+
+TMoptions.smooth = smooth;
+TMoptions.nturns = nturns;
+TMoptions.mode   = mode;
+TMoptions.minampx= minampx;
+TMoptions.minampy= minampy;
+TMoptions.xmax   = xmax;
+TMoptions.xmin   = xmin;
+TMoptions.ymax   = ymax;
+TMoptions.ymin   = ymin;
+TMoptions.dp     = dp;
+TMoptions.dpmin  = dpmin;
+TMoptions.dpmax  = dpmax;
+TMoptions.npx    = npx;
+TMoptions.npy    = npy;
+TMoptions.npd    = npd;
+TMoptions.method = method;
+
+%
 plotmode         = getoption(varargin,'plotmode','abs');
 plottype         = getoption(varargin,'plottype','x');
 resorder         = getoption(varargin,'resorder',3);
@@ -282,8 +311,6 @@ dqx              = getoption(varargin,'dqx',0.001);
 dqy              = getoption(varargin,'dqy',0.001);
 caxrange         = getoption(varargin,'caxrange','auto');
 
-tunemap.inputs.method=method;
-tunemap.inputs.nturns=nturns;
 
 %% Preamble
 ACHRO  = atdisable_6d(ACHRO);
@@ -292,18 +319,18 @@ nped   = atGetRingProperties(ACHRO).Periodicity;
 % If "method" is NAFF or "mode" requires NAFF
 % number of turns is a multipe of 6 and the periodicity, otherwise it is
 % only a multiple ofthe periodicity
-if (method==4 || smoothf || strcmpi(mode,'difxy') || strcmpi(mode,'difxdp') || strcmpi(mode,'difydp'))
+if (method==4 || smooth || strcmpi(mode,'difxy') || strcmpi(mode,'difxdp') || strcmpi(mode,'difydp'))
     ndiv=lcm(nped,6);
 else
     ndiv=nped;
 end
-if (method==4 || smoothf || strcmpi(mode,'difxy') || strcmpi(mode,'difxdp') || strcmpi(mode,'difydp'))
+if (method==4 || smooth || strcmpi(mode,'difxy') || strcmpi(mode,'difxdp') || strcmpi(mode,'difydp'))
     nturns = 2^(log2(nturns));
 end
 nturns = (fix(nturns/ndiv)+1)*ndiv; 
 % if "mathod" is NAFF, minimum number of turns is 66
 %
-if (method==4 || smoothf || strcmpi(mode,'difxy') || strcmpi(mode,'difxdp') || strcmpi(mode,'difydp'))
+if (method==4 || smooth || strcmpi(mode,'difxy') || strcmpi(mode,'difxdp') || strcmpi(mode,'difydp'))
     nturns = max(nturns,66);
 end
 Qxx=[];
@@ -460,7 +487,7 @@ switch mode
         Qxgridxy=nan(npx*npy,1);
         Qygridxy=nan(npx*npy,1);
 
-        if (smoothf)
+        if (smooth)
             method=4;
             Rin = zeros(6,npx*npy);
             Rin(1,:) = axgridxy';
@@ -499,7 +526,7 @@ switch mode
         
         Qxgridxdp =nan(npd*npx,1);
         Qygridxdp =nan(npd*npx,1);
-        if (smoothf)
+        if (smooth)
             method=4;
             Rin = zeros(6,npd*npx);
             Rin(1,:) = axgridxdp';
@@ -536,7 +563,7 @@ switch mode
         Qxgridydp =nan(npd*npy,1);
         Qygridydp =nan(npd*npy,1);
         
-        if (smoothf)
+        if (smooth)
             method=4;
             Rin = zeros(6,npd*npy);
             Rin(3,:) = aygridydp';
@@ -577,7 +604,7 @@ switch mode
         Qxgridxy2=nan(npx*npy,1);
         Qygridxy2=nan(npx*npy,1);
 
-        if (smoothf)
+        if (smooth)
             Rin = zeros(6,npx*npy);
             Rin(1,:) = axdifxy';
             Rin(3,:) = aydifxy';
@@ -624,7 +651,7 @@ switch mode
         Qxgridxdp2=nan(npd*npx,1);
         Qygridxdp2=nan(npd*npx,1);
 
-        if (smoothf)
+        if (smooth)
             Rin = zeros(6,npd*npx);
             Rin(1,:) = axdifxdp';
             Rin(5,:) = dpdifxdp';
@@ -671,7 +698,7 @@ switch mode
         Qxgridydp2=nan(npd*npy,1);
         Qygridydp2=nan(npd*npy,1);
 
-        if (smoothf)
+        if (smooth)
             Rin = zeros(6,npd*npy);
             Rin(3,:) = aydifydp';
             Rin(5,:) = dpdifydp';
@@ -726,21 +753,6 @@ telapsed = toc(tstart);
 %
 %% Collects output structure info
 tunemap.inputs.ACHRO=ACHRO;
-tunemap.inputs.mode=mode;
-tunemap.inputs.desc=desc;
-tunemap.inputs.dp=dp;
-tunemap.inputs.xmin=xmin;
-tunemap.inputs.xmax=xmax;
-tunemap.inputs.ymin=ymin;
-tunemap.inputs.ymax=ymax;
-tunemap.inputs.dpmin=dpmin;
-tunemap.inputs.dpmax=dpmax;
-tunemap.inputs.npx=npx;
-tunemap.inputs.npy=npy;
-tunemap.inputs.npd=npd;
-tunemap.inputs.smoothf=smoothf;
-tunemap.inputs.minampx=minampx;
-tunemap.inputs.minampy=minampy;
 tunemap.inputs.plotargs.plotmode=plotmode;
 tunemap.inputs.plotargs.plottype=plottype;
 tunemap.inputs.plotargs.resorder=resorder;
@@ -762,8 +774,13 @@ tunemap.inputs.plotargs.ratef=ratef;
 
 tunemap.outputs.desc=strcat(sprintf('%s',datetime),' : ', desc);
 tunemap.outputs.nped=nped;
-tunemap.outputs.method=method;
-tunemap.outputs.nturns=nturns;
+if (TMoptions.nturns~=nturns)
+    fprintf('%s Warning: n. turns changed from %5d %5d \n',...
+            datetime, TMoptions.nturns,nturns);
+    TMoptions.nturns=nturns;
+end
+
+tunemap.outputs.TMoptions=TMoptions;
 tunemap.outputs.Qxx=Qxx;
 tunemap.outputs.Qyx=Qyx;
 tunemap.outputs.Qxy=Qxy;
@@ -833,10 +850,6 @@ tunemap.outputs.Qdifydpra = Qdifydpra;
 
 tunemap.outputs.telapsed  = telapsed;
 
-if (tunemap.inputs.nturns~=tunemap.outputs.nturns)
-    fprintf('%s Warning: n. turns changed from %5d %5d \n',...
-            datetime, tunemap.inputs.nturns,tunemap.outputs.nturns);
-end
 
 %% Plots Tune Map
 if (plotf)

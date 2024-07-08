@@ -74,7 +74,8 @@ function plotTuneMap(tunemap,varargin)
 % PFT 2024/05/05: added tune diffusion plot in (x,y) plane
 % PFT 2024/05/08: added tune diffusion plots in (x,dp) and (y,dp) planes
 % PFT 2024/05/10: added grid plots for tune variations
-% 
+% PFT 2024/07/05: updated to handle TMoptions structure from calcTuneMap
+% PFT 2024/07/06 changed hold statement to avoid clutter
 
 %% Input argument parsing
 plotmode   = getoption(varargin,'plotmode',tunemap.inputs.plotargs.plotmode);
@@ -89,33 +90,32 @@ x0         = getoption(varargin,'x0',tunemap.inputs.plotargs.x0);
 y0         = getoption(varargin,'y0',tunemap.inputs.plotargs.y0);
 dp0        = getoption(varargin,'dp0',tunemap.inputs.plotargs.dp0);
 ratef      = any(strcmpi(varargin,'rate'));
-smf        = any(strcmpi(varargin,'smooth'));
 
-xmin   = tunemap.inputs.xmin;
-xmax   = tunemap.inputs.xmax;
-ymin   = tunemap.inputs.ymin;
-ymax   = tunemap.inputs.ymax;
-amplx  = tunemap.outputs.amplx;
-amply  = tunemap.outputs.amply;
-axgridxy = tunemap.outputs.axgridxy;
-aygridxy = tunemap.outputs.aygridxy;
-axgridxdp = tunemap.outputs.axgridxdp;
-aygridydp = tunemap.outputs.aygridydp;
-dpgridxdp = tunemap.outputs.dpgridxdp;
-dpgridydp = tunemap.outputs.dpgridydp;
-dpmin  = tunemap.inputs.dpmin;
-dpmax  = tunemap.inputs.dpmax;
-dps    = tunemap.outputs.dps;
-npx    = tunemap.inputs.npx;
-npy    = tunemap.inputs.npy;
-npd    = tunemap.inputs.npd;
+xmin       = tunemap.outputs.TMoptions.xmin;
+xmax       = tunemap.outputs.TMoptions.xmax;
+ymin       = tunemap.outputs.TMoptions.ymin;
+ymax       = tunemap.outputs.TMoptions.ymax;
+dpmin      = tunemap.outputs.TMoptions.dpmin;
+dpmax      = tunemap.outputs.TMoptions.dpmax;
+npx        = tunemap.outputs.TMoptions.npx;
+npy        = tunemap.outputs.TMoptions.npy;
+npd        = tunemap.outputs.TMoptions.npd;
+amplx      = tunemap.outputs.amplx;
+amply      = tunemap.outputs.amply;
+axgridxy   = tunemap.outputs.axgridxy;
+aygridxy   = tunemap.outputs.aygridxy;
+axgridxdp  = tunemap.outputs.axgridxdp;
+aygridydp  = tunemap.outputs.aygridydp;
+dpgridxdp  = tunemap.outputs.dpgridxdp;
+dpgridydp  = tunemap.outputs.dpgridydp;
+dps        = tunemap.outputs.dps;
 
-xminplot = getoption(varargin,'xminplot',xmin);
-xmaxplot = getoption(varargin,'xmaxplot',xmax);
-yminplot = getoption(varargin,'yminplot',ymin);
-ymaxplot = getoption(varargin,'ymaxplot',ymax);
-dpminplot = getoption(varargin,'dpminplot',dpmin);
-dpmaxplot = getoption(varargin,'dpmaxplot',dpmax);
+xminplot   = getoption(varargin,'xminplot',xmin);
+xmaxplot   = getoption(varargin,'xmaxplot',xmax);
+yminplot   = getoption(varargin,'yminplot',ymin);
+ymaxplot   = getoption(varargin,'ymaxplot',ymax);
+dpminplot  = getoption(varargin,'dpminplot',dpmin);
+dpmaxplot  = getoption(varargin,'dpmaxplot',dpmax);
 
 %% Plots Tune Map
 switch plotmode
@@ -254,7 +254,7 @@ switch plottype
         Qyyfrac=tunemap.outputs.Qyyfrac;
 
         if not(isempty(Qxxfrac)||isempty(Qyxfrac)||isempty(Qyxfrac)||isempty(Qyyfrac))
-            figure;plot(Qxxfrac,Qyxfrac,'ok');hold;
+            figure;plot(Qxxfrac,Qyxfrac,'ok');hold on;
             plot(Qxyfrac,Qyyfrac,'or');
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
@@ -270,7 +270,7 @@ switch plottype
         Qygridxyfrac=tunemap.outputs.Qygridxyfrac;
 
         if (not(isempty(Qxgridxyfrac)||isempty(Qygridxyfrac)))
-            figure;plot(Qxgridxyfrac,Qygridxyfrac,'ok');hold;
+            figure;plot(Qxgridxyfrac,Qygridxyfrac,'ok');hold on;
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
                           
@@ -536,7 +536,7 @@ switch plottype
             Qyfmxy(:,1:npx*npy) = [Qygridxyfrac'-dqy; Qygridxyfrac'+dqy; ...
                                    Qygridxyfrac'+dqy; Qygridxyfrac'-dqy];
             figure;
-            fill(Qxfmxy,Qyfmxy,Qdifxy);hold;
+            fill(Qxfmxy,Qyfmxy,Qdifxy);hold on;
             xlabel('qx');ylabel('qy');
             plot_net(resorder,qxrange(1),qxrange(2),...
                      qyrange(1),qyrange(2));
@@ -570,7 +570,7 @@ switch plottype
             Qyfmxdp(:,1:npd*npx) = [Qygridxdpfrac'-dqy; Qygridxdpfrac'+dqy; ...
                                     Qygridxdpfrac'+dqy; Qygridxdpfrac'-dqy];
             figure;
-            fill(Qxfmxdp,Qyfmxdp,Qdifxdp);hold;
+            fill(Qxfmxdp,Qyfmxdp,Qdifxdp);hold on;
             xlabel('qx');ylabel('qy');
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
@@ -604,7 +604,7 @@ switch plottype
             Qyfmydp(:,1:npd*npy) = [Qygridydpfrac'-dqy; Qygridydpfrac'+dqy; ...
                                     Qygridydpfrac'+dqy; Qygridydpfrac'-dqy];
             figure;
-            fill(Qxfmydp,Qyfmydp,Qdifydp);hold;
+            fill(Qxfmydp,Qyfmydp,Qdifydp);hold on;
             xlabel('qx');ylabel('qy');
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
@@ -651,7 +651,7 @@ switch plottype
         [~,dp0pos] = min(abs(dps));
 
         if not(isempty(Qxdpfrac)||isempty(Qydpfrac))
-            figure;plot(Qxdpfrac(1:dp0pos),Qydpfrac(1:dp0pos),'ob');hold;
+            figure;plot(Qxdpfrac(1:dp0pos),Qydpfrac(1:dp0pos),'ob');hold on;
             plot(Qxdpfrac(dp0pos:length(dps)),Qydpfrac(dp0pos:length(dps)),'or');
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
@@ -665,7 +665,7 @@ switch plottype
         fprintf('%s Error in plotTuneMap: unknown plottype: %s \n',datetime,plottype);       
         return
 end
-
+%% Auxiliary functions
 function plotslice(ax,ay,Q,plane,z0)
 %
 % plots vertical or horizontal slices of a two-dimensional tune 
@@ -698,7 +698,7 @@ for i=1:numel(z0)
             legstr{i}=num2str(ay(idx));
             if (i==1)
                 figure;plot(amplx_m(idx,:),Q_m(idx,:),'o-');
-                hold;
+                hold on;
             else
                 plot(amplx_m(idx,:),Q_m(idx,:),'o-');
             end
@@ -707,7 +707,7 @@ for i=1:numel(z0)
             [~,idx] = min(abs(ax-z0(i)));
             legstr{i}=num2str(ax(idx));
             if (i==1)
-                figure;plot(amply_m(:,idx),Q_m(:,idx),'o-');hold
+                figure;plot(amply_m(:,idx),Q_m(:,idx),'o-');hold on;
             else
                 plot(amply_m(:,idx),Q_m(:,idx),'o-');
             end
@@ -717,4 +717,3 @@ legend(legstr);
 hold off;
 
 
-    

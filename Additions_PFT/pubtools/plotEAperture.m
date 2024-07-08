@@ -1,5 +1,5 @@
 function  EApertures=plotEAperture(RING)
-% Plots the Rectangular aperture fields 
+% Plots the Elliptical Aperture fields 
 % 
 nelem = length(RING);
 Spos=findspos(RING,1:nelem);
@@ -11,7 +11,7 @@ for i=1:nelem
         EApertures(i,1:2) = nan(1,2);
     end
 end
-figure;plot(Spos,EApertures(:,1)*1000,'-ob');hold;xlabel('S[m]');ylabel('Aperture[mm]');
+figure;plot(Spos,EApertures(:,1)*1000,'-ob');hold on;xlabel('S[m]');ylabel('Aperture[mm]');
 ylim([0,20]);
 plot(Spos,EApertures(:,2)*1000,'-sr');
 legend('X','Y');grid;

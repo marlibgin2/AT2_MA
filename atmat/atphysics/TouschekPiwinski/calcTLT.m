@@ -55,7 +55,6 @@ function TL = calcTLT(varargin)
 %   TL.inputs.MAoptions
 %
 %   TL.outputs structure with fields
-
 %   TL.outputs.LMA: local momentum aperture structure  with fields
 %
 %   TL.outputs.LMA.outputs lists calculation results with the following fields
@@ -66,7 +65,6 @@ function TL = calcTLT(varargin)
 %                           deviation from periodicity
 %   TL.outputs.LMA.outputs.MAoptions: LMA calculation options
 %   TL.outputs.LMA.outputs.telapsed: elapsed calculation time [s]
-
 %   TL.outputs.TL Touschek lifetime [s]
 %   TL.outputs.telapsed: elapsed calculation time [s]
 %

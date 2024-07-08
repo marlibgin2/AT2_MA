@@ -166,6 +166,7 @@ TolTune          = getoption(varargin,'TolTune',1E-3); % tolerance for tune matc
 frac             = getoption(varargin,'frac',1.0); % fraction for quad change in each tune fit iteration
 
 %% Locate points at which LMA is to be calculated
+tstart = tic;
 if (strcmpi(lmafams,'all'))
     Ipos = (1:size(RING,1))'; %(first element is assumed to be RingPAram)
 else
@@ -186,7 +187,7 @@ Spos = findspos(RING,Ipos);
 nSpos = numel(Spos);
 
 %% Preamble
-tstart = tic;
+
 if (verboselevel>0)
     fprintf('**** \n');
     fprintf('%s CalcLMAdist: Starting LMA distribution calculation at %3d points \n', datetime, length(Spos));
@@ -303,7 +304,8 @@ for i=1:nseeds+1
  end
 
  if (stablat(i))
-    [map_l(i,:),map_h(i,:)]=calcLMA_raw(RINGe{i},Ipos,...
+    RINGes=RINGe{i}; 
+    [map_l(i,:),map_h(i,:)]=calcLMA_raw(RINGes,Ipos,...
                'deltalimit',deltalimit, ...
                'initcoord', initcoord,...
                'delta', delta,...

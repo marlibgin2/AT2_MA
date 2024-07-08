@@ -4,5 +4,5 @@ function ppool(c,n)
 % in auroro nworkers = n_nodes*24 (max n_npdes is 16)
 % in cosmos nworkers = n_nodes*48 (up top 10 nodes tested so far)
 parpool(c,n);
-pctRunOnAll warning off
+%pctRunOnAll warning off
 end

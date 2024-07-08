@@ -36,6 +36,7 @@ function plotDAdist(varargin)
 % PFT 2024/05/27 : added title to xy mode plot
 % PFT 2024/05/26 : updated handling of verbose output, added DA without
 %                  errors to xydp mode plots.
+% PFT 2024/07/06 changed hold statement to avoid clutter
 %
 %% Input argument parsing
 %
@@ -68,7 +69,7 @@ switch mode
     case {'xy';'XY'}
         if (strcmpi(DAmode,'border'))
             figure; xlabel('X [mm]'); ylabel('Y [mm]');grid;
-            xlim([xminplot xmaxplot]*1000);ylim([0 ymaxplot]*1000);hold;
+            xlim([xminplot xmaxplot]*1000);ylim([0 ymaxplot]*1000);hold on;
             title(sprintf('dp = %3.1f %%', dp*100));
         else
             fprintf('%s DA dist plot requires border DA calc mode. DA mode is %s . Aborting...\n',...
@@ -93,7 +94,7 @@ switch mode
     case {'xydp';'XYDP'}
         figure; xlabel('dp [%]'); ylabel('X [mm]');grid;
         xlim([dpminplot dpmaxplot]*100);
-        ylim([xminplot xmaxplot]*1000);hold;
+        ylim([xminplot xmaxplot]*1000);hold on;
         errorbar(dps*100,DAxdppav*1000,DAxdppst*1000,'-ob');
         errorbar(dps*100,DAxdpmav*1000,DAxdpmst*1000,'-or');
         plot(dps*100, DAxdpsp(:,1)*1000, '-ok');
@@ -101,7 +102,7 @@ switch mode
 
         figure; xlabel('dp [%]'); ylabel('Y [mm]');grid;
         xlim([dpminplot dpmaxplot]*100);
-        ylim([0 ymaxplot]*1000);hold;
+        ylim([0 ymaxplot]*1000);hold on;
         errorbar(dps*100,DAydpav*1000,DAydpst*1000,'-ob');
         plot(dps*100, DAydps(:,1)*1000, '-ok');
 end
@@ -111,7 +112,7 @@ if (plotorbrmsf)
    plot(DAdist.outputs.orb0_stds(1,2:end)*1000,'-o');
    xlabel('seed #');
    ylabel('x/y[mm]');
-   hold;
+   hold on;
    plot(DAdist.outputs.orb0_stds(3,2:end)*1000,'-o');
    legend({'X','Y'});
    title('rms orbit before correction');
@@ -120,7 +121,7 @@ if (plotorbrmsf)
    plot(DAdist.outputs.orb_stds(1,2:end)*1000,'-o');
    xlabel('seed #');
    ylabel('x/y[mm]');
-   hold;
+   hold on;
    plot(DAdist.outputs.orb_stds(3,2:end)*1000,'-o');
    legend({'X','Y'});
    title('rms orbit after correction');
