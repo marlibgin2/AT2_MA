@@ -1,0 +1,1 @@
+F = findall(0,'type','figure','tag','TMWWaitbar');delete(F); % to delete hanging waitbars
