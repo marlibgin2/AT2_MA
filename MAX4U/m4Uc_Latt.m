@@ -1,44 +1,38 @@
-%% m4_cLatt_woerrors
-% This script and the accompanying "m4_cLatt_werrors" run all "cLatt" 
-% function options in a series of steps creating/overwriting a structure 
-% named "m4T" in the matlab workspace, saving this variable
-% in a "m4T.mat" file and saving all matlab output in a logfile
+function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits)
+% Runs all "cLatt" function options in a series of steps 
+% creating/overwriting  a structure m4UT, saving this variable
+% in a "m4UT.mat" at the end of each step and saving all matlab 
+% output in a logfile
 %
 % The intended workflow is 
-%  1. create a script based on the "m4_cTemplate.m" editing the 
+%  1. create a script based on the "m4Uc_Template.m" editing the 
 %     statements in the "Lattice Specific Data" section 
-%  2. Run the script created in step 1, which calls this script and
-%     possibly amd/or also the "m4_cLatt_werrors" script.
-%  3. Rename or copy the resulting "m4T" sctructure accordingly.
 %
-% The "m4_cLatt_werrors" script is a contunuation of this script, 
-% containing the more time-consuming Lattice evaluations with errors. 
-% Breaking the evaluation into these two parts gives a convenient way 
-% of only performing the faster calculations at a first chek of a 
-% new lattice.
-%% Note 1
-% The worskpace variable ACHRO (a cell array with the AT2 lattice 
-%         to be evaluated) must be defined before calling this script.
+%  2. Run the script created in step 1, which calls this function 
 %
-%% Note 2 
-% The workspace variables below need to be defined prior to 
-% running this script, which is typically done by the script created in 
-% step 1 above.
+% Each time cLatt is called from this function, a progress bar is started 
+% with which the calculation may be interrupted for continuation at a 
+% later time, adding info to the already existing structure.
+% The code below can be used as a template for continuation runs
 %
-% lattname                :string containigg the lattice name
-% desc                    :descriptive string 
-%% Note 3
-% The workspace variables below need to be defined prior to running
-% this script. If not available certain features of the cLatt function will
-% not be available
 %
+%% Inputs
+% Mandatory arguments: 
+% ACHRO     : AT2 lattice cell array for one achromat. 
+% lattname  : string containigg the lattice name
+% desc      : descriptive string 
+% MagnetStrengthLimits : structure containing hardware limits for magnets 
+% ACHRO_ref : reference achromat for calcualtion of desing orbit
+%             deviations. if = {} deviations are not calcualted
+%
+% cLoptions : structure containing at least the fields below
+%   cLoptions.All_famsO : list of all magnet fanilies. If empty, the
+%                         function attempst to find all magnet families
+%                         in the input lattice                    
 %   cLoptions.ringtune_fams :(1X2) cell array of strings with magnet families
 %                           to be uised for tune matching
 %   cLoptions.chrom_fams    :(1X2) cell array of strings with magnet families
 %                           to be used for chromaticity matching
-%   MagnetStrengthLimits : structure with magnet hardware limits
-%   ACHROGRD_a1          : cell array with reference AT2 lattice for design
-%                          orbit comparison
 %   cLoptions.eqfam      : (1XN) cell array of strings with 
 %                          the names in the MagnetStrengthLmits structure 
 %                          that are to be compared for determining 
@@ -49,11 +43,11 @@
 %                         to compensate for the introduction of 
 %                         reverse bends
 %
-
 %% History
 % PFT 2024/07/06 : first version
 % PFT 2024/07/10 : break up of the script into two - without errors and with errors
-%
+% PFT 2024/07/13 : turned script into function
+% PFT 2024/07/14 : added handling of exitflag from cLatt
 %% General initialisation
 
 if(isempty(cLoptions.All_famsO))
@@ -157,44 +151,106 @@ cLoptions.TLoptions.LMAperiods        = 1;
 cLoptions.TLoptions.kcoupl            = 0.025;
 
 %% Creates Lattice Structure and runs basic calculations
-m4T = cLatt([],'lattname',lattname, 'desc',desc,'cLoptions',cLoptions,...
+[m4UT, ~] = cLatt([],'lattname',lattname, 'desc',desc,'cLoptions',cLoptions,...
                'verbose',1);
 
-m4T = cLatt(m4T,'ACHRO',ACHRO,'ACHRO_ref',ACHROGRD_a1,'verbose',1);
+[m4UT, ~] = cLatt(m4UT,'ACHRO',ACHRO,'ACHRO_ref',ACHRO_ref,'verbose',1);
 
-m4T = cLatt(m4T,'MagnetStrengthLimits',MagnetStrengthLimits,'verbose',1);
+[m4UT, ~] = cLatt(m4UT,'MagnetStrengthLimits',MagnetStrengthLimits,'verbose',1);
 
-m4T = cLatt(m4T,'basic','verbose',1);
+[m4UT, exitflag] = cLatt(m4UT,'basic','verbose',1);
 
-save('m4T', 'm4T');
+save('m4UT', 'm4UT');
 
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
 %
 %% Lattice without errors
 % Dynamic Aperture
-m4T = cLatt(m4T,'DAxy','verbose',2);
+[m4UT, exitflag] = cLatt(m4UT,'DAxy','verbose',2);
 
-save('m4T', 'm4T');
+save('m4UT', 'm4UT');
 
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
 
-m4T = cLatt(m4T,'DAxydp','verbose',2);
+[m4UT, exitflag] = cLatt(m4UT,'DAxydp','verbose',2);
 
-save('m4T', 'm4T');
+save('m4UT', 'm4UT');
 
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
 % Tune Maps
-m4T = cLatt(m4T,'TM_xy','TM_gridxy','TM_gridxdp','TM_gridydp','TM_chro','verbose',2);
+[m4UT, exitflag] = cLatt(m4UT,'TM_xy','TM_gridxy','TM_gridxdp','TM_gridydp','TM_chro','verbose',2);
 
-save('m4T', 'm4T');
+save('m4UT', 'm4UT');
 
-m4T = cLatt(m4T,'TM_difxy','TM_difxdp', 'TM_difydp', 'verbose',2);
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
 
-save('m4T', 'm4T');
+[m4UT, exitflag] = cLatt(m4UT,'TM_difxy','TM_difxdp', 'TM_difydp', 'verbose',2);
+
+save('m4UT', 'm4UT');
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
 
 % Momentum Aperture
-m4T = cLatt(m4T,'LMA','verbose',2);
+[m4UT, exitflag] = cLatt(m4UT,'LMA','verbose',2);
 
-save('m4T', 'm4T');
+save('m4UT', 'm4UT');
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
 
 %Touschek lifetime
-m4T = cLatt(m4T,'TLT','verbose',3);
-save('m4T', 'm4T');
+[m4UT, exitflag] = cLatt(m4UT,'TLT','verbose',3);
 
+save('m4UT', 'm4UT');
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
+
+%% Lattice with errors
+% Tune Maps
+[m4UT, exitflag] = cLatt(m4UT,'TMdist','verbose',3);
+
+save('m4UT', 'm4UT');
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
+% Dynamic Aperture
+[m4UT, exitflag] = cLatt(m4UT,'DAdistxy','verbose',2); 
+
+save('m4UT', 'm4UT');
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
+
+[m4UT,exitflag] = cLatt(m4UT,'DAdistxydp','verbose',2);  
+
+save('m4UT', 'm4UT');
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
+
+
+% Momentum Aperture
+[m4UT,exitflag] = cLatt(m4UT,'LMAdist','verbose',3);  
+
+save('m4UT', 'm4UT');
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
+
+% Touschek lifetime
+[m4UT,exitflag] = cLatt(m4UT,'TLTdist','verbose',4);  
+
+save('m4UT', 'm4UT');
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
