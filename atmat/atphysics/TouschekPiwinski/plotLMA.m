@@ -8,6 +8,7 @@ function plotLMA(varargin)
 % Optional arguments
 % dpmaxplot : maximum of energy deviation axis, default =  LMA.deltalimit
 % dpminplot : minimum of energy deviation axis, default = -LMA.deltalimit
+% plottitle : title string
 % verbose : defines level of verbose output, default=0, i.e. no output
 %
 %% Usage examples
@@ -17,13 +18,14 @@ function plotLMA(varargin)
 %% History
 % PFT 2024/06/15, first version
 % PFT 2024/07/03 added vertical scale control
-%
+% PFT 2024/07/15 added optional plot title
 %% Input argument parsing
 %
 LMA           = getargs(varargin,[]);
 verboselevel  = getoption(varargin,'verbose',0);
 dpmaxplot     = getoption(varargin,'dpmaxplot', LMA.outputs.MAoptions.deltalimit);
 dpminplot     = getoption(varargin,'dpminplot',-LMA.outputs.MAoptions.deltalimit);
+plottitle     = getoption(varargin,'plottitle','');
 
 %% Plots LMA
 Spos  = LMA.outputs.Spos;
@@ -35,6 +37,7 @@ xlabel('S[m]');
 ylabel('Local Momentum Aperture [%]');
 grid on;
 ylim([dpminplot*100,dpmaxplot*100]);
+title(plottitle);
 
 
 

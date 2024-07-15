@@ -29,7 +29,8 @@ function [RINGc,orb0,orb] = calcOrb(varargin)
 % PFT 2024/03/02, first version
 % PFT 2024/03/10: Bug fix to get the correct output lattice
 % PFT 2024/06/30: added search for corrector indices based on family names
-%
+% PFT 2024/07/08: added search for BPM indices based on alternative famity
+%                 names
 %% Input argument parsing
 RING           = getargs(varargin,[]);
 plotf          = any(strcmpi(varargin,'plot'));
@@ -40,6 +41,9 @@ verbosef       = any(strcmpi(varargin,'verbose'));
 % View the orbit, including BPM errors
 setoption('WarningDp6D',false); % avoids warning messages
 iBPM = findcells(RING,'FamName','BPM');
+if (isempty(iBPM))
+    iBPM=findcells(RING,'FamName','mon');
+end
 RINGc = RING;
 if (isempty(iBPM))
     fprintf('%s Error in calcOrb; no BPMs in Lattice to plot orbit, aborting... \n', datetime);

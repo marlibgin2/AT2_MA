@@ -1,7 +1,7 @@
 function DAdist = calcDAdist(varargin)
 % Calculates and plots Dynamic Aperture of a number of 
 % lattice variants that differ only through the application of a given 
-% error model (and possibly correspondin corrections).
+% error model (and possibly corresponding corrections).
 % Tracking can be 6d or 4d as defined by the input lattice. 
 % This is a higher level wrapper function
 % that in turn calls the lower level function "calcDA_raw"
@@ -96,7 +96,7 @@ function DAdist = calcDAdist(varargin)
 %   DAdist.outputs.DAVs=DAVs: (nang+1X2*(nseeds+1)) array of dynamic aperture 
 %                           border coordinates for all seeds
 %                           (only for DAMode='border')
-%   DAdist.outputs.orb0_stds: (6Xnseeds+1) array of close orbit standadr
+%   DAdist.outputs.orb0_stds: (6Xnseeds+1) array of closed orbit standard
 %                           deviations for perturbed lattices before 
 %                           correction. First point is the unperturbed
 %                           lattice.
@@ -140,11 +140,11 @@ function DAdist = calcDAdist(varargin)
 %   DAdist.outputs.telapsed: calculation time [s]
 %
 %% Usage examples
-% DAdist = calcDAdist(RING,ErrorModel,DAoptions,'plot','corrorb','verbose', 1);
-% DAdist = calcDAdist(RING,ErrorModel,[],'nturns',1024,'corrorb');
-% calcDAdist(RING,ErrorModel,[],'nturns',1024,'nseeds',10,'plot','corrorb');
-% DAdist = calcDAdist(RING,ErrorModel,[],'nturns',810,'corrorb','corrtun','tunfams',{'Q1','Q2'},'frac',0.5);
-% DAdist = calcDAdist(RING,ErrorModel,[],'mode,'xydp','nturns',810,'corrorb','corrtun','tunfams',{'Q1','Q2'});
+% DAdist = calcDAdist(RING,ErrorModel,DAoptions,'plot','verbose', 1);
+% DAdist = calcDAdist(RING,ErrorModel,[],'nturns',1024);
+% calcDAdist(RING,ErrorModel,[],'nturns',1024,'nseeds',10,'plot','corrorb',false);
+% DAdist = calcDAdist(RING,ErrorModel,[],'nturns',810,'tunfams',{'Q1','Q2'},'frac',0.5);
+% DAdist = calcDAdist(RING,ErrorModel,[],'mode,'xydp','nturns',810,'tunfams',{'Q1','Q2'});
 
 %% History
 % PFT 2024/03/12

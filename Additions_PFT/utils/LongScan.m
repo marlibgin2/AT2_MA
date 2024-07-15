@@ -1,5 +1,5 @@
 function LongScan(i0,Nsteps,nfiles,MaxEmitt,MaxChro,MaxEta,choosef)
-% Executes series of GALSS Scanns 
+% Executes series of GALSS Scans 
 % The lattice, parameters to be varied and their ranges are defined in the
 %   function glass_scan.
 %

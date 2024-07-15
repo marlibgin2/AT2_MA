@@ -67,7 +67,7 @@ function LMA = calcLMA(varargin)
 %% History
 % PFT 2024/03/08. 
 % PFT 2024/06/16: changed output into a structure
-%
+% PFT 2024/07/12: corrected naming of PeriodDev field in output Structure
 %% Input argument parsing
 [RING,MAoptions] = getargs(varargin,[],[]);
 if (isempty(MAoptions))
@@ -219,7 +219,7 @@ LMA.outputs.Spos  = Spos;
 LMA.outputs.map_l = map_l;
 LMA.outputs.map_h = map_h;
 LMA.outputs.Ipos  = Ipos;
-LMA.outputs.PeridoDev = PeriodDev;
+LMA.outputs.PeriodDev = PeriodDev;
 LMA.outputs.telapsed = telapsed;
 
 %% Plots LMA

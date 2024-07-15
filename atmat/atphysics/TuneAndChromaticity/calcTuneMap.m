@@ -42,6 +42,13 @@ function tunemap=calcTuneMap(varargin)
 %  TMoptions.dpmax: max energy deviation for chromatic tune footprint,default = +0.03
 %  TMoptions.dpmin: min energy deviation for chromatic tune footprint,default = -0.03
 %
+%  TMoptions.xmax_dm: max horizontal amplitude [m] for diffusion maps, default = 0.005 
+%  TMoptions.xmin_dm: min horizontal amplitude [m] for diffusion maps, default = 0.0 
+%  TMoptions.ymax_dm: max vertical amplitude [m], default = 0.004
+%  TMoptions.ymin_dm: min vertical amplitude [m], default = 0.0
+%  TMoptions.dpmax_dm: max energy deviation for chromatic tune footprint,default = +0.03
+%  TMoptions.dpmin_dm: min energy deviation for chromatic tune footprint,default = -0.03
+%
 %  TMoptions.dp: initial energy deviation, default = 0.0
 %
 %  TMoptions.npx: number of points along horizontal direction; default = 11
@@ -57,6 +64,9 @@ function tunemap=calcTuneMap(varargin)
 %  TMoptions.smooth  : if true, selects smooth mode grid calculations - note that this means 
 %           computations are not parallelized. This is only relevant for
 %           method=4 (NAFF), deafult = false
+%
+%  TMoptions.full : if true calculation is 6D for a full riung,possibly with
+%                   errors, else it is 4 d.
 %
 % Optional arguments
 % Any of the fields in the TMoptions structure
@@ -103,6 +113,14 @@ function tunemap=calcTuneMap(varargin)
 % ymaxplot: maximum vertical coordinate in tune plots, default = ymax
 % dpminplot: minimum momentum deviation in tune plots, deafult = dpmin
 % dpmaxplot: maximum momentum deviation in tune plots, default = dpmax
+%
+% xminplot_dm: minimum horizontal coordinate in diffusion map plots, default = xmin
+% xmaxplot_dm: maximum horizontal coordinate in diffusion map, default = xmax_dm 
+% yminplot_dm: minimum vertical coordinate in diffusion map, default = ymin_dm 
+% ymaxplot_dm: maximum vertical coordinate in diffusion map, default = ymax_dm
+% dpminplot_dm: minimum momentum deviation in diffusion map, deafult = dpmin_dm
+% dpmaxplot_dm: maximum momentum deviation in diffusion map, default = dpmax_dm
+%
 % x0  : (1xN) array of horizontal values for line plots vs y or dp
 % y0  : (1xN) array of horizontal values for line plots vs x or dp
 % dp0 : (1XN) array of energy deviation values  for line plots vs x or y
@@ -112,7 +130,7 @@ function tunemap=calcTuneMap(varargin)
 % dqy     : vertical half width of square in tune space for FMA plots,
 %           default = 0.001 
 %
-% caxrange: color axis range, default [-10 0]
+% caxrange: color axis range, default "auto"
 % verbose : defines level of verbose output, default=0, i.e. no output
 %
 % Optional flags
@@ -134,6 +152,12 @@ function tunemap=calcTuneMap(varargin)
 %   tunemap.inputs.plotargs.ymaxplot
 %   tunemap.inputs.plotargs.dpminplot
 %   tunemap.inputs.plotargs.dpmaxplot
+%   tunemap.inputs.plotargs.xminplot_dm
+%   tunemap.inputs.plotargs.xmaxplot_dm
+%   tunemap.inputs.plotargs.yminplot_dm
+%   tunemap.inputs.plotargs.ymaxplot_dm
+%   tunemap.inputs.plotargs.dpminplot_dm
+%   tunemap.inputs.plotargs.dpmaxplot_dm
 %   tunemap.inputs.plotargs.dqx
 %   tunemap.inputs.plotargs.dqy
 %   tunemap.inputs.plotargs.x0
@@ -217,8 +241,8 @@ function tunemap=calcTuneMap(varargin)
 % tunemap = calcTuneMap(ACHRO,TMoptions,'plot','xmin',-0.007,'xmax',0.004,'mode','x');
 % tunemap = calcTuneMap(ACHRO,TMoptions,'xmin',-0.007,'xmax',0.004,'ymin',0.0,'ymax',0.002,'mode','grid');
 % tunemap = calcTuneMap(ACHRO,TMoptions,'mode','chro','npd',121,'dpmin',-0.050,'dpmax',0.050);
-% tunemap = calcTuneMap(ACHRO,TMoptions,'mode','difxdp','npd',121,'npx', 121, dpmin',-0.050,'dpmax',0.050);
-% tunemap = calcTuneMap(ACHRO,TMoptions,'mode','difxy','npx',64+1,'npy',2*64+1,'xmin',-0.005,'xmax',0.005);
+% tunemap = calcTuneMap(ACHRO,TMoptions,'mode','difxdp','npd',121,'npx', 121, dpmin_dm',-0.050,'dpmax_dm',0.050);
+% tunemap = calcTuneMap(ACHRO,TMoptions,'mode','difxy','npx',64+1,'npy',2*64+1,'xmin_dm',-0.005,'xmax_dm',0.005);
 
 %% History
 % PFT 2024/04/27: first version, based on calcADTS
@@ -231,6 +255,8 @@ function tunemap=calcTuneMap(varargin)
 % PFT 2024/05/19: added check that number of turns is larger than 66 for
 %                 NAFF
 % PFT 2024/07/05: changed input to use a single structure TMoptions
+% PFT 2024/07/12: separated defaults fo limits of tune maps and diffusion
+%                 maps
 %
 %% Input argument parsing
 [ACHRO,TMoptions] = getargs(varargin,[],[]);
@@ -244,9 +270,15 @@ if (isempty(TMoptions))
    TMoptions.xmax = +0.006;
    TMoptions.ymin = 0.0;
    TMoptions.ymax = 0.004;
+   TMoptions.xmin_dm = -0.006;
+   TMoptions.xmax_dm = +0.006;
+   TMoptions.ymin_dm = 0.0;
+   TMoptions.ymax_dm = 0.004;
    TMoptions.dp   = 0.0;
    TMoptions.dpmin = -0.04;
    TMoptions.dpmax = +0.04;
+   TMoptions.dpmin_dm = -0.04;
+   TMoptions.dpmax_dm = +0.04;
    TMoptions.nturns = 1024;
    TMoptions.minampx = 30E-6;
    TMoptions.minampy = 30E-6;
@@ -267,30 +299,42 @@ xmax             = getoption(varargin,'xmax', TMoptions.xmax);
 xmin             = getoption(varargin,'xmin',TMoptions.xmin);
 ymax             = getoption(varargin,'ymax',TMoptions.ymax);
 ymin             = getoption(varargin,'ymin',TMoptions.ymin);
+xmax_dm          = getoption(varargin,'xmax_dm', TMoptions.xmax_dm);
+xmin_dm          = getoption(varargin,'xmin_dm',TMoptions.xmin_dm);
+ymax_dm          = getoption(varargin,'ymax_dm',TMoptions.ymax_dm);
+ymin_dm          = getoption(varargin,'ymin_dm',TMoptions.ymin_dm);
 dp               = getoption(varargin,'dp',TMoptions.dp);
 dpmin            = getoption(varargin,'dpmin',TMoptions.dpmin);
 dpmax            = getoption(varargin,'dpmax',TMoptions.dpmax);
+dpmin_dm         = getoption(varargin,'dpmin_dm',TMoptions.dpmin_dm);
+dpmax_dm         = getoption(varargin,'dpmax_dm',TMoptions.dpmax_dm);
 npx              = getoption(varargin,'npx',TMoptions.npx);
 npy              = getoption(varargin,'npy',TMoptions.npy);
 npd              = getoption(varargin,'npd',TMoptions.npd);
 method           = getoption(varargin,'method',TMoptions.method);
 
-TMoptions.smooth = smooth;
-TMoptions.nturns = nturns;
-TMoptions.mode   = mode;
-TMoptions.minampx= minampx;
-TMoptions.minampy= minampy;
-TMoptions.xmax   = xmax;
-TMoptions.xmin   = xmin;
-TMoptions.ymax   = ymax;
-TMoptions.ymin   = ymin;
-TMoptions.dp     = dp;
-TMoptions.dpmin  = dpmin;
-TMoptions.dpmax  = dpmax;
-TMoptions.npx    = npx;
-TMoptions.npy    = npy;
-TMoptions.npd    = npd;
-TMoptions.method = method;
+TMoptions.smooth   = smooth;
+TMoptions.nturns   = nturns;
+TMoptions.mode     = mode;
+TMoptions.minampx  = minampx;
+TMoptions.minampy  = minampy;
+TMoptions.xmax     = xmax;
+TMoptions.xmin     = xmin;
+TMoptions.ymax     = ymax;
+TMoptions.ymin     = ymin;
+TMoptions.xmax_dm  = xmax_dm;
+TMoptions.xmin_dm  = xmin_dm;
+TMoptions.ymax_dm  = ymax_dm;
+TMoptions.ymin_dm  = ymin_dm;
+TMoptions.dp       = dp;
+TMoptions.dpmin    = dpmin;
+TMoptions.dpmax    = dpmax;
+TMoptions.dpmin_dm = dpmin_dm;
+TMoptions.dpmax_dm = dpmax_dm;
+TMoptions.npx      = npx;
+TMoptions.npy      = npy;
+TMoptions.npd      = npd;
+TMoptions.method   = method;
 
 %
 plotmode         = getoption(varargin,'plotmode','abs');
@@ -304,6 +348,12 @@ yminplot         = getoption(varargin,'yminplot',ymin);
 ymaxplot         = getoption(varargin,'ymaxplot',ymax);
 dpminplot        = getoption(varargin,'dpminplot',dpmin);
 dpmaxplot        = getoption(varargin,'dpmaxplot',dpmax);
+xminplot_dm      = getoption(varargin,'xminplot_dm',xmin_dm);
+xmaxplot_dm      = getoption(varargin,'xmaxplot_dm',xmax_dm);
+yminplot_dm      = getoption(varargin,'yminplot_dm',ymin_dm);
+ymaxplot_dm      = getoption(varargin,'ymaxplot_dm',ymax_dm);
+dpminplot_dm     = getoption(varargin,'dpminplot_dm',dpmin_dm);
+dpmaxplot_dm     = getoption(varargin,'dpmaxplot_dm',dpmax_dm);
 x0               = getoption(varargin,'x0','all');
 y0               = getoption(varargin,'y0','all');
 dp0              = getoption(varargin,'dp0','all');
@@ -311,14 +361,13 @@ dqx              = getoption(varargin,'dqx',0.001);
 dqy              = getoption(varargin,'dqy',0.001);
 caxrange         = getoption(varargin,'caxrange','auto');
 
-
 %% Preamble
 ACHRO  = atdisable_6d(ACHRO);
 nped   = atGetRingProperties(ACHRO).Periodicity;  
 
 % If "method" is NAFF or "mode" requires NAFF
-% number of turns is a multipe of 6 and the periodicity, otherwise it is
-% only a multiple ofthe periodicity
+% number of turns is a multipe of 6 and of the periodicity, otherwise it is
+% only a multiple of the periodicity
 if (method==4 || smooth || strcmpi(mode,'difxy') || strcmpi(mode,'difxdp') || strcmpi(mode,'difydp'))
     ndiv=lcm(nped,6);
 else
@@ -590,8 +639,8 @@ switch mode
 
     case {'difxy';'DIFXY'}
         method=4;
-        amplx=linspace(xmin,xmax,npx);
-        amply=linspace(ymin,ymax,npy);
+        amplx=linspace(xmin_dm,xmax_dm,npx);
+        amply=linspace(ymin_dm,ymax_dm,npy);
         [amplx_m, amply_m]=meshgrid(amplx,amply);
         axdifxy  = reshape(amplx_m,npx*npy,1);
         aydifxy  = reshape(amply_m,npx*npy,1);     
@@ -637,8 +686,8 @@ switch mode
        
     case {'difxdp';'DIFXDP'}
         method=4;
-        amplx=linspace(xmin,xmax,npx);
-        dps=linspace(dpmin,dpmax,npd);
+        amplx=linspace(xmin_dm,xmax_dm,npx);
+        dps=linspace(dpmin_dm,dpmax_dm,npd);
         [dps_m, amplx_m]=meshgrid(dps,amplx);
         dpdifxdp  = reshape(dps_m,npd*npx,1);
         axdifxdp  = reshape(amplx_m,npd*npx,1); 
@@ -684,8 +733,8 @@ switch mode
 
     case {'difydp';'DIFYDP'}
         method=4;
-        amply=linspace(ymin,ymax,npy);
-        dps=linspace(dpmin,dpmax,npd);
+        amply=linspace(ymin_dm,ymax_dm,npy);
+        dps=linspace(dpmin_dm,dpmax_dm,npd);
         [dps_m, amply_m]=meshgrid(dps,amply);
         dpdifydp  = reshape(dps_m,npd*npy,1);
         aydifydp  = reshape(amply_m,npd*npy,1);     
@@ -764,6 +813,12 @@ tunemap.inputs.plotargs.yminplot=yminplot;
 tunemap.inputs.plotargs.ymaxplot=ymaxplot;
 tunemap.inputs.plotargs.dpminplot=dpminplot;
 tunemap.inputs.plotargs.dpmaxplot=dpmaxplot;
+tunemap.inputs.plotargs.xminplot_dm=xminplot_dm;
+tunemap.inputs.plotargs.xmaxplot_dm=xmaxplot_dm;
+tunemap.inputs.plotargs.yminplot_dm=yminplot_dm;
+tunemap.inputs.plotargs.ymaxplot_dm=ymaxplot_dm;
+tunemap.inputs.plotargs.dpminplot_dm=dpminplot_dm;
+tunemap.inputs.plotargs.dpmaxplot_dm=dpmaxplot_dm;
 tunemap.inputs.plotargs.dqx=dqx;
 tunemap.inputs.plotargs.dqy=dqy;
 tunemap.inputs.plotargs.caxrange=caxrange;

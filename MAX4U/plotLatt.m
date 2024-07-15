@@ -18,8 +18,8 @@ function plotLatt(LS,varargin)
 %            If not given, the two values above are taken from
 %            DAS.outputs.DAoptions
 %
-% dpminplot : minimum energy deviation for xdp and ydp plots
-% dpmaxplot : maximum energy deviation for xdp and ydp plots
+% dpminplot : minimum energy deviation for xdp and ydp DA plots
+% dpmaxplot : maximum energy deviation for xdp and ydp DA plots
 %
 % plotTuneMap options
 % zoom: zoom factor for tune diagram plots , default = 1.0
@@ -27,6 +27,20 @@ function plotLatt(LS,varargin)
 %           default = 0.001
 % dqy     : vertical half width of square in tune space for FMA plots,
 %           default = 0.001 
+% xminplot_dm : minimum horizontal limit for tune diffusion maps [m]
+% xmaxplot_dm : maximum horizontal limit for tune diffusion maps  [m]
+% ymaxplot_dm : maximum vertical limits for tune diffusion maps  [m] %
+% yminplot_dm : maximum vertical limits for tune diffusion maps  [m] %
+%
+% dpminplot_dm : minimum energy deviation for xdp and ydp plots
+% dpmaxplot_dm : maximum energy deviation for xdp and ydp plots
+%
+% dpminplotLMA : minimum energy deviation for LMA plots
+% dpmaxplotLMA : maximum energy deviation for LMA plots
+% caxrange     : color axis scale for tune diffusion maps of single
+%                achromat, default = "auto"
+% caxrange_r   : color axis range for full ring diffusion maps, default =
+%                "auto"
 %
 % Optional flags
 %
@@ -51,6 +65,10 @@ function plotLatt(LS,varargin)
 %               errors
 % 'LMAdist'   : Local Momentum Aperture for whole ring with errors 
 % 'TLTdist'   : Touschek lifetime for ring with errors
+% 'TMdist'    : Tune maps for full ring with errors
+% 'nogrid'    : supresses grid plots
+%
+% 'save' : exports all plots to a pdf file
 %
 %% Usage examples
 % plotLattice(m4_standard,'all');
@@ -60,7 +78,8 @@ function plotLatt(LS,varargin)
 %% History
 % 2024/07 first version
 % 2024/07/06 : added conditional plotting
-%
+% 2024/07/10 : added saving to pdf file
+% 2024/07/13 : added plot of difusion map with errors
 %% Input argument parsing
 
 basicf      = any(strcmpi(varargin,'basic'));
@@ -82,23 +101,86 @@ TM_chrof    = any(strcmpi(varargin,'TM_chro'));
 LMAf        = any(strcmpi(varargin,'LMA'));
 LMAdistf    = any(strcmpi(varargin,'LMAdist'));
 TLTdistf    = any(strcmpi(varargin,'TLTdist'));
+TMdistf     = any(strcmpi(varargin,'TMdist'));
+nogridf     = any(strcmpi(varargin,'nogrid'));
 %
-xminplot  = getoption(varargin,'xminplot',-LS.cLoptions.DAoptions.XmaxDA);
-xmaxplot  = getoption(varargin,'xmaxplot', LS.cLoptions.DAoptions.XmaxDA);
-ymaxplot  = getoption(varargin,'ymaxplot',LS.cLoptions.DAoptions.YmaxDA);
-dpminplot = getoption(varargin,'dpminplot',LS.cLoptions.DAoptions.dpmin);
-dpmaxplot = getoption(varargin,'dpmaxplot',LS.cLoptions.DAoptions.dpmax);
+savef       = any(strcmpi(varargin,'save'));
 %
+xminplot     = getoption(varargin,'xminplot',-LS.cLoptions.DAoptions.XmaxDA);
+xmaxplot     = getoption(varargin,'xmaxplot', LS.cLoptions.DAoptions.XmaxDA);
+ymaxplot     = getoption(varargin,'ymaxplot',LS.cLoptions.DAoptions.YmaxDA);
+dpminplot    = getoption(varargin,'dpminplot',LS.cLoptions.DAoptions.dpmin);
+dpmaxplot    = getoption(varargin,'dpmaxplot',LS.cLoptions.DAoptions.dpmax);
+
+xminplot_dm  = getoption(varargin,'xminplot_dm', LS.cLoptions.TMoptions.xmin_dm);
+xmaxplot_dm  = getoption(varargin,'xmaxplot_dm', LS.cLoptions.TMoptions.xmax_dm);
+ymaxplot_dm  = getoption(varargin,'ymaxplot_dm', LS.cLoptions.TMoptions.ymax_dm);
+yminplot_dm  = getoption(varargin,'yminplot_dm', 0.0);
+dpminplot_dm = getoption(varargin,'dpminplot_dm',LS.cLoptions.TMoptions.dpmin_dm);
+dpmaxplot_dm = getoption(varargin,'dpmaxplot_dm',LS.cLoptions.TMoptions.dpmax_dm);
+
+dpmaxplotLMA = getoption(varargin,'dpmaxplotLMA',LS.cLoptions.MAoptions.deltalimit);
+dpminplotLMA = getoption(varargin,'dpminplotLMA',-LS.cLoptions.MAoptions.deltalimit);
+
 zoom        = getoption(varargin,'zoom',1);
 dqx         = getoption(varargin,'dqx',0.001);
 dqy         = getoption(varargin,'dqy',0.001);
+caxrange    = getoption(varargin,'caxrange','auto');
+caxrange_r  = getoption(varargin,'caxrange_r','auto');
+%
+
+%% Creates export file
+if (savef)
+    fn=strcat(LS.Lattice_Name,'.pdf');
+    figure('Name','Lattice Evaluation');
+    smm=LS.LattPerf.atsummary;
+    attext = {sprintf('   *************  Summary for ''%s'' ************\n', LS.Lattice_Name)};
+    attext = [attext;sprintf('   Energy: \t\t\t% 4.5f [GeV]\n', smm.e0)];
+    attext = [attext;sprintf('   Circumference: \t\t% 4.5f [m]\n', smm.circumference)];
+    attext = [attext;sprintf('   Full tunes H/V \t\t %4.5f %4.5f\n', smm.Itunes(1),smm.Itunes(2))];
+    attext = [attext;sprintf('   Momentum Compaction Factor: \t% 4.5e\n', smm.compactionFactor)];
+    attext = [attext;sprintf('   Chromaticity H: \t\t%+4.5f\n', smm.chromaticity(1))];
+    attext = [attext;sprintf('   Chromaticity V: \t\t%+4.5f\n', smm.chromaticity(2))];
+    attext = [attext;sprintf('   Radiation Loss: \t\t% 4.5f [keV]\n', smm.radiation*1e6)];
+    attext = [attext;sprintf('   Natural Energy Spread [0.1 %%]: \t% 4.5f\n', smm.naturalEnergySpread*1000)];
+    attext = [attext;sprintf('   Natural Emittance: \t\t% 4.5f [pmrad]\n', smm.naturalEmittance*1E12)];
+    attext = [attext;sprintf('   RF Voltage: \t% 4.5f [kV]\n', LS.LattData.V0/1e3)];
+    %{
+
+            fprintf('                   Frequency: \t% 4.5f [MHz]\n', freq/1e6);
+            fprintf('             Harmonic Number: \t% 4.0f\n', smm.harmon);
+            fprintf('   Overvoltage factor: \t\t% 4.5f\n', smm.overvoltage);
+            fprintf('   Synchronous Phase:  \t\t% 4.5f [rad] (%4.5f [deg])\n', smm.syncphase, smm.syncphase*180/pi);
+            fprintf('   Linear Energy Acceptance:  \t% 4.3f %%\n', smm.energyacceptance*100);
+            fprintf('   Synchrotron Tune:   \t\t% 4.5f (%4.5f kHz or %4.2f turns) \n', smm.synctune, smm.synctune/smm.revTime*1e-3, 1/smm.synctune);
+            fprintf('   Bunch Length:       \t\t% 4.5f [mm] (%4.5f ps)\n', smm.bunchlength*1e3, bunchtime*1e12);
+            fprintf(SeparatorString);
+            fprintf('   Injection:\n');
+            fprintf('   H: beta = %06.3f [m] alpha = %+04.1e eta = %+04.3f [m] eta'' = %+04.1e \n', bx(1), ax(1), etax(1), etaprimex(1));
+            fprintf('   V: beta = %06.3f [m] alpha = %+04.1e eta = %+04.3f [m] eta'' = %+04.1e \n', by(1), ay(1), etay(1), etaprimey(1));
+            fprintf('   ********** End of Summary for ''%s'' **********\n', LatticeName);
+            fprintf('\n');
+    
+    %}
+    dim=[0.05 0.9 0.9 0.0];
+    annotation('textbox',dim, 'String',attext,'FitBoxToText','on');
+    exportgraphics(gcf,fn);
+end
 
 %% Basic Plots
 if (allf||basicf)
 %% Twiss parameters and Physical Aperture
     if (not(isempty(LS.ACHROMAT)))
-        atplot(LS.ACHROMAT);
-        plotEAperture(LS.ACHROMAT);
+        figure;atplot(LS.ACHROMAT);title(LS.Lattice_Name);
+        if (savef)
+            exportgraphics(gcf,fn,'Append',true);
+        end
+
+        plotEAperture(LS.ACHROMAT,'plottitle',LS.Lattice_Name);
+
+        if (savef)
+            exportgraphics(gcf,fn,'Append',true);
+        end
     else
         fprintf('%s plotLattice: Warning - ACHROMAT cell array is empty. \n', datetime)
     end
@@ -106,13 +188,27 @@ if (allf||basicf)
 %% Design orbit deviation 
     if (not(isempty(LS.LattData.DesignOrbit.Deviation)))
         plotDO(LS,'dev');
+        if (savef)
+            exportgraphics(gcf,fn,'Append',true);
+        end
     else
         fprintf('%s plotLattice: Warning - Design Orbit arrays are empty. \n', datetime)
     end
-
+%% Magnet Centres 
+    if (not(isempty(LS.LattData.MagCentres.Deviation)))
+        plotDO(LS,'magdev');
+        if (savef)
+            exportgraphics(gcf,fn,'Append',true);
+        end
+    else
+        fprintf('%s plotLattice: Warning - Magnet Centre arrays are empty. \n', datetime)
+    end
 %% Field and Gradient
     if (not(isempty(LS.LattData.FG.Spos)))
         plotfield(LS.LattData.FG);
+        if (savef)
+            exportgraphics(gcf,fn,'Append',true);
+        end
     else
         fprintf('%s plotLattice: Warning - Field arrays are empty. \n', datetime);
     end
@@ -121,21 +217,33 @@ end
 if (allf||DAsf||DAxyf)
     if(not(isempty(fieldnames(LS.LattPerf.DA.xy_0))))
         plotDA(LS.LattPerf.DA.xy_0,'xminplot',xminplot,...
-               'xmaxplot',xmaxplot,'ymaxplot',ymaxplot);
+               'xmaxplot',xmaxplot,'ymaxplot',ymaxplot,...
+               'plottitle',LS.Lattice_Name);
+        if (savef)
+            exportgraphics(gcf,fn,'Append',true);
+        end
     else
         fprintf('%s plotLattice: Warning - DA.xy_0 structure empty. \n', datetime);
     end
 
     if(not(isempty(fieldnames(LS.LattPerf.DA.xy_p3))))
         plotDA(LS.LattPerf.DA.xy_p3,'xminplot',xminplot,...
-               'xmaxplot',xmaxplot,'ymaxplot',ymaxplot);
+               'xmaxplot',xmaxplot,'ymaxplot',ymaxplot,...
+               'plottitle',LS.Lattice_Name);
+        if (savef)
+            exportgraphics(gcf,fn,'Append',true);
+        end
     else
         fprintf('%s plotLattice: Warning - DA.xy_p3 structure empty. \n', datetime);
     end
 
     if(not(isempty(fieldnames(LS.LattPerf.DA.xy_m3))))
         plotDA(LS.LattPerf.DA.xy_m3, 'xminplot',xminplot,...
-               'xmaxplot',xmaxplot,'ymaxplot',ymaxplot);
+               'xmaxplot',xmaxplot,'ymaxplot',ymaxplot,...
+               'plottitle',LS.Lattice_Name);
+        if (savef)
+            exportgraphics(gcf,fn,'Append',true);
+        end
     else
         fprintf('%s plotLattice: Warning - DA.xy_m3 structure empty. \n', datetime);
     end
@@ -144,36 +252,68 @@ end
 %% Dynamic Aperture without errors in (x,dp) and (y,dp) planes
 if (allf||DAsf||DAxydpf)
     if(not(isempty(fieldnames(LS.LattPerf.DA.xydp))))
-        plotDA(LS.LattPerf.DA.xydp,'xminplot',xminplot,...
+        phandles=plotDA(LS.LattPerf.DA.xydp,'xminplot',xminplot,...
                'xmaxplot',xmaxplot,'ymaxplot',ymaxplot,...
-               'dpminplot',dpminplot,'dpmaxplot',dpmaxplot);
+               'dpminplot',dpminplot,'dpmaxplot',dpmaxplot, ...
+               'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - DA.xydp structure empty. \n', datetime);
     end
 end
 
-%% Dynamic aperture with errors on( x,y) plane
+%% Dynamic aperture with errors on(x,y) plane
 if (allf||DAsf||DAdistxyf)
     if(not(isempty(fieldnames(LS.LattPerf.DAdist.xy))))
-        plotDAdist(LS.LattPerf.DAdist.xy,'plotorbrms');
+        phandles=plotDAdist(LS.LattPerf.DAdist.xy,...
+            'xmaxplot',xmaxplot,'ymaxplot',ymaxplot,...
+            'xminplot',xminplot,...
+            'plottitle',LS.Lattice_Name,'plotorbrms');
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - DAdist.xy structure empty. \n', datetime);
     end
 end
 
-%% Dynamic aperture with errors on( x,dp) and (y,p) planes
+%% Dynamic aperture with errors on(x,dp) and (y,p) planes
 if (allf||DAsf||DAdistxydpf)
     if(not(isempty(fieldnames(LS.LattPerf.DAdist.xydp))))
-        plotDAdist(LS.LattPerf.DAdist.xydp);
+        phandles=plotDAdist(LS.LattPerf.DAdist.xydp,'dpminplot',dpminplot, ...
+            'dpmaxplot',dpmaxplot,'xminplot',xminplot,...
+            'xmaxplot',xmaxplot,'ymaxplot',ymaxplot,...
+            'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - DAdist.xydp structure empty. \n', datetime);
     end
 end
 
-%% Tune maps
+%% Tune maps for single achromat without errors
 if (allf||TMsf||TM_xyf)
     if(not(isempty(fieldnames(LS.LattPerf.TM.xy))))
-        plotTuneMap(LS.LattPerf.TM.xy,'plotmode','rel');
+        phandles=plotTuneMap(LS.LattPerf.TM.xy,'plotmode','rel',...
+            'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - TM.xy structure empty. \n', datetime);
     end
@@ -181,31 +321,59 @@ end
 
 if (allf||TMsf||TM_chrof)
     if(not(isempty(fieldnames(LS.LattPerf.TM.chro))))
-        plotTuneMap(LS.LattPerf.TM.chro,'plotmode','rel');
+        phandles=plotTuneMap(LS.LattPerf.TM.chro,'plotmode','rel',...
+            'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - TM.chro structure empty. \n', datetime);
     end
 end
 
-if (allf||TMsf||TM_gridxyf)
+if ((allf||TMsf||TM_gridxyf)&&not(nogridf))
     if(not(isempty(fieldnames(LS.LattPerf.TM.gridxy))))
-        plotTuneMap(LS.LattPerf.TM.gridxy);
+        phandles=plotTuneMap(LS.LattPerf.TM.gridxy,...
+            'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - TM.gridxy structure empty. \n', datetime);
     end
 end
 
-if(allf||TMsf||TM_gridxdpf)
+if((allf||TMsf||TM_gridxdpf)&&not(nogridf))
     if(not(isempty(fieldnames(LS.LattPerf.TM.gridxdp))))
-        plotTuneMap(LS.LattPerf.TM.gridxdp);
+        phandles=plotTuneMap(LS.LattPerf.TM.gridxdp,...
+            'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - TM.gridxdp structure empty. \n', datetime);
     end
 end
 
-if(allf||TMsf||TM_gridxdpf)
+if((allf||TMsf||TM_gridxdpf)&&not(nogridf))
     if(not(isempty(fieldnames(LS.LattPerf.TM.gridxdp))))
-        plotTuneMap(LS.LattPerf.TM.gridydp);
+        phandles=plotTuneMap(LS.LattPerf.TM.gridydp,...
+            'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - TM.gridydp structure empty. \n', datetime);
     end
@@ -213,7 +381,16 @@ end
 
 if (allf||TMsf||TM_difxyf)
     if(not(isempty(fieldnames(LS.LattPerf.TM.difxy)))) 
-        plotTuneMap(LS.LattPerf.TM.difxy,'caxrange',[-10 -2],'rate');
+        phandles=plotTuneMap(LS.LattPerf.TM.difxy,'caxrange',caxrange,...
+            'rate','xminplot_dm',xminplot_dm,'xmaxplot_dm',xmaxplot_dm,...
+            'yminplot_dm',yminplot_dm,'ymaxplot_dm',ymaxplot_dm,...
+            'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
         qxav = LS.LattPerf.atsummary.tunes(1) + nanmean(LS.LattPerf.TM.difxy.outputs.dQxgridxy);
         qyav = LS.LattPerf.atsummary.tunes(2) + nanmean(LS.LattPerf.TM.difxy.outputs.dQygridxy);
         qxmin=LS.LattPerf.atsummary.tunes(1) + min(LS.LattPerf.TM.difxy.outputs.dQxgridxy);
@@ -227,8 +404,15 @@ if (allf||TMsf||TM_difxyf)
         qxmax=min(qxav + DQ/2,1);
         qymin=max(qyav - DQ/2,0);
         qymax=min(qyav + DQ/2,1);
-        plotTuneMap(LS.LattPerf.TM.difxy,'plottype','fmxy','qxrange',...
-            [qxmin qxmax],'qyrange',[qymin qymax],'dqx',dqx,'dqy',dqy,'rate');
+        phandles=plotTuneMap(LS.LattPerf.TM.difxy,'plottype','fmxy','qxrange',...
+            [qxmin qxmax],'qyrange',[qymin qymax],'dqx',dqx,'dqy',dqy,'rate',...
+            'caxrange',caxrange,'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - TM.difxy structure empty. \n', datetime);
     end
@@ -236,7 +420,16 @@ end
 
 if (allf||TMsf||TM_difxdpf)
     if(not(isempty(fieldnames(LS.LattPerf.TM.difxdp))))
-        plotTuneMap(LS.LattPerf.TM.difxdp,'caxrange',[-10 -2],'rate');
+        phandles=plotTuneMap(LS.LattPerf.TM.difxdp,'caxrange',caxrange,'rate',...
+            'xminplot_dm',xminplot_dm,'xmaxplot_dm',xmaxplot_dm,...
+            'dpminplot_dm',dpminplot_dm,'dpmaxplot_dm',dpmaxplot_dm,...
+            'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
         qxav = LS.LattPerf.atsummary.tunes(1) + nanmean(LS.LattPerf.TM.difxdp.outputs.dQxgridxdp);
         qyav = LS.LattPerf.atsummary.tunes(2) + nanmean(LS.LattPerf.TM.difxdp.outputs.dQygridxdp);
         qxmin=LS.LattPerf.atsummary.tunes(1) + min(LS.LattPerf.TM.difxdp.outputs.dQxgridxdp);
@@ -250,8 +443,15 @@ if (allf||TMsf||TM_difxdpf)
         qxmax=min(qxav + DQ/2,1);
         qymin=max(qyav - DQ/2,0);
         qymax=min(qyav + DQ/2,1);
-        plotTuneMap(LS.LattPerf.TM.difxdp,'plottype','fmxdp','qxrange',...
-            [qxmin qxmax],'qyrange',[qymin qymax],'dqx',dqx,'dqy',dqy);
+        phandles=plotTuneMap(LS.LattPerf.TM.difxdp,'plottype','fmxdp','qxrange',...
+            [qxmin qxmax],'qyrange',[qymin qymax],'dqx',dqx,'dqy',dqy,...
+            'caxrange',caxrange,'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - TM.difxdp structure empty. \n', datetime);
     end
@@ -259,7 +459,16 @@ end
 
 if (allf||TMsf||TM_difydpf)
     if(not(isempty(fieldnames(LS.LattPerf.TM.difydp))))
-        plotTuneMap(LS.LattPerf.TM.difydp,'caxrange',[-10 -2],'rate');
+        phandles=plotTuneMap(LS.LattPerf.TM.difydp,'caxrange',caxrange,'rate',...
+            'dpminplot_dm',dpminplot_dm,'dpmaxplot_dm',dpmaxplot_dm,...
+            'yminplot_dm',yminplot_dm,'ymaxplot_dm',ymaxplot_dm,...
+            'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
         qxav = LS.LattPerf.atsummary.tunes(1) + nanmean(LS.LattPerf.TM.difydp.outputs.dQxgridydp);
         qyav = LS.LattPerf.atsummary.tunes(2) + nanmean(LS.LattPerf.TM.difydp.outputs.dQygridydp);
         qxmin=LS.LattPerf.atsummary.tunes(1) + min(LS.LattPerf.TM.difydp.outputs.dQxgridydp);
@@ -273,9 +482,16 @@ if (allf||TMsf||TM_difydpf)
         qxmax=min(qxav + DQ/2,1);
         qymin=max(qyav - DQ/2,0);
         qymax=min(qyav + DQ/2,1);
-        plotTuneMap(LS.LattPerf.TM.difydp,'plottype','fmydp',...
+        phandles=plotTuneMap(LS.LattPerf.TM.difydp,'plottype','fmydp',...
             'qxrange',[qxmin qxmax],'qyrange',[qymin qymax],...
-            'dqx',dqx,'dqy',dqy,'rate');
+            'caxrange',caxrange,'dqx',dqx,'dqy',dqy,'rate',...
+            'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - TM.difydp structure empty. \n', datetime);
     end
@@ -288,12 +504,22 @@ end
 
 if (allf||LMAf)
     if(not(isempty(fieldnames(LS.LattPerf.LMA))))
-        plotLMA(LS.LattPerf.LMA,'dpminplot',dpminplot,'dpmaxplot',dpmaxplot);
+        plotLMA(LS.LattPerf.LMA,'dpminplot',dpminplotLMA,...
+            'dpmaxplot',dpmaxplotLMA,'plottitle',LS.Lattice_Name);
+        if (savef)
+            exportgraphics(gcf,fn,'Append',true);
+        end
     else
         fprintf('%s plotLattice: Warning - LMA structure empty. \n', datetime);
         if(not(isempty(fieldnames(LS.LattPerf.TL))))
             plotLMA(LS.LattPerf.TL.outputs.LMA,...
-                    'dpminplot',dpminplot,'dpmaxplot',dpmaxplot); 
+                    'dpminplot',dpminplotLMA,'dpmaxplot',dpmaxplotLMA); 
+            if (savef)
+                nhandles=numel(phandles);
+                for i=1:nhandles
+                    exportgraphics(phandles{i},fn,'Append',true);
+                end
+            end
         else  
             fprintf('%s plotLattice: Warning - TL structure empty. \n', datetime);
         end
@@ -304,12 +530,27 @@ end
 %% Local Momentum aperture with errors
 if (allf||LMAdistf)
     if(not(isempty(fieldnames(LS.LattPerf.LMAdist))))
-        plotLMAdist(LS.LattPerf.LMAdist,'dpminplot',dpminplot,'dpmaxplot',dpmaxplot);
+        phandles=plotLMAdist(LS.LattPerf.LMAdist,...
+            'dpminplot',dpminplotLMA,'dpmaxplot',dpmaxplotLMA,...
+            'plottitle',LS.Lattice_Name,'plotorbrms');
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - LMAdist structure empty. \n', datetime);
         if(not(isempty(fieldnames(LS.LattPerf.TLdist))))
-            plotLMAdist(LS.LattPerf.TLdist.outputs.LMAdist,...
-                'dpminplot',dpminplot,'dpmaxplot',dpmaxplot);
+            phandles=plotLMAdist(LS.LattPerf.TLdist.outputs.LMAdist,...
+                'dpminplot',dpminplotLMA,'dpmaxplot',dpmaxplotLMA,...
+                'plottitle',LS.Lattice_Name);
+            if (savef)
+                nhandles=numel(phandles);
+                for i=1:nhandles
+                    exportgraphics(phandles{i},fn,'Append',true);
+                end
+            end
         else
             fprintf('%s plotLattice: Warning - TLdist structure empty. \n', datetime);
         end
@@ -319,12 +560,47 @@ end
 %% Touschek lifetime with errors
 if (allf||TLTdistf)
     if(not(isempty(fieldnames(LS.LattPerf.TLdist))))
-        plotTLTdist(LS.LattPerf.TLdist);
+        phandles=plotTLTdist(LS.LattPerf.TLdist,'plottitle',LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
     else
         fprintf('%s plotLattice: Warning - TLdist structure empty. \n', datetime);
     end
 end
-
-
+%% Tune diffusion map for full ring without and with errors
+if (allf||TMdistf)
+    if(not(isempty(fieldnames(LS.LattPerf.TMdist))))
+        phandles=plotTuneMap(LS.LattPerf.TMdist.outputs.TMs{1},...
+            'rate',...
+            'xminplot_dm',xminplot_dm,'xmaxplot_dm',xmaxplot_dm,...
+            'yminplot_dm',yminplot_dm,'ymaxplot_dm',ymaxplot_dm,...
+            'plottype','difxy','caxrange',caxrange_r,...
+            'plottitle',strcat(LS.Lattice_Name,': no errors'));
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
+        phandles=plotTuneMap(LS.LattPerf.TMdist.outputs.TMs{2},...
+            'rate',...
+            'xminplot_dm',xminplot_dm,'xmaxplot_dm',xmaxplot_dm,...
+            'yminplot_dm',yminplot_dm,'ymaxplot_dm',ymaxplot_dm,...
+            'plottype','difxy','caxrange',caxrange_r, ...
+            'plottitle',strcat(LS.Lattice_Name,': with errors'));
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
+    else
+        fprintf('%s plotLattice: Warning - TLdist structure empty. \n', datetime);
+    end
+end
 
 

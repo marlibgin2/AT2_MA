@@ -1,6 +1,7 @@
-function  EApertures=plotEAperture(RING)
+function  EApertures=plotEAperture(RING,varargin)
 % Plots the Elliptical Aperture fields 
 % 
+plottitle  = getoption(varargin,'plottitle','');
 nelem = length(RING);
 Spos=findspos(RING,1:nelem);
 EApertures=zeros(nelem,2);
@@ -14,5 +15,5 @@ end
 figure;plot(Spos,EApertures(:,1)*1000,'-ob');hold on;xlabel('S[m]');ylabel('Aperture[mm]');
 ylim([0,20]);
 plot(Spos,EApertures(:,2)*1000,'-sr');
-legend('X','Y');grid;
+legend('X','Y');grid;title(plottitle);
 end
