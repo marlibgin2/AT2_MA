@@ -1,7 +1,6 @@
 function tunemap=calcTuneMap(varargin)
-% Calculates and plots betatron tunes maps as a function of position 
-% or energy.
-% Calculates an plots frequency maps and tune diffusion maps
+% Calculates and plots betatron tunes maps as a function of position  
+% or momentum. Calculates an plots frequency maps and tune diffusion maps
 %
 % This is a high level wrapper to the function calcTune. 
 % Tracking is 4d + fixed energy deviation
@@ -29,6 +28,7 @@ function tunemap=calcTuneMap(varargin)
 %  'difydp' calculates tune diffusion map in the ydp plane 
 %               tune calculation method is 4 (NAFF). 
 %  'chrom' calculates chromatic tune footprint.
+%
 %  TMoptions.minampx: minimum absolute value of amplitude in horizontal direction,
 %            default=30 microm
 %  TMoptions.minampy: minimum absolute value of amplitude in horizontal direction,

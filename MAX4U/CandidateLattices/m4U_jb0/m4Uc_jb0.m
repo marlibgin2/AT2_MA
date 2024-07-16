@@ -85,4 +85,4 @@ m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,...
 
 diary off
 
-%plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.008,'xminplot',-0.012,'xmaxplot',0.012,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'nogrid','ymaxplot_dm',0.008,'xmaxplot_dm',0.012,'xminplot_dm',-0.012,'save');
+%plotLatt(m4UT,'all','ymaxplot_dm',0.007,'zoom',2.0,'ymaxplot',0.007,'xminplot',-0.012,'xmaxplot',0.012,'dpminplotLMA',-0.20,'dpmaxplotLMA',0.20,'nogrid','xmaxplot_dm',0.012,'xminplot_dm',-0.012,'caxrange',[-10 0],'caxrange_r',[-10 -5],'save');

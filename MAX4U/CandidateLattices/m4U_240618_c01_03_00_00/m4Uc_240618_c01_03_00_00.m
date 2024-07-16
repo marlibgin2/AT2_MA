@@ -50,8 +50,8 @@
 %% Lattice specific data
 lattname = 'm4U-240618-c01-03-00-00';
 desc = 'From Åke, translated by Johan B. to Tracy 2024/07/02';
-diary_file=strcat(lattname,'_log_',datestr(now,30));
-diary(diary_file);
+%diary_file=strcat(lattname,'_log_',datestr(now,30));
+%diary(diary_file);
 
 ACHRO = m4_20240618_M1a_QFAQFBQFCp175c_tracy(); % the script from Johan, 
                                                 % with modifications of the
@@ -97,6 +97,6 @@ cLoptions.ErrorModel = errormodel_DDRchallenging('gdran',1.0,...
 m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,...
     MagnetStrengthLimits);
 
-diary off
+%diary off
 
 %plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'nogrid','save');

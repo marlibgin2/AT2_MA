@@ -90,6 +90,8 @@ function phandles=plotTuneMap(tunemap,varargin)
 %                 diffusion maps
 % PFT 2024/07/13: added string to plot title
 % PFT 2024/07/15: added output handles, reformatted titles
+% PFT 2024/07/16: incoporrated new plot_net function that can handle
+%                 the integer part of the tune
 
 %% Input argument parsing
 plotmode   = getoption(varargin,'plotmode',tunemap.inputs.plotargs.plotmode);
@@ -291,15 +293,14 @@ switch plottype
         end
 
     case {'td';'TD'}
-        
-        Qxxfrac=tunemap.outputs.Qxxfrac;
-        Qyxfrac=tunemap.outputs.Qyxfrac;
-        Qxyfrac=tunemap.outputs.Qxyfrac;
-        Qyyfrac=tunemap.outputs.Qyyfrac;
+        Qxx=tunemap.outputs.Qxx;
+        Qyx=tunemap.outputs.Qyx;
+        Qxy=tunemap.outputs.Qxy;
+        Qyy=tunemap.outputs.Qyy;
 
-        if not(isempty(Qxxfrac)||isempty(Qyxfrac)||isempty(Qyxfrac)||isempty(Qyyfrac))
-            figure;plot(Qxxfrac,Qyxfrac,'ok');hold on;
-            plot(Qxyfrac,Qyyfrac,'or');
+        if not(isempty(Qxx)||isempty(Qyx)||isempty(Qyx)||isempty(Qyy))
+            figure;plot(Qxx,Qyx,'ok');hold on;
+            plot(Qxy,Qyy,'or');
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
                           
@@ -308,19 +309,19 @@ switch plottype
             nhandles=nhandles+1;
             phandles{nhandles}=gcf;
         else
-            fprintf('%s Error in plotTuneMap: Qxx, Aqxy, Qyx or Qyx not available for plottype %s \n', datetime, plottype);
+            fprintf('%s Error in plotTuneMap: Qxx, Qxy, Qyx or Qyy not available for plottype %s \n', datetime, plottype);
         end
 
     case {'gridtd';'GRIDTD'}
-        Qxgridxyfrac=tunemap.outputs.Qxgridxyfrac;
-        Qygridxyfrac=tunemap.outputs.Qygridxyfrac;
+        Qxgridxy=tunemap.outputs.Qxgridxy;
+        Qygridxy=tunemap.outputs.Qygridxy;
 
-        if (not(isempty(Qxgridxyfrac)||isempty(Qygridxyfrac)))
-            figure;plot(Qxgridxyfrac,Qygridxyfrac,'ok');hold on;
+        if (not(isempty(Qxgridxy)||isempty(Qygridxy)))
+            figure;plot(Qxgridxy,Qygridxy,'ok');hold on;
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
                           
-            xlabel('qx');ylabel('qy');
+            xlabel('Qx');ylabel('Qy');
             title(strcat(plottitle,{' Res order = '},num2str(resorder)));
             grid on;
             nhandles=nhandles+1;
@@ -382,7 +383,7 @@ switch plottype
             nhandles=nhandles+1;
             phandles{nhandles}=gcf;
         else
-            fprintf('%s Error in plotTuneMap: Qxgridxyfrac or Qygridxyfrac not available for plottype %s \n', datetime, plottype);
+            fprintf('%s Error in plotTuneMap: Qxgridxy or Qygridxy not available for plottype %s \n', datetime, plottype);
         end
 
      case {'gridxdp';'GRIDXDP'}
@@ -606,13 +607,13 @@ switch plottype
         end
 
         if(not(isempty(Qdifxy)))
-            Qxgridxyfrac=tunemap.outputs.Qxgridxyfrac;
-            Qygridxyfrac=tunemap.outputs.Qygridxyfrac;
+            Qxgridxy=tunemap.outputs.Qxgridxy;
+            Qygridxy=tunemap.outputs.Qygridxy;
    
-            Qxfmxy(:,1:npx*npy) = [Qxgridxyfrac'-dqx; Qxgridxyfrac'-dqx; ...
-                                   Qxgridxyfrac'+dqx; Qxgridxyfrac'+dqx];
-            Qyfmxy(:,1:npx*npy) = [Qygridxyfrac'-dqy; Qygridxyfrac'+dqy; ...
-                                   Qygridxyfrac'+dqy; Qygridxyfrac'-dqy];
+            Qxfmxy(:,1:npx*npy) = [Qxgridxy'-dqx; Qxgridxy'-dqx; ...
+                                   Qxgridxy'+dqx; Qxgridxy'+dqx];
+            Qyfmxy(:,1:npx*npy) = [Qygridxy'-dqy; Qygridxy'+dqy; ...
+                                   Qygridxy'+dqy; Qygridxy'-dqy];
             figure;
             fill(Qxfmxy,Qyfmxy,Qdifxy);hold on;
             xlabel('qx');ylabel('qy');
@@ -625,7 +626,7 @@ switch plottype
             if (ratef)
                 title(strcat(plottitle,{' Tune Diffusion Rate:(X,Y),Res order='},num2str(resorder)));
             else
-                title(strcat(plottite, {' Tune Diffusion:(X,Y), Res order ='},num2str(resorder)));
+                title(strcat(plottitle, {' Tune Diffusion:(X,Y), Res order ='},num2str(resorder)));
             end
             colorbar;
             nhandles=nhandles+1;
@@ -642,13 +643,13 @@ switch plottype
         end
 
         if (not(isempty(Qdifxdp)))    
-            Qxgridxdpfrac=tunemap.outputs.Qxgridxdpfrac;
-            Qygridxdpfrac=tunemap.outputs.Qygridxdpfrac;
+            Qxgridxdp=tunemap.outputs.Qxgridxdp;
+            Qygridxdp=tunemap.outputs.Qygridxdp;
    
-            Qxfmxdp(:,1:npd*npx) = [Qxgridxdpfrac'-dqx; Qxgridxdpfrac'-dqx; ...
-                                    Qxgridxdpfrac'+dqx; Qxgridxdpfrac'+dqx];
-            Qyfmxdp(:,1:npd*npx) = [Qygridxdpfrac'-dqy; Qygridxdpfrac'+dqy; ...
-                                    Qygridxdpfrac'+dqy; Qygridxdpfrac'-dqy];
+            Qxfmxdp(:,1:npd*npx) = [Qxgridxdp'-dqx; Qxgridxdp'-dqx; ...
+                                    Qxgridxdp'+dqx; Qxgridxdp'+dqx];
+            Qyfmxdp(:,1:npd*npx) = [Qygridxdp'-dqy; Qygridxdp'+dqy; ...
+                                    Qygridxdp'+dqy; Qygridxdp'-dqy];
             figure;
             fill(Qxfmxdp,Qyfmxdp,Qdifxdp);hold on;
             xlabel('qx');ylabel('qy');
@@ -678,13 +679,13 @@ switch plottype
         end
 
         if(not(isempty(Qdifydp)))
-            Qxgridydpfrac=tunemap.outputs.Qxgridydpfrac;
-            Qygridydpfrac=tunemap.outputs.Qygridydpfrac;
+            Qxgridydp=tunemap.outputs.Qxgridydp;
+            Qygridydp=tunemap.outputs.Qygridydp;
    
-            Qxfmydp(:,1:npd*npy) = [Qxgridydpfrac'-dqx; Qxgridydpfrac'-dqx; ...
-                                    Qxgridydpfrac'+dqx; Qxgridydpfrac'+dqx];
-            Qyfmydp(:,1:npd*npy) = [Qygridydpfrac'-dqy; Qygridydpfrac'+dqy; ...
-                                    Qygridydpfrac'+dqy; Qygridydpfrac'-dqy];
+            Qxfmydp(:,1:npd*npy) = [Qxgridydp'-dqx; Qxgridydp'-dqx; ...
+                                    Qxgridydp'+dqx; Qxgridydp'+dqx];
+            Qyfmydp(:,1:npd*npy) = [Qygridydp'-dqy; Qygridydp'+dqy; ...
+                                    Qygridydp'+dqy; Qygridydp'-dqy];
             figure;
             fill(Qxfmydp,Qyfmydp,Qdifydp);hold on;
             xlabel('qx');ylabel('qy');
@@ -733,13 +734,13 @@ switch plottype
         end
         
     case {'chrotd';'CHROTD'}
-        Qxdpfrac=tunemap.outputs.Qxdpfrac;
-        Qydpfrac=tunemap.outputs.Qydpfrac;
+        Qxdp=tunemap.outputs.Qxdp;
+        Qydp=tunemap.outputs.Qydp;
         [~,dp0pos] = min(abs(dps));
 
-        if not(isempty(Qxdpfrac)||isempty(Qydpfrac))
-            figure;plot(Qxdpfrac(1:dp0pos),Qydpfrac(1:dp0pos),'ob');hold on;
-            plot(Qxdpfrac(dp0pos:length(dps)),Qydpfrac(dp0pos:length(dps)),'or');
+        if not(isempty(Qxdp)||isempty(Qydp))
+            figure;plot(Qxdp(1:dp0pos),Qydp(1:dp0pos),'ob');hold on;
+            plot(Qxdp(dp0pos:length(dps)),Qydp(dp0pos:length(dps)),'or');
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
                           

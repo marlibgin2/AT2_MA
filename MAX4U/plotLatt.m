@@ -80,6 +80,8 @@ function plotLatt(LS,varargin)
 % 2024/07/06 : added conditional plotting
 % 2024/07/10 : added saving to pdf file
 % 2024/07/13 : added plot of difusion map with errors
+% 2024/07/16 : adapted tune map plots to the the new plot_net function
+%              that can handle the integer part of the tune
 %% Input argument parsing
 
 basicf      = any(strcmpi(varargin,'basic'));
@@ -114,8 +116,8 @@ dpmaxplot    = getoption(varargin,'dpmaxplot',LS.cLoptions.DAoptions.dpmax);
 
 xminplot_dm  = getoption(varargin,'xminplot_dm', LS.cLoptions.TMoptions.xmin_dm);
 xmaxplot_dm  = getoption(varargin,'xmaxplot_dm', LS.cLoptions.TMoptions.xmax_dm);
-ymaxplot_dm  = getoption(varargin,'ymaxplot_dm', LS.cLoptions.TMoptions.ymax_dm);
 yminplot_dm  = getoption(varargin,'yminplot_dm', 0.0);
+ymaxplot_dm  = getoption(varargin,'ymaxplot_dm', LS.cLoptions.TMoptions.ymax_dm);
 dpminplot_dm = getoption(varargin,'dpminplot_dm',LS.cLoptions.TMoptions.dpmin_dm);
 dpmaxplot_dm = getoption(varargin,'dpmaxplot_dm',LS.cLoptions.TMoptions.dpmax_dm);
 
@@ -391,19 +393,19 @@ if (allf||TMsf||TM_difxyf)
                 exportgraphics(phandles{i},fn,'Append',true);
             end
         end
-        qxav = LS.LattPerf.atsummary.tunes(1) + nanmean(LS.LattPerf.TM.difxy.outputs.dQxgridxy);
-        qyav = LS.LattPerf.atsummary.tunes(2) + nanmean(LS.LattPerf.TM.difxy.outputs.dQygridxy);
-        qxmin=LS.LattPerf.atsummary.tunes(1) + min(LS.LattPerf.TM.difxy.outputs.dQxgridxy);
-        qxmax=LS.LattPerf.atsummary.tunes(1) + max(LS.LattPerf.TM.difxy.outputs.dQxgridxy);
-        qymin=LS.LattPerf.atsummary.tunes(2) + min(LS.LattPerf.TM.difxy.outputs.dQygridxy);
-        qymax=LS.LattPerf.atsummary.tunes(2) + max(LS.LattPerf.TM.difxy.outputs.dQygridxy);
+        qxav = LS.LattPerf.atsummary.Itunes(1) + nanmean(LS.LattPerf.TM.difxy.outputs.dQxgridxy);
+        qyav = LS.LattPerf.atsummary.Itunes(2) + nanmean(LS.LattPerf.TM.difxy.outputs.dQygridxy);
+        qxmin=LS.LattPerf.atsummary.Itunes(1) + min(LS.LattPerf.TM.difxy.outputs.dQxgridxy);
+        qxmax=LS.LattPerf.atsummary.Itunes(1) + max(LS.LattPerf.TM.difxy.outputs.dQxgridxy);
+        qymin=LS.LattPerf.atsummary.Itunes(2) + min(LS.LattPerf.TM.difxy.outputs.dQygridxy);
+        qymax=LS.LattPerf.atsummary.Itunes(2) + max(LS.LattPerf.TM.difxy.outputs.dQygridxy);
         DQx = qxmax-qxmin;
         DQy = qymax-qymin;
         DQ = max(DQx,DQy)/zoom;
         qxmin=max(qxav - DQ/2,0);
-        qxmax=min(qxav + DQ/2,1);
+        qxmax=qxav + DQ/2;
         qymin=max(qyav - DQ/2,0);
-        qymax=min(qyav + DQ/2,1);
+        qymax=qyav + DQ/2;
         phandles=plotTuneMap(LS.LattPerf.TM.difxy,'plottype','fmxy','qxrange',...
             [qxmin qxmax],'qyrange',[qymin qymax],'dqx',dqx,'dqy',dqy,'rate',...
             'caxrange',caxrange,'plottitle',LS.Lattice_Name);
@@ -430,19 +432,19 @@ if (allf||TMsf||TM_difxdpf)
                 exportgraphics(phandles{i},fn,'Append',true);
             end
         end
-        qxav = LS.LattPerf.atsummary.tunes(1) + nanmean(LS.LattPerf.TM.difxdp.outputs.dQxgridxdp);
-        qyav = LS.LattPerf.atsummary.tunes(2) + nanmean(LS.LattPerf.TM.difxdp.outputs.dQygridxdp);
-        qxmin=LS.LattPerf.atsummary.tunes(1) + min(LS.LattPerf.TM.difxdp.outputs.dQxgridxdp);
-        qxmax=LS.LattPerf.atsummary.tunes(1) + max(LS.LattPerf.TM.difxdp.outputs.dQxgridxdp);
-        qymin=LS.LattPerf.atsummary.tunes(2) + min(LS.LattPerf.TM.difxdp.outputs.dQygridxdp);
-        qymax=LS.LattPerf.atsummary.tunes(2) + max(LS.LattPerf.TM.difxdp.outputs.dQygridxdp);
+        qxav = LS.LattPerf.atsummary.Itunes(1) + nanmean(LS.LattPerf.TM.difxdp.outputs.dQxgridxdp);
+        qyav = LS.LattPerf.atsummary.Itunes(2) + nanmean(LS.LattPerf.TM.difxdp.outputs.dQygridxdp);
+        qxmin=LS.LattPerf.atsummary.Itunes(1) + min(LS.LattPerf.TM.difxdp.outputs.dQxgridxdp);
+        qxmax=LS.LattPerf.atsummary.Itunes(1) + max(LS.LattPerf.TM.difxdp.outputs.dQxgridxdp);
+        qymin=LS.LattPerf.atsummary.Itunes(2) + min(LS.LattPerf.TM.difxdp.outputs.dQygridxdp);
+        qymax=LS.LattPerf.atsummary.Itunes(2) + max(LS.LattPerf.TM.difxdp.outputs.dQygridxdp);
         DQx = qxmax-qxmin;
         DQy = qymax-qymin;
         DQ = max(DQx,DQy)/zoom;
         qxmin=max(qxav - DQ/2,0);
-        qxmax=min(qxav + DQ/2,1);
+        qxmax=qxav + DQ/2;
         qymin=max(qyav - DQ/2,0);
-        qymax=min(qyav + DQ/2,1);
+        qymax=qyav + DQ/2;
         phandles=plotTuneMap(LS.LattPerf.TM.difxdp,'plottype','fmxdp','qxrange',...
             [qxmin qxmax],'qyrange',[qymin qymax],'dqx',dqx,'dqy',dqy,...
             'caxrange',caxrange,'plottitle',LS.Lattice_Name);
@@ -469,19 +471,19 @@ if (allf||TMsf||TM_difydpf)
                 exportgraphics(phandles{i},fn,'Append',true);
             end
         end
-        qxav = LS.LattPerf.atsummary.tunes(1) + nanmean(LS.LattPerf.TM.difydp.outputs.dQxgridydp);
-        qyav = LS.LattPerf.atsummary.tunes(2) + nanmean(LS.LattPerf.TM.difydp.outputs.dQygridydp);
-        qxmin=LS.LattPerf.atsummary.tunes(1) + min(LS.LattPerf.TM.difydp.outputs.dQxgridydp);
-        qxmax=LS.LattPerf.atsummary.tunes(1) + max(LS.LattPerf.TM.difydp.outputs.dQxgridydp);
-        qymin=LS.LattPerf.atsummary.tunes(2) + min(LS.LattPerf.TM.difydp.outputs.dQygridydp);
-        qymax=LS.LattPerf.atsummary.tunes(2) + max(LS.LattPerf.TM.difydp.outputs.dQygridydp);
+        qxav = LS.LattPerf.atsummary.Itunes(1) + nanmean(LS.LattPerf.TM.difydp.outputs.dQxgridydp);
+        qyav = LS.LattPerf.atsummary.Itunes(2) + nanmean(LS.LattPerf.TM.difydp.outputs.dQygridydp);
+        qxmin=LS.LattPerf.atsummary.Itunes(1) + min(LS.LattPerf.TM.difydp.outputs.dQxgridydp);
+        qxmax=LS.LattPerf.atsummary.Itunes(1) + max(LS.LattPerf.TM.difydp.outputs.dQxgridydp);
+        qymin=LS.LattPerf.atsummary.Itunes(2) + min(LS.LattPerf.TM.difydp.outputs.dQygridydp);
+        qymax=LS.LattPerf.atsummary.Itunes(2) + max(LS.LattPerf.TM.difydp.outputs.dQygridydp);
         DQx = qxmax-qxmin;
         DQy = qymax-qymin;
         DQ = max(DQx,DQy)/zoom;
         qxmin=max(qxav - DQ/2,0);
-        qxmax=min(qxav + DQ/2,1);
+        qxmax=qxav + DQ/2;
         qymin=max(qyav - DQ/2,0);
-        qymax=min(qyav + DQ/2,1);
+        qymax=qyav + DQ/2;
         phandles=plotTuneMap(LS.LattPerf.TM.difydp,'plottype','fmydp',...
             'qxrange',[qxmin qxmax],'qyrange',[qymin qymax],...
             'caxrange',caxrange,'dqx',dqx,'dqy',dqy,'rate',...
@@ -496,9 +498,6 @@ if (allf||TMsf||TM_difydpf)
         fprintf('%s plotLattice: Warning - TM.difydp structure empty. \n', datetime);
     end
 end
-
-
-
 
 %% Local Momentum Aperture without errors 
 
@@ -602,5 +601,3 @@ if (allf||TMdistf)
         fprintf('%s plotLattice: Warning - TLdist structure empty. \n', datetime);
     end
 end
-
-

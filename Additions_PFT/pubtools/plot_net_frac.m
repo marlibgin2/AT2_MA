@@ -1,4 +1,4 @@
-function plot_net(order,qxmin,qxmax,qzmin,qzmax)
+function plot_net_frac(order,qxmin,qxmax,qzmin,qzmax)
 %PLOT_NET Plot the tune resonance diagram of desired order
 % plot_net(order,qxmin,qxmax,qzmin,qzmax)
 %
