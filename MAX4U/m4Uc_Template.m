@@ -49,7 +49,7 @@
 % 2024/07/17 : incrporrated Saroj's mod_IntSteps function
 %
 %% Lattice specific data
-lattname = 'm4U-240618-c01-03-00-00';
+lattname = 'm4U-240618-f02-02-01-01';
 desc = 'From Åke, translated by Johan B. to Tracy 2024/07/02';
 %diary_file=strcat(lattname,'_log_',datestr(now,30));
 %diary(diary_file);
@@ -74,7 +74,7 @@ cLoptions.All_famsO={}; %   optional, If empty m4_cLatt finds out the magnet
 
 cLoptions.ringtune_fams = {'qfend';'qdend'};   % magnet families for tune matching
 cLoptions.chrom_fams    = {'sdqd','sfi'}; % magnet families for chromaticity matching
-cLoptions.sext_fams     = {''}; % list of all sextupole families 
+cLoptions.sext_fams     = {'sfi';'sfo';'sfm';'sdqd';'sdendq'}; % list of all sextupole families 
 cLoptions.eqfam = {'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';...
                    'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';...
                    'dipm';'dipm';'dipm';'dipm';'dipm';...
