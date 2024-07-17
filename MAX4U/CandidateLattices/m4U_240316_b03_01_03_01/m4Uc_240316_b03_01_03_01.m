@@ -1,63 +1,72 @@
 %% m4Uc_240316_b03_01_03_01
 % This script is a template to set up workspace variables needed
-% to run the "m4_cLatt_woerrors" and "m4_cLatt_werrors" scripts, 
-% which in turn, run all "cLatt" function options in a series of steps 
-% creating/overwriting a structure named "m4T" in the matlab workspace, 
-% saving this variable in a "m4T.mat" file and saving all matlab output 
-% in a logfile. 
-%
-% Breaking the evaluation into The "m4_cLatt_woerrors" script and 
-% the more tme-consuming "m4_cLatt_woerrors" scripts  gives a convenient 
-% way of only performing the faster calculations at a first chek of a 
-% new lattice.
+% to run the "m4U_cLatt" script, which in turn, runs all "cLatt" function 
+% options in a series of steps creating/overwriting a structure named
+% "m4UT" in the matlab workspace, saving this variable
+% in a "m4UT.mat" file and saving all matlab output in a logfile
 %
 % The intended workflow is 
 %  1. Edit the statements in the "Lattice Specific Data" section below.
-%  2. Run the script.
-%  3. Rename or copy the resulting "m4T" sctructure accordingly.
-%  4. Execution may be interrupted at any moment and the most recent 
-%     m4T scruture can be recovered by loading it from the file 
+%  2. Make sure the variables ACHROGRD_a1 and MagnetStrengthLimits are 
+%     available in the workspace (see below for their content)
+%  3. Run the script.
+%  4. Rename or copy the resulting "m4UT" structure accordingly.
+%  5. Execution may be interrupted at any moment and the most recent 
+%     m4UT scruture can be recovered by loading it from the file 
 %     saved on disk. From that point on, further calculation and 
-%     updates to the m4T structure may be carried out by running 
-%     cLatt with specific input options. See the m4_cLatt script for 
+%     updates to the m4UT structure may be carried out by running 
+%     cLatt with specific input options. See the m4Uc_Latt script for 
 %     many possible calls to cLatt.
 %  
-% The structure "cLoptions" is stored as a field in the "m4T" structure 
-% and contains various lattice evaluation optional settings. These are
-% listed in the "General initialisation" section of the m4_cLatt script 
+% The structure "cLoptions" is stored as a field in the "m4UT" structure 
+% and contains various optionallattice evaluation settings. These are
+% listed in the "General initialisation" section of the m4Uc_Latt function 
 % (which sets their default values). If values different from the defauls 
 % are desired for fields in the cLoptions structure, these can be changed 
-% at anytime, e.g., by directly editing the corresponding fields or by 
+% at anytime, e.g., by directly editing the correspondig fields or by 
 % typing:
-%    >>cLoptions = m4T.cLoptions; % extracts cLoptions to the workspace.
-%    >>cLoptions.DAoptions.nturns = 2028 % implements the desired changes -
+%    >>cLpptions = m4UT.cLoptions; % extracts cLoptions to the workspace.
+%    >>cLoptions.DAoptions.nturns = 2028 % implementi the desired changes -
 %    in this example, we change the number of turns used in dynamic
-%    aperture calculations
+%    aperture calcualations
 %
-%    >>m4T=cLatt(m4T, 'cLoptions',cLoptions,'verbose',1); % stores the
-%                                          changes in the "m4T" structure.
-%
+%    >>m4UT=cLatt(m4UT, 'cLoptions',cLoptions,'verbose',1); % stores the
+%                                          changes in the "m4UT" structure.
 %    Note that such changes do not automatically re-run any evaluations 
 %    that are affected by them - these need to be rerun explicitly 
-%    to update the corresponding fields in the m4T structure, e.g.
+%    to update the corresponding fields in the m4UT structure, e.g.
 %
-%    >> m4T = cLatt(m4T,'DAxy','verbose',2);
+%    >> m4UT = cLatt(m4UT,'DAxy','verbose',2);
 %    
-%
+% A quick look at the m4Uc_Latt function reveals the syntax of calls to
+%  the cLatt function
 
 %% History
 % 2024/07/07 : first verstion
 % 2024/07/10 : break up of the calculations into two setps - with and
 %              without errors
+% 2024/07/13 : restructured to call m4Uc_Latt as a function
+%
 %% Lattice specific data
 lattname = 'm4U-240316-b03-01-03-01';
 desc = 'MOGA_20240313T091640, Ind 12, Disp Matched, 3.49mrad RB';
-diary_file=strcat(lattname,'_log_',datestr(now,30));
-diary(diary_file);
-
-ACHRO = ACHRO; % The cell array with the AT2 lattice to be evaluated
 
 m4U('b3','Full','rbk',3.49E-3);
+DAoptions = LatticeOptData.DAoptions;
+DAoptions.xmaxdas  =  0.010;
+DAoptions.xmindas  = -0.010;
+DAoptions.ymnaxdas =  0.007;
+
+
+load('/home/pedtav/Documents/Max4U/MOGA_Scans/MOGA_20240313T091640.mat');
+
+
+rp=ExMOGA(MOGAResults,12,'verbose','fitdisp','fitchrom','fittune',...
+          'tunes',[55.15 16.20],'LatticeOptData',LatticeOptData,...
+          'DAoptions',DAoptions);
+
+
+ACHRO = rp.outputs.ACHROGRD; % The cell array with the AT2 lattice to be evaluated
 
 % Initialize physical apertures
 %for i=1:length(ACHRO)
@@ -77,9 +86,11 @@ cLoptions.ErrorModel = errormodel_DDRchallenging('gdran',1.0,...
                             'mgalran',1.0,'mulsys',1.0,'mulran',1.0, ...
                             'strran',1.0,'bpmran',1.0);
 
+load('/home/pedtav/Documents/Codes/AT/AT2.0/MAX4U/MagnetStrengthLimits.mat');
+load('/home/pedtav/Documents/Codes/AT/AT2.0/MAX4U/CandidateLattices/m4_standard/m4_standard.mat');
+ACHRO_ref = m4_standard.ACHROMAT;
 
 %% Run cLatt options
-m4_cLatt_woerrors;
-m4_cLatt_werrors;
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits);
 
-diary off
+%plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'nogrid','save');

@@ -61,7 +61,7 @@ f0=rerr{indrfc(1)}.Frequency;
 
 % default arguments
 if nargin<12 || isempty(printouttext)
-    printouttext=true;
+    printouttext=false;  % temporary fix
 end
 if nargin<11 || isempty(steererlimit)
     steererlimit=[];

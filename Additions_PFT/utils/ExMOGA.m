@@ -98,7 +98,7 @@ Qrange         = getoption(varargin,'IQrange',[46 47 15 18]);
 qrange         = getoption(varargin,'qrange',[0.1 0.4 0.1 0.4]);
 Npq            = getoption(varargin,'Npq',[10 10]);
 LatticeOptData = getoption(varargin,'LatticeOptData',MOGAResults.LatticeOptData);
-DAoptions      = getoption(varargin,'DAoptions',MOGAResults.LatticeOptData.DAoptions);
+DAoptions      = getoption(varargin,'DAoptions',LatticeOptData.DAoptions);
 
 %% Preamble
 if (verbose||tunescanf)

@@ -67,7 +67,7 @@ function DAdist = calcDAdist(varargin)
 %   TolTune : tolerance for tune matching, default = 1E-3
 %   frac    : fraction for quad change in each tune fit iteration, defaut = 1.0
 %
-%   verboselevel : defines level of verbose output, default=0, i.e. no output
+%   verbose : defines level of verbose output, default=0, i.e. no output
 %
 % Optional flags
 % plot : plots DA distribution;
@@ -359,7 +359,7 @@ parfor i=1:nseeds+1
             if (verboselevel>0)
                 fprintf('%s Correcting orbit seed n. %3d \n', datetime, i-1);
             end
-            [RINGe{i}, orb0, orb] = calcOrb(RINGe{i},'correct');
+            [RINGe{i}, orb0, orb] = calcOrb(RINGe{i},'correct','verbose',verboselevel-1);
             for j=1:6
                 orb0_stds(j,i)=std(orb0(j,:));
                 orb_stds(j,i)=std(orb(j,:));

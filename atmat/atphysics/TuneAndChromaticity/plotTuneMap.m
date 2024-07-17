@@ -304,7 +304,7 @@ switch plottype
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
                           
-            xlabel('qx');ylabel('qy');
+            xlabel('Qx');ylabel('Qy');
             title(strcat(plottitle,{ 'Res order = '},num2str(resorder)));
             nhandles=nhandles+1;
             phandles{nhandles}=gcf;
@@ -616,7 +616,7 @@ switch plottype
                                    Qygridxy'+dqy; Qygridxy'-dqy];
             figure;
             fill(Qxfmxy,Qyfmxy,Qdifxy);hold on;
-            xlabel('qx');ylabel('qy');
+            xlabel('Qx');ylabel('Qy');
             plot_net(resorder,qxrange(1),qxrange(2),...
                      qyrange(1),qyrange(2));
             grid on;
@@ -652,7 +652,7 @@ switch plottype
                                     Qygridxdp'+dqy; Qygridxdp'-dqy];
             figure;
             fill(Qxfmxdp,Qyfmxdp,Qdifxdp);hold on;
-            xlabel('qx');ylabel('qy');
+            xlabel('Qx');ylabel('Qy');
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
             grid on;
@@ -688,7 +688,7 @@ switch plottype
                                     Qygridydp'+dqy; Qygridydp'-dqy];
             figure;
             fill(Qxfmydp,Qyfmydp,Qdifydp);hold on;
-            xlabel('qx');ylabel('qy');
+            xlabel('Qx');ylabel('Qy');
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
             grid on;
@@ -744,7 +744,7 @@ switch plottype
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
                           
-            xlabel('qx');ylabel('qy');
+            xlabel('Qx');ylabel('Qy');
             title(strcat(plottitle,{' Res order='},num2str(resorder)));
             nhandles=nhandles+1;
             phandles{nhandles}=gcf;

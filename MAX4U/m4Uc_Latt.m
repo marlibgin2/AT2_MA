@@ -42,7 +42,7 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 %                         when the dipole bending angle has been changed 
 %                         to compensate for the introduction of 
 %                         reverse bends
-%
+
 %% History
 % PFT 2024/07/06 : first version
 % PFT 2024/07/10 : break up of the script into two - without errors and with errors

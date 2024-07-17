@@ -264,7 +264,11 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                                            structure
 % LattStruct.LattData.CLv : Challenge Levels structure, output from
 %                           chalevel.
-%
+% LattStruct.LattData.famLayout : cell array with two coluns. The first 
+%              contains strings with names of magnet families in
+%              the order they appear in the lattice and the 
+%              second contains the corresponding multipolar strengths 
+%              of tose elentes - the PolynomB array field of the element.
 % ******************************************************************
 % LattStruct.LattPerf.atsummary : output of atsummary run on RINGGRD
 %
@@ -454,6 +458,8 @@ if (isempty(LattSt))
     LattStruct.LattData.MagCentres.x2d=[];
     LattStruct.LattData.MagCentres.y2d=[];
     LattStruct.LattData.MagCentres.Deviation=[];
+    LattStruct.LattData.MagCentres.Deviation=[];
+    LattStruct.LattData.MagCentres.famLayout={};
 
     %
     LattStruct.LattPerf.atsummary = struct;
@@ -562,8 +568,9 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.ACHROGRD      = {};
     cLoptions.RING          = {};
     cLoptions.RINGGRD       = {};
-    cLoptions.chrom_fams    = {'S2_a1';'S5_a1'}; % chromaticty correction
-    cLoptions.ringtune_fams = {'Q1_a1';'Q2_a1'};% ring tunes matching
+    cLoptions.chrom_fams    = {'S3_b3';'S5_b3'}; % chromaticty correction
+    cLoptions.ringtune_fams = {'Q1_b3';'Q2_b3'};% ring tunes matching
+    cLoptions.sext_fams     = {'S1_b3';'S2_b3';'S3_b3';'S4_b3';'S5_b3'};
 
     cLoptions.All_famsO = {'Q1_b3';'Q2_b3';'R1_b3';...
                              'D2_b3';'D3_b3';'D1_b3';...
@@ -607,9 +614,9 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.DAoptions.YmaxDA  = 0.006;   
     cLoptions.DAoptions.npdax   = 64; 
     cLoptions.DAoptions.npday   = 64; 
-    cLoptions.DAoptions.dx = cLoptions.DAoptions.XmaxDA/cLoptions.DAoptions.npdax;
-    cLoptions.DAoptions.dy = cLoptions.DAoptions.YmaxDA/cLoptions.DAoptions.npday;   % grid stepsize in y [m]
-    cLoptions.DAoptions.dxdy = cLoptions.DAoptions.dx*cLoptions.DAoptions.dy; % grid cell area [m**2]
+    cLoptions.DAoptions.dx      = cLoptions.DAoptions.XmaxDA/cLoptions.DAoptions.npdax;
+    cLoptions.DAoptions.dy      = cLoptions.DAoptions.YmaxDA/cLoptions.DAoptions.npday;   % grid stepsize in y [m]
+    cLoptions.DAoptions.dxdy    = cLoptions.DAoptions.dx*cLoptions.DAoptions.dy; % grid cell area [m**2]
     
     cLoptions.DAoptions.npDA = (2*cLoptions.DAoptions.npdax+1)*(cLoptions.DAoptions.npday+1); %total number of grid points
     cLoptions.DAoptions.X0da = zeros(cLoptions.DAoptions.npDA,1);  % horizontal coordinates of grid points [m]
@@ -684,6 +691,14 @@ fb=waitbar(0,'Lattice Structure Creation/Update', 'Name','Progress', 'CreateCanc
 setappdata(fb,'canceling',0);
 frac=0.0;
 dfrac=100/11;
+%% Lattice family layout
+if (basicf||allf)
+    if (verboselevel>0)
+        fprintf('%s cLatt: Determining lattice family layout \n', datetime);
+    end
+    fLO = famLayout(ACHRO);
+    LattStruct.LattData.famLayout=fLO;
+end
 %% Calculates design orbit
 if (basicf||allf)
     if (verboselevel>0)
@@ -821,26 +836,6 @@ if(isempty(RINGGRD))
     end
 end
 
-%
-%% Generates lattice at zero chromaticity
-if ( (basicf||allf)&&not(isempty(cLoptions.chrom_fams)))
-    if (verboselevel>0)
-         fprintf('%s cLatt: creating zero chromaticity lattice\n',datetime);
-    end
-    TolChrom     = cLoptions.DAoptions.TolChrom; % Chromaticity tolerances
-    Nitchro      = cLoptions.DAoptions.Nitchro;  % Max n. iterations of chromaticity correction
-    chrom_fams   = cLoptions.chrom_fams;
-    try 
-        [ACHRO_zc, ~, ~]=fitchroit(ACHRO, chrom_fams, [0 0], Nitchro, TolChrom); 
-    catch ME
-        fprintf('%s cLatt: Error in fitting zero chromaticity: ', datetime);
-        fprintf('Error message was:%s \n',ME.message);
-        ACHRO_zc={};
-    end
-    LattStruct.LattData.ACHROMAT_ZC = ACHRO_zc;
-end
-ACHRO_zc=LattStruct.LattData.ACHROMAT_ZC;
-
 %% Calculates field and gradient profiles
 if (basicf||allf)
     if (verboselevel>0)
@@ -861,6 +856,42 @@ if (basicf||allf)
         LattStruct.LattPerf.atsummary = atsummary(LattStruct.LattData.RINGGRD);
     end
 end
+%% Generates lattice at zero chromaticity
+if ( (basicf||allf)&&not(isempty(cLoptions.chrom_fams)))
+    if (verboselevel>0)
+         fprintf('%s cLatt: creating zero chromaticity lattice\n',datetime);
+    end
+    TolChrom     = cLoptions.DAoptions.TolChrom; % Chromaticity tolerances
+    Nitchro      = cLoptions.DAoptions.Nitchro;  % Max n. iterations of chromaticity correction
+    chrom_fams   = cLoptions.chrom_fams;
+    try 
+        [ACHRO_zc, ~, ~]=fitchroit(ACHRO, chrom_fams, [0 0], Nitchro, TolChrom); 
+    catch ME
+        fprintf('%s cLatt: Error in fitting zero chromaticity: ', datetime);
+        fprintf('Error message was:%s \n',ME.message);
+        ACHRO_zc={};
+    end
+    LattStruct.LattData.ACHROMAT_ZC = ACHRO_zc;
+end
+ACHRO_zc=LattStruct.LattData.ACHROMAT_ZC;
+%% Generates lattice with all sextupoles at zero
+if ( (basicf||allf)&&not(isempty(cLoptions.sext_fams)))
+    if (verboselevel>0)
+         fprintf('%s cLatt: creating lattice with all sextupoles at zero\n',datetime);
+    end
+    SFams=cLoptions.sext_fams;
+    nSFams = numel(SFams);
+    ACHRO_zs = ACHRO;
+    for i=1:nSFams
+        I_sext   = find(atgetcells(ACHRO, 'FamName', SFams{i}));
+        ACHRO_zs = atsetfieldvalues(ACHRO_zs, I_sext, 'PolynomB',{1,3}, 0.0); 
+    end
+    LattStruct.LattData.ACHROMAT_zs = ACHRO_zs;
+    ats_zs=atsummary(ACHRO_zs);
+    LattStruct.LattPerf.atsummary.achrnatchrom=ats_zs.chromaticity;
+    LattStruct.LattPerf.atsummary.achrtunes=ats_zs.Itunes;
+end
+
 % waitbar
 frac=frac+dfrac;
 waitbar(frac/100,fb,strcat(sprintf('%3.0f %s',frac,'%')));

@@ -76,12 +76,15 @@ function plotLatt(LS,varargin)
 % plotLattice(m4_standard,'DAs');
 
 %% History
-% 2024/07 first version
-% 2024/07/06 : added conditional plotting
-% 2024/07/10 : added saving to pdf file
-% 2024/07/13 : added plot of difusion map with errors
-% 2024/07/16 : adapted tune map plots to the the new plot_net function
-%              that can handle the integer part of the tune
+% PFT 2024/07 first version
+% PFT 2024/07/06 : added conditional plotting
+% PFT 2024/07/10 : added saving to pdf file
+% PFT 2024/07/13 : added plot of difusion map with errors
+% PFT 2024/07/16 : adapted tune map plots to the the new plot_net function
+%                  that can handle the integer part of the tune.
+%                  added plot of Challenge Levels, removing families
+%                  for which no equivalent family in the MagnetStrengthLimits
+%                  has been defined
 %% Input argument parsing
 
 basicf      = any(strcmpi(varargin,'basic'));
@@ -134,19 +137,36 @@ caxrange_r  = getoption(varargin,'caxrange_r','auto');
 %% Creates export file
 if (savef)
     fn=strcat(LS.Lattice_Name,'.pdf');
-    figure('Name','Lattice Evaluation');
+    
+    exportgraphics(gcf,fn);
+end
+
+%% Basic Plots
+if (allf||basicf)
+%% Parameter Table
+
+    fsum=figure('Name','Lattice Evaluation');
+    fsum.Position=[1150 96 768 710];
     smm=LS.LattPerf.atsummary;
+    
     attext = {sprintf('   *************  Summary for ''%s'' ************\n', LS.Lattice_Name)};
-    attext = [attext;sprintf('   Energy: \t\t\t% 4.5f [GeV]\n', smm.e0)];
-    attext = [attext;sprintf('   Circumference: \t\t% 4.5f [m]\n', smm.circumference)];
-    attext = [attext;sprintf('   Full tunes H/V \t\t %4.5f %4.5f\n', smm.Itunes(1),smm.Itunes(2))];
-    attext = [attext;sprintf('   Momentum Compaction Factor: \t% 4.5e\n', smm.compactionFactor)];
-    attext = [attext;sprintf('   Chromaticity H: \t\t%+4.5f\n', smm.chromaticity(1))];
-    attext = [attext;sprintf('   Chromaticity V: \t\t%+4.5f\n', smm.chromaticity(2))];
-    attext = [attext;sprintf('   Radiation Loss: \t\t% 4.5f [keV]\n', smm.radiation*1e6)];
-    attext = [attext;sprintf('   Natural Energy Spread [0.1 %%]: \t% 4.5f\n', smm.naturalEnergySpread*1000)];
-    attext = [attext;sprintf('   Natural Emittance: \t\t% 4.5f [pmrad]\n', smm.naturalEmittance*1E12)];
-    attext = [attext;sprintf('   RF Voltage: \t% 4.5f [kV]\n', LS.LattData.V0/1e3)];
+    attext =[attext; sprintf(' %s \n', datetime) ];
+    attext = [attext;sprintf('   Energy: \t\t\t %2.1f GeV\n', smm.e0)];
+    attext = [attext;sprintf('   Circumference: \t\t %3.1f m\n', smm.circumference)];
+    attext = [attext;sprintf('   Full tunes H/V: \t\t %4.2f / %4.2f\n', smm.Itunes(1),smm.Itunes(2))];
+    attext = [attext;sprintf('   Momentum Compaction Factor: \t %3.2e\n', smm.compactionFactor)];
+    attext = [attext;sprintf('   Chromaticity H: \t\t%+4.2f\n', smm.chromaticity(1))];
+    attext = [attext;sprintf('   Chromaticity V: \t\t%+4.2f\n', smm.chromaticity(2))];
+    attext = [attext;sprintf('   Radiation Loss: \t\t% 4.1f keV\n', smm.radiation*1e6)];
+    attext = [attext;sprintf('   Natural Energy Spread: \t% 3.2f %%\n', smm.naturalEnergySpread*100)];
+    attext = [attext;sprintf('   Natural Emittance: \t\t% 4.1f pmrad\n', smm.naturalEmittance*1E12)];
+    attext = [attext;sprintf('   RF Voltage: \t% 3.1f MV\n', LS.LattData.V0/1e6)];
+    if (isfield(smm,'achrnatchrom'))
+        attext = [attext;sprintf('   Achromat natural chromaticities: H/V\t\t %3.2f / %3.2f\n', smm.achrnatchrom(1),smm.achrnatchrom(2))];
+    end
+    if (isfield(smm,'achrtunes'))
+        attext = [attext;sprintf('   Achromat tunes  H/V: \t\t %3.2f / %3.2f\n', smm.achrtunes(1),smm.achrtunes(2))];
+    end
     %{
 
             fprintf('                   Frequency: \t% 4.5f [MHz]\n', freq/1e6);
@@ -162,15 +182,15 @@ if (savef)
             fprintf('   V: beta = %06.3f [m] alpha = %+04.1e eta = %+04.3f [m] eta'' = %+04.1e \n', by(1), ay(1), etay(1), etaprimey(1));
             fprintf('   ********** End of Summary for ''%s'' **********\n', LatticeName);
             fprintf('\n');
-    
     %}
-    dim=[0.05 0.9 0.9 0.0];
-    annotation('textbox',dim, 'String',attext,'FitBoxToText','on');
-    exportgraphics(gcf,fn);
-end
+    dim=[0.2 0.9 0.9 0.0];
+    annotation('textbox', dim, 'String',attext,'FitBoxToText','on');
+    h = gca; h.XAxis.Visible = 'off';h.YAxis.Visible = 'off';
+    if (savef)
+            exportgraphics(gcf,fn);
+    end
+    hold off;
 
-%% Basic Plots
-if (allf||basicf)
 %% Twiss parameters and Physical Aperture
     if (not(isempty(LS.ACHROMAT)))
         figure;atplot(LS.ACHROMAT);title(LS.Lattice_Name);
@@ -214,6 +234,25 @@ if (allf||basicf)
     else
         fprintf('%s plotLattice: Warning - Field arrays are empty. \n', datetime);
     end
+
+%% Challenge Levels
+    if (not(isempty(LS.LattData.CLv)))
+        Fams   = replace(LS.cLoptions.All_famsO,'_','-');
+        CL     = LS.LattData.CLv.outputs.CL;;
+        CL_c   = CL(~isnan(CL));
+        Fams   = Fams(~isnan(CL));
+        Fams_c = categorical(Fams);
+        figure;bar(Fams_c,CL_c);ylim([0,5]);
+        title(strcat(LS.Lattice_Name,{' Challenge Levels'}));
+        ylim([0 5]);
+        if (savef)
+            exportgraphics(gcf,fn,'Append',true);
+        end
+    else
+        fprintf('%s plotLattice: Warning - Challenge Levels fields are empty. \n', datetime);
+    end
+
+
 end
 %% Dynamic Aperture without errors on and off-energy
 if (allf||DAsf||DAxyf)

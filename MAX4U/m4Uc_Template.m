@@ -46,6 +46,7 @@
 % 2024/07/10 : break up of the calculations into two setps - with and
 %              without errors
 % 2024/07/13 : restructured to call m4Uc_Latt as a function
+% 2024/07/17 : incrporrated Saroj's mod_IntSteps function
 %
 %% Lattice specific data
 lattname = 'm4U-240618-c01-03-00-00';
@@ -54,14 +55,12 @@ desc = 'From Åke, translated by Johan B. to Tracy 2024/07/02';
 %diary(diary_file);
 
 ACHRO = m4_20240618_M1a_QFAQFBQFCp175c_tracy(); % run or load tha ACHROMAT 
-                                                % cell array containg the 
+                                                % cell array containing the 
                                                 % AT2 lattice for a
                                                 % single achromat
                                                 
 
-%for i=1:numel(ACHRO)
-%    ACHRO{i}.NumIntSteps=10;    % If necessary fixes missing NumIntSteps.
-%end
+% ACHRO = mod_IntSteps(ACHRO,10,10,3,1); % If necessary, fix missing NumIntSteps
 
 % Initialize physical apertures
 for i=1:length(ACHRO)
@@ -75,6 +74,7 @@ cLoptions.All_famsO={}; %   optional, If empty m4_cLatt finds out the magnet
 
 cLoptions.ringtune_fams = {'qfend';'qdend'};   % magnet families for tune matching
 cLoptions.chrom_fams    = {'sdqd','sfi'}; % magnet families for chromaticity matching
+cLoptions.sext_fams     = {''}; % list of all sextupole families 
 cLoptions.eqfam = {'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';...
                    'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';...
                    'dipm';'dipm';'dipm';'dipm';'dipm';...
@@ -92,9 +92,10 @@ cLoptions.ErrorModel = errormodel_DDRchallenging('gdran',1.0,...
 
 
 %% Run cLatt options
-m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,...
-    MagnetStrengthLimits);
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits);
 
 %diary off
 
-%plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'nogrid','save');
+% Below an examploi of how the 'plotLatt' function can be used to prodcue
+% plots from the m4UT structure and save the results on a file.
+% plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'nogrid','save');

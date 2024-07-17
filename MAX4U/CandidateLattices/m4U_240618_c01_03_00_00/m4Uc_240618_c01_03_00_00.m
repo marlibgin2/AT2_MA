@@ -46,12 +46,11 @@
 % 2024/07/10 : break up of the calculations into two setps - with and
 %              without errors
 % 2024/07/13 : restructured to call m4Uc_Latt as a function
-%
+% 2024/07/17 : incrporrated Saroj's mod_IntSteps function
+
 %% Lattice specific data
 lattname = 'm4U-240618-c01-03-00-00';
 desc = 'From Åke, translated by Johan B. to Tracy 2024/07/02';
-%diary_file=strcat(lattname,'_log_',datestr(now,30));
-%diary(diary_file);
 
 ACHRO = m4_20240618_M1a_QFAQFBQFCp175c_tracy(); % the script from Johan, 
                                                 % with modifications of the
@@ -61,9 +60,7 @@ ACHRO = m4_20240618_M1a_QFAQFBQFCp175c_tracy(); % the script from Johan,
                                                 % bends in the original OPA
                                                 % file frm Åke
 
-for i=1:numel(ACHRO)
-    ACHRO{i}.NumIntSteps=10;           % Fixes missing NumIntSteps
-end
+ACHRO = mod_IntSteps(ACHRO,10,10,3,1); % Fixes missing NumIntSteps
 
 % Initialize physical apertures
 for i=1:length(ACHRO)
@@ -77,11 +74,11 @@ cLoptions.All_famsO={}; %   optional, If empty m4_cLatt finds out the magnet
 
 cLoptions.ringtune_fams = {'qfend';'qdend'};   % magnet families for tune matching
 cLoptions.chrom_fams    = {'sdqd','sfi'}; % magnet families for chromaticity matching
-cLoptions.eqfam = {'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';...
-                   'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';...
-                   'dipm';'dipm';'dipm';'dipm';'dipm';...
+cLoptions.eqfam = {'dip';'dip';'dip';'';'';'';'';'';'';...
+                   '';'';'';'';'';'';'';'';'';...
+                   '';'';'';'';'';...
                    'Qf_Qfm';'Qf_Qfm';'Qf_Qfm';...
-                   'dipm';'dipm';'dipm';'dipm';'dipm';'dipm';'dipm';...
+                   'dipm';'';'';'';'';'';'';...
                    'Sdend';'Sd';'Oxx_Oxy';'Oxx_Oxy';'Oyy';...
                    'Qfend_Qdend';'Qfend_Qdend';'Qf_Qfm';...
                    'Sfi_Sfo';'Sfm';'Sfi_Sfo'};
@@ -92,11 +89,12 @@ cLoptions.ErrorModel = errormodel_DDRchallenging('gdran',1.0,...
                             'mgalran',1.0,'mulsys',1.0,'mulran',1.0, ...
                             'strran',1.0,'bpmran',1.0);
 
+load('/home/pedtav/Documents/Codes/AT/AT2.0/MAX4U/MagnetStrengthLimits.mat');
+load('/home/pedtav/Documents/Codes/AT/AT2.0/MAX4U/CandidateLattices/m4_standard/m4_standard.mat');
+ACHRO_ref = m4_standard.ACHROMAT;
 
 %% Run cLatt options
-m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,...
-    MagnetStrengthLimits);
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits);
 
-%diary off
 
-%plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'nogrid','save');
+%plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'nogrid','caxrange',[-10 0], 'caxrange_r',[-10 0],'save');

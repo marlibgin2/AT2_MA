@@ -7,8 +7,8 @@ function Fams = findFams(LAT)
 %% Outputs
 % Fams: structure with the fields
 % Fams.Dipoles    : cell array of strings with names of dipole families
-% Fams.Multipoles : cell aray of stris with names of multipole families
-% Fams.Correctors : cell array of strings with names of orbit cOrrector
+% Fams.Multipoles : cell array of strings with names of multipole families
+% Fams.Correctors : cell array of strings with names of orbit corrector
 %                   families
 % Fams.BPMs       : cell array of strings with names of monitor families
 %                   

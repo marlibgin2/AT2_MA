@@ -292,7 +292,7 @@ parfor i=1:nseeds+1
             if (verboselevel>0)
                 fprintf('%s Correcting orbit seed n. %3d \n', datetime, i-1);
             end
-            [RINGe{i}, orb0, orb] = calcOrb(RINGe{i},'correct');
+            [RINGe{i}, orb0, orb] = calcOrb(RINGe{i},'correct','verbose',verboselevel-1);
             for j=1:6
                 orb0_stds(j,i)=std(orb0(j,:));
                 orb_stds(j,i)=std(orb(j,:));

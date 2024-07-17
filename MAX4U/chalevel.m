@@ -65,9 +65,13 @@ function CLv = chalevel(varargin)
 % PFT 2024/06/02: documentation
 % PFT 2024/06/03: further documentation
 % PFT 2024/06/05: added possibility of lattice structure input
-% PFT 2024/06/18: added hablidng of case without MagnetStrengthLimist
+% PFT 2024/06/18: added handling of case without MagnetStrengthLimist
 %                 structure (for use with the cLatt function). added verbose
 %                 level parameter
+% PFT 2024/07/16: added handlign of case wjere specific families have no
+%                 equivaent fdamily in ManetStregtLimits, which is
+%                 indicated by an empty string entry in eqfam
+%
 %% Input argument parsing
 MagnetStrengthLimits = getargs(varargin,[]);
 
@@ -156,20 +160,24 @@ if (isempty(fieldnames(MagnetStrengthLimits)))
     CL=[];
 else
     for i=1:nfams
-        MagStr=MagnetStrengthLimits.(eqfam{i});
-        Mins= MagStr.Mins;
-        Maxs= MagStr.Maxs;
-        CLs = MagStr.CLs; 
-        ncl = numel(Mins);
-        CLa = repmat(X0scal(i),1,ncl);
-        CLb = (CLa>=Mins).*(CLa<Maxs);
-        CLc = repmat(1000,1,ncl);
-        for j=1:ncl
-            if(CLb(j))
-                CLc(j)=CLs(j);
+        if (isfield(MagnetStrengthLimits,eqfam{i}))
+            MagStr=MagnetStrengthLimits.(eqfam{i});
+            Mins= MagStr.Mins;
+            Maxs= MagStr.Maxs;
+            CLs = MagStr.CLs; 
+            ncl = numel(Mins);
+            CLa = repmat(X0scal(i),1,ncl);
+            CLb = (CLa>=Mins).*(CLa<Maxs);
+            CLc = repmat(1000,1,ncl);
+            for j=1:ncl
+                if(CLb(j))
+                    CLc(j)=CLs(j);
+                end
             end
+            CL(i)=min(CLc);
+        else
+            CL(i)=nan;
         end
-        CL(i)=min(CLc);
     end
 end
 %% Collects output structure data

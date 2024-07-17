@@ -7,12 +7,11 @@ function [RINGc,orb0,orb] = calcOrb(varargin)
 % RING : AT2 lattice array
 %
 %% Optional input parameters
-% None
+% verbose : defines level of verbose output, default=0, i.e. no output
 %
 %% Optional flags
 % correct: corrects the orbit
 % plot : plots the orbit
-% verbose: produces verbose output
 %
 %% Output parameters
 % RINGc: corrected ring (if correction is not asked for, this is the same as the input lattice)
@@ -31,11 +30,13 @@ function [RINGc,orb0,orb] = calcOrb(varargin)
 % PFT 2024/06/30: added search for corrector indices based on family names
 % PFT 2024/07/08: added search for BPM indices based on alternative famity
 %                 names
+% PFT 2024/07/16: improved handlign of verbose option
+%
 %% Input argument parsing
 RING           = getargs(varargin,[]);
 plotf          = any(strcmpi(varargin,'plot'));
 correctf       = any(strcmpi(varargin,'correct'));
-verbosef       = any(strcmpi(varargin,'verbose'));
+verboselevel   = getoption(varargin,'verbose',0);
 
 %% Calculates the closed orbit
 % View the orbit, including BPM errors
@@ -74,8 +75,10 @@ if (correctf)
 %    RINGc = atcorrectorbit(RING,[],[],[],[],[140 120; 160 140; 180 160; ...
 %                           ones(10,1)*[200 180]],[true true],0.75,...
 %                           [],[],[0.38, 0.38]*1e-3,verbosef);
+     
      RINGc = atcorrectorbit(RING,iBPM,indHCor,indVCor,[],[],[true true],0.75,...
-                           [],[],[0.38, 0.38]*1e-3,verbosef);
+                           [],[],[0.38, 0.38]*1e-3,(verboselevel-1)>0);
+     
     % Calculate the new orbit and plot in the former figure
     orb = findorbit6Err(RINGc,iBPM);
     if (plotf)
