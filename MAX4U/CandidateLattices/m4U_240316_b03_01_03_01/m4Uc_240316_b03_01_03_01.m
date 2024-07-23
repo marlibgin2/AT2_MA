@@ -79,6 +79,7 @@ cLoptions.All_famsO=LatticeOptData.All_famsO; %   optional, If empty m4_cLatt fi
 %                           of family names is desired.
 cLoptions.ringtune_fams = LatticeOptData.ringtune_fams;   % magnet families for tune matching
 cLoptions.chrom_fams    = LatticeOptData.chrom_fams; % magnet families for chromaticity matching
+cLoptions.sext_fams     = LatticeOptData.sext_fams;
 cLoptions.RBfams = LatticeOptData.RBfams;
 cLoptions.eqfam = LatticeOptData.eqfam;
 cLoptions.eqsca = LatticeOptData.eqsca;
@@ -93,4 +94,4 @@ ACHRO_ref = m4_standard.ACHROMAT;
 %% Run cLatt options
 m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits);
 
-%plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'nogrid','save');
+%plotLatt(m4UT,'all','ymaxplot_dm',0.006,'zoom',2.0,'ymaxplot',0.006,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.17,'dpmaxplotLMA',0.17,'caxrange',[-10 0],'caxrange_r',[-10 -5],'nogrid','save');

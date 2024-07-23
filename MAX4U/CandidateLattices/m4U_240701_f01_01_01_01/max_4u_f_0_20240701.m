@@ -1,6 +1,6 @@
 % Received from Johan, auto export to AT from Tracy
 % with minor tweaks - function npfloat, removed RF cavity (to be added
-% by the achromat2lattice faction.)
+% by the achromat2lattice function.)
 %
 function ring = max_4u_f_0()
 ring = {...

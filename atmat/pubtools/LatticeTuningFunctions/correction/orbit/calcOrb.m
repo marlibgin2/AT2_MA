@@ -28,9 +28,9 @@ function [RINGc,orb0,orb] = calcOrb(varargin)
 % PFT 2024/03/02, first version
 % PFT 2024/03/10: Bug fix to get the correct output lattice
 % PFT 2024/06/30: added search for corrector indices based on family names
-% PFT 2024/07/08: added search for BPM indices based on alternative famity
+% PFT 2024/07/08: added search for BPM indices based on alternative family
 %                 names
-% PFT 2024/07/16: improved handlign of verbose option
+% PFT 2024/07/16: improved handling of verbose option
 %
 %% Input argument parsing
 RING           = getargs(varargin,[]);

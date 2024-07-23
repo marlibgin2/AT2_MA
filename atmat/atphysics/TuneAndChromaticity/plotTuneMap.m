@@ -94,6 +94,13 @@ function phandles=plotTuneMap(tunemap,varargin)
 %                 the integer part of the tune
 
 %% Input argument parsing
+if(isempty(fields(tunemap)))
+   fprintf('%s Error in plotTuneMap. Empty tune map structure. \n', ...
+                   datetime);
+   phandles={};
+    return
+end
+
 plotmode   = getoption(varargin,'plotmode',tunemap.inputs.plotargs.plotmode);
 plottype   = getoption(varargin,'plottype',tunemap.inputs.plotargs.plottype);
 resorder   = getoption(varargin,'resorder',tunemap.inputs.plotargs.resorder);

@@ -37,7 +37,7 @@ xlabel('S[m]');
 ylabel('Local Momentum Aperture [%]');
 grid on;
 ylim([dpminplot*100,dpmaxplot*100]);
-title(plottitle);
+title(strcat(plottitle, {' LMA without errors'}));
 
 
 

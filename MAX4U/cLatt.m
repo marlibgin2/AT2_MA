@@ -61,6 +61,41 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                                factor is (dipole bending
 %                                angle)/(referencece bend angle - either 3
 %                                or 1.5 degrees)
+% cLoptions.GOoptions : structure with the fields below describing hoinse for the
+%                vacuum chamber and magnet aperures in the horizontal
+%                plane.
+%                Note:at the oment these do not affect the apertures or 
+%                fields used for tracking !
+%
+% cLoptions.GOoptions.GOmode = 1; % selects how the chamber and magnet aperture 
+%                        geometries are calculated
+%    Mode 1: Vacuum chamber follows the design orbit,
+%            Reverse bends are built as symmetric quadrupoles and
+%            have their apertures increased by the amount
+%            necesary to accomodate the chamber aperture.
+%                
+%    Mode 2: Vacuum chamber follows the design orbit,
+%            Reverse bends are built as asymmetric quadrupoles 
+%            so that their aperture does not need to be changed.
+%
+%    Mode 3: Vacuum chamber is moved by a fixed amount in the
+%            horizontal plane and magnet apertures are not changed. 
+%            This causes a reduction of physical aperture
+%            and makes the design orbit go off-centre in various 
+%            magnets, For the reverse bends this is desired as in this
+%            case we assume they are symmetric quadrupoles (as in case
+%            1). For sextupoles/octupoles this will generate feed-down
+%            to be evaluated
+%
+% cLoptions.GOoptions.chamberHAperture   : horizontal vacuum chamber
+%                                  half-aperture, default = 0.011 m
+% cLoptions.GOoptions.chamberTomagnetGap : chamber to magnet gap, 
+%                                          default = 0.5E.4 m;
+% cLoptions.GOoptions.chamberThickness   : chamber thickness = 1.0E-3 m;
+% cLoptions.GOoptions.chamberShift       : Radial shift to be applied to  
+%                             vacuum chamber in the range covering 
+%                             VC3 to VC7,i.e. from U1/BPM-01 to U5/BPM-01,
+%                             default = 4.0E-3 m; 
 %
 % cLoptions.nseeds      : # of seeds for DA,LMA and TLT calculation 
 %                         with errors, default = 10
@@ -183,7 +218,11 @@ function [LattStruct, exitflag] = cLatt(varargin)
 % cLoptions.TLoptions.reltol: relative tolerance, default  = 1.0e-16
 % cLoptions.TLoptions.Nperiods: number of periods, default = 20
 % cLoptions.TLoptions.LMAperiods: number of periods for which to calculate the LMA, default = 1;
-% cLoptions.TLoptions.kcoupl: coupling ratio, default = 0.025
+% cLoptions.TLoptions.kcoupl: coupling ratio, if = 'auto', calculated from the
+%                                   vertical emittance, default = 'auto'
+% cLoptions.TLoptions.emity : vertical emittance, if kcoupl not 'auto', 
+%                             calculated from the coupling ratio, 
+%                             default =8.0E-12 [m rad]
 %
 % *******************************************************
 %
@@ -223,42 +262,85 @@ function [LattStruct, exitflag] = cLatt(varargin)
 % LattStruct is a structure with fields
 % LattStruct.Lattice_Name: string with lattice name following naming convention
 % LattStruct.Description : string with verbose description of how latice was developed
-%
 % LattStruct.ACHROMAT    : AT2 lattice cell array for one achromat (an echo of the input)
-% LattStruct.ACHROMAT_ref: AT2 lattice cell array for one reference achromat (an echo of the input)
-%
-% LattStruct.V0          : total Rf voltage (echo of input)
+% LattStuct.Log          : cell array of strings with log of structure construction 
 % 
 % LattStruc.cLoptions : echo of input cLoptions structure or set of defaults
 %
 % *******************************************************************
 %
+% LattStruct.LattData.V0          : total Rf voltage (echo of input)
 % LattStruc.LattData.XAllO   :strengths of all families (includes octupoles)
-
+% LattStruct.LattData.ACHROMAT_ref: AT2 lattice cell array for one reference achromat (an echo of the input)
 % LattStruc.LattData.RINGGRD  : Full ring latice 6d enabled with same magnet strengths as
 %            ACHROMAT. Octupoles are the same as in ACHRO (if they exist
 %            there). Otehrwise they are zero.
 %
 % LattStruct.LattData.ACHROMAT_ZC : achromat for whih the chromatoicity is
 %                                   set to zero
-% LattStruct.LattData.DesignOrbit: structure with the following fields 
-%                          describing the design orbit for one achromat.
-% LattStruct.LattData.DesignOrbit.s2d: orbit length
-% LattStruct.LattData.DesignOrbit.x2d: horizontal coordinate [m]
-% LattStruct.LattData.DesignOrbit.y2d: vertical coordinate [m]
-% LattStruct.LattData.DesignOrbit.a2d: angle [rad]
-% LattStruct.LattData.DesignOrbit.baa: change in angle [rad]
-% LattStruct.LattData.DesignOrbit.ban: Element family if bending angle is not zero
-% LattStruct.LattData.DesignOrbit.s2d_ref: orbit length (reference lattice)
-% LattStruct.LattData.DesignOrbit.x2d_ref: horizontal coordinate [m]
-%                                           (reference lattice)
-% LattStruct.LattData.DesignOrbit.y2d_ref: vertical coordinate [m]
-%                                           (reference lattice)
-% LattStruct.LattData.DesignOrbit.a2d_ref: angle [rad] reference lattice
 %
-% LattStruct.LattData.DesignOrbit.Deviation: Distance between central
-%                                             orbit of the inout achromat
-%                                             and the refeence achromat
+% LattStruct.LattData.geometry: structure with the following fields 
+%                          describing the design orbit, chamber and magnet
+%                          horizontal apertures.
+%
+% LattStruct.LattData.geometry.DesignOrbit.s2d: orbit length
+% LattStruct.LattData.geometry.DesignOrbit.x2d: horizontal coordinate [m]
+% LattStruct.LattData.geometry.DesignOrbit.y2d: vertical coordinate [m]
+% LattStruct.LattData.geometry.DesignOrbit.a2d: angle [rad]
+% LattStruct.LattData.geometry.DesignOrbit.baa: change in angle [rad]
+% LattStruct.LattData.geometry.DesignOrbit.ban: Element family if bending angle is not zero
+%
+% LattStruct.LattData.geometry.ref.DesignOrbit.s2d: orbit length (reference lattice)
+% LattStruct.LattData.geometry.ref.DesignOrbit.x2d: horizontal coordinate [m]
+%                                           (reference lattice)
+% LattStruct.LattData.geometry.ref.DesignOrbit.y2d: vertical coordinate [m]
+%                                           (reference lattice)
+% LattStruct.LattData.geometry.ref.DesignOrbit.a2d_ref: angle [rad] 
+%                                           (reference lattice)
+%
+% LattStruct.LattData.geometry.DesignOrbit.Deviation: distance between central
+%                                             orbit of the input achromat
+%                                             and the reference achromat
+%
+% LattStruct.LattData.geometry.ref.Magnets.HAperture : reference horizontal
+%                                                      magnet aperture
+% LattStruct.LattData.geometry.ref.Chambers.HApertur : reference horizontal
+%                                                      chamber aperture
+% LattStruct.LattData.geometry.ref.Magnets.x2d_up                   
+% LattStruct.LattData.geometry.ref.Magnets.y2d_up
+% LattStruct.LattData.geometry.ref.Magnets.x2d_down
+% LattStruct.LattData.geometry.ref.Magnets.y2d_down
+% LattStruct.LattData.geometry.ref.Chambers.x2d_up
+% LattStruct.LattData.geometry.ref.Chambers.y2d_up
+% LattStruct.LattData.geometry.ref.Chambers.x2d_down
+% LattStruct.LattData.geometry.ref.Chambers.y2d_down
+% LattStruct.LattData.geometry.ref.chThick
+%
+% LattStruct.LattData.geometry.Magnets.Centre.x2d
+% LattStruct.LattData.geometry.Magnets.Centre.y2d
+% LattStruct.LattData.geometry.Magnets.Centre.Deviation
+% LattStruct.LattData.geometry.Magnets.HAperture
+% LattStruct.LattData.geometry.Magnets.Walls.x2d_up
+% LattStruct.LattData.geometry.Magnets.Walls.y2d_up
+% LattStruct.LattData.geometry.Magnets.Walls.x2d_down
+% LattStruct.LattData.geometry.Magnets.Walls.y2d_down
+% LattStruct.LattData.geometry.Magnets.Walls.dev_up
+% LattStruct.LattData.geometry.Magnets.Walls.dev_down
+%
+% LattStruct.LattData.geometry.Magnets.magceTobeam
+%
+% LattStruct.LattData.geometry.Chambers.Centre.x2d
+% LattStruct.LattData.geometry.Chambers.Centre.y2d
+% LattStruct.LattData.geometry.Chambers.Centre.Deviation
+% LattStruct.LattData.geometry.Chambers.HAperture
+% LattStruct.LattData.geometry.Chambers.Walls.x2d_up
+% LattStruct.LattData.geometry.Chambers.Walls.y2d_up
+% LattStruct.LattData.geometry.Chambers.Walls.x2d_down 
+% LattStruct.LattData.geometry.Chambers.Walls.y2d_down 
+% LattStruct.LattData.geometry.Chambers.Walls.dev_up   
+% LattStruct.LattData.geometry.Chambers.Walls.dev_down 
+% LattStruct.LattData.geometry.Chambers.chaceTobeam 
+% LattStruct.LattData.geometry.Chambers.effectiveAperture
 %
 % LattStruct.LattData.MagnetStrengthLimits : Magnet Strength Limits
 %                                            structure
@@ -359,18 +441,31 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                  general method built into the chalevel function
 % PFT 2024/06/22 : renamed LatticeOptData as cLoptions and rechecked that 
 %                  all required default values are available.
-% PFT 2024/06/26 : further restructured of the output structure and
+% PFT 2024/06/26 : further restructured the output structure and
 %                  added Touschek lifetime for achromat without errors 
-%                  and full ring with errors
-% PFT 2024/06/28 : added calculation of fields and gradients
+%                  and full ring with errors.
+% PFT 2024/06/28 : added calculation of fields and gradients.
 % PFT 2024/06/30 : changed handling of 'basic' calculation mode
 % PFT 2024/07/06 : added choice of calculation subsets (DAs, TMs)
 % PFT 2024/07/07 : added checks for unavailable cLoption fields
-%                  changed SetBPMWeights( to handle lattice without BPMs
-% PFT 2024/07/09 : changed SetBPMWeights( to handle lattice with mons or
+%                  changed SetBPMWeights to handle lattice without BPMs
+% PFT 2024/07/09 : changed SetBPMWeights to handle lattice with mons or
 %                  BPMs and print out a warning if none can be found)
-%                : added chamber centre calculation
+%                : added magnet centre calculation
+% PFT 2024/07/12 : separate input argumets for tune maps and diffusion maps 
+% PFT 2024/07/13 : added calls to TMdist - tune map with errors
+%                  added progress bar
 % PFT 2024/07/14 : added exitflag output
+% PFT 2024/07/17 : added lattice layout determination
+% PFT 2024/07/18 : added calcualtion of chamber and magnet aperture
+%                  geometries
+% PFT 2024/07/21 : added log of structure creation,
+%                  changed LMA calculation without errors from single
+%                  achromat 4D to full ring 6D.
+% PFT 2024/07/22 : added possibilty of fixing vertical emittance instead
+%                  of coupling.
+%                  added possibility of using existing LMA structure as
+%                  input .
 %
 %% Input argument parsing
 LattSt               = getargs(varargin,[]);
@@ -433,6 +528,19 @@ if (isempty(LattSt))
     LattStruct.Lattice_Name = lattname;
     LattStruct.Description  = desc;
     LattStruct.ACHROMAT     = ACHRO;
+    if (nargin>1)
+        if(ischar(varargin{2}))
+            args=varargin{2};
+        end
+    else
+        args='';
+    end
+    for i=3:nargin
+        if (ischar(varargin{i}))
+            args=[args,',',varargin{i}];
+        end
+    end
+    LattStruct.Log = {strcat(sprintf('%s', datetime),{': Structure Created, args = '}, {args})};
     LattStruct.cLoptions    = cLoptions;
     %
     LattStruct.LattData.ACHROMAT_ref = ACHRO_ref;
@@ -443,23 +551,11 @@ if (isempty(LattSt))
     LattStruct.LattData.CLv=struct;
     LattStruct.LattData.ACHROMAT_ZC={};
     LattStruct.LattData.RINGGRD=RING;
-    LattStruct.LattData.DesignOrbit.s2d=[];
-    LattStruct.LattData.DesignOrbit.x2d=[];
-    LattStruct.LattData.DesignOrbit.y2d=[];
-    LattStruct.LattData.DesignOrbit.a2d=[];
-    LattStruct.LattData.DesignOrbit.baa=[];
-    LattStruct.LattData.DesignOrbit.ban={};
-    LattStruct.LattData.DesignOrbit.s2d_ref=[];
-    LattStruct.LattData.DesignOrbit.x2d_ref=[];
-    LattStruct.LattData.DesignOrbit.y2d_ref=[];
-    LattStruct.LattData.DesignOrbit.a2d_ref=[];
-    LattStruct.LattData.DesignOrbit.Deviation=[];
+    %
+    LattStruct.LattData.geometry=struct();
+
     LattStruct.LattData.FG={};
-    LattStruct.LattData.MagCentres.x2d=[];
-    LattStruct.LattData.MagCentres.y2d=[];
-    LattStruct.LattData.MagCentres.Deviation=[];
-    LattStruct.LattData.MagCentres.Deviation=[];
-    LattStruct.LattData.MagCentres.famLayout={};
+    LattStruct.LattData.famLayout={};
 
     %
     LattStruct.LattPerf.atsummary = struct;
@@ -490,6 +586,23 @@ if (isempty(LattSt))
 
 else
     LattStruct=LattSt;
+    if (nargin>1)
+        if(ischar(varargin{2}))
+            args=varargin{2};
+        end
+    else
+        args='';
+    end
+    for i=3:nargin
+        if (ischar(varargin{i}))
+            args=[args,',',varargin{i}];
+        end
+    end
+    if (isfield(LattStruct,'Log'))
+        LattStruct.Log=[LattStruct.Log; {strcat(sprintf('%s', datetime),{': args = '}, {args} )}];
+    else
+        LattStruct.Log={strcat(sprintf('%s', datetime),{': args = '}, {args})};
+    end
     if (verboselevel>0)
         fprintf('%s Lattice data will be added to an existing structure \n', datetime);
     end
@@ -588,7 +701,14 @@ if (isempty(fieldnames(cLoptions)))
 
     cLoptions.eqsca  = [1 1 1 1 (1.5+2*3.49E-3*180/pi)/1.5 1 1 1 1 1 1 1 1 1 1 1];
     cLoptions.RBfams = {'R1_b3'};
-%  
+
+    cLoptions.GOoptions.GOmode   = 1; 
+    cLoptions.GOoptions.chamberHAperture   = 11.0E-3;
+    cLoptions.GOoptions.chamberTomagnetGap =  0.5E-3;
+    cLoptions.GOoptions.chamberThickness   =  1.0E-3;
+    cLoptions.GOoptions.chamberShift       =  0.5E-3;
+
+    %
     cLoptions.DAoptions.DAmode   = 'border';
     cLoptions.DAoptions.nturns   = 1024;
     cLoptions.DAoptions.betax0   = NaN; 
@@ -669,7 +789,8 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.TLoptions.reltol            = 1.0e-16;
     cLoptions.TLoptions.Nperiods          = 20;
     cLoptions.TLoptions.LMAperiods        = 1;
-    cLoptions.TLoptions.kcoupl            = 0.025;
+    cLoptions.TLoptions.kcoupl            = 'auto';
+    cLoptions.TLoptions.emity             = 8.0E-12;
 
     if (not(isempty(cLoptions.RING)))
         cLoptions.MAoptions.S0max         = findspos(cLoptions.RING,length(cLoptions.RING)+1)/20;
@@ -712,12 +833,14 @@ if (basicf||allf)
 
     [s2d, x2d, y2d, a2d, baa, ban] = Survey2D(ACHRO_SP,9.0*pi/180);
     
-    LattStruct.LattData.DesignOrbit.s2d=s2d;
-    LattStruct.LattData.DesignOrbit.x2d=x2d;
-    LattStruct.LattData.DesignOrbit.y2d=y2d;
-    LattStruct.LattData.DesignOrbit.a2d=a2d;
-    LattStruct.LattData.DesignOrbit.baa=baa;
-    LattStruct.LattData.DesignOrbit.ban=ban;
+    npo=numel(x2d);
+
+    LattStruct.LattData.geometry.DesignOrbit.s2d=s2d;
+    LattStruct.LattData.geometry.DesignOrbit.x2d=x2d;
+    LattStruct.LattData.geometry.DesignOrbit.y2d=y2d;
+    LattStruct.LattData.geometry.DesignOrbit.a2d=a2d;
+    LattStruct.LattData.geometry.DesignOrbit.baa=baa;
+    LattStruct.LattData.geometry.DesignOrbit.ban=ban;
 
     if (not(isempty(ACHRO_ref)))
         if (split>1)
@@ -727,16 +850,17 @@ if (basicf||allf)
         end
         
         [s2d_ref, x2d_ref, y2d_ref, a2d_ref,~,~] = Survey2D(ACHRO_ref_SP,9.0*pi/180);
-        
-        LattStruct.LattData.DesignOrbit.s2d_ref = s2d_ref;
-        LattStruct.LattData.DesignOrbit.x2d_ref = x2d_ref;
-        LattStruct.LattData.DesignOrbit.y2d_ref = y2d_ref;
-        LattStruct.LattData.DesignOrbit.a2d_ref = a2d_ref;
+        npo_ref = numel(x2d_ref);
+
+        LattStruct.LattData.geometry.ref.DesignOrbit.s2d = s2d_ref;
+        LattStruct.LattData.geometry.ref.DesignOrbit.x2d = x2d_ref;
+        LattStruct.LattData.geometry.ref.DesignOrbit.y2d = y2d_ref;
+        LattStruct.LattData.geometry.ref.DesignOrbit.a2d = a2d_ref;
         [~, ia, ~] = unique(x2d_ref);
         x2d_refu = x2d_ref(ia);
         y2d_refu = y2d_ref(ia);
-        dist  = zeros(length(x2d),1);
-        for i = 1:length(x2d)
+        dist  = zeros(npo,1);
+        for i = 1:npo
             yinter=interp1(x2d_refu,y2d_refu,x2d(i));
             dist(i)    = abs(yinter - y2d(i));
         end
@@ -744,49 +868,255 @@ if (basicf||allf)
         dist=nan(length(x2d),1);
     end
 
-    LattStruct.LattData.DesignOrbit.Deviation = dist;
+    LattStruct.LattData.geometry.DesignOrbit.Deviation = dist;
 end
-%% Calculates magnet centre coordinates
+%% Calculates magnet and chamber geometry
 if (basicf||allf)
-    x2d_mag=x2d;
-    y2d_mag=y2d;
-    dist_mag  = zeros(length(x2d),1);
-    if (isfield(cLoptions,'RBfams'))
-        if (not(isempty(cLoptions.RBfams)))
-             if (verboselevel>0)
-                fprintf('%s cLatt: calculating magnet centre coordinates \n', datetime);
+    
+    chamberHAperture_ref   = cLoptions.GOoptions.chamberHAperture;
+    chamberTomagnetGap     = cLoptions.GOoptions.chamberTomagnetGap; 
+    chamberThickness       = cLoptions.GOoptions.chamberThickness;
+    magHAperture_ref       = chamberHAperture_ref+chamberTomagnetGap +...
+                             chamberThickness;
+    chamberShift           = cLoptions.GOoptions.chamberShift;
+    
+    LattStruct.LattData.geometry.ref.Magnets.HAperture  = magHAperture_ref*ones(npo_ref,1);
+    LattStruct.LattData.geometry.ref.Chambers.HAperture = chamberHAperture_ref*ones(npo_ref,1);
+
+    [x2d_magup_ref,y2d_magup_ref] = shiftPath(x2d_ref,y2d_ref,a2d_ref,...
+                               magHAperture_ref*ones(npo_ref,1),1:npo_ref);   
+    LattStruct.LattData.geometry.ref.Magnets.x2d_up=x2d_magup_ref;
+    LattStruct.LattData.geometry.ref.Magnets.y2d_up=y2d_magup_ref;
+
+    [x2d_magdown_ref,y2d_magdown_ref] = shiftPath(x2d_ref,y2d_ref,a2d_ref,...
+                               -magHAperture_ref*ones(npo_ref,1),1:npo_ref);  
+    LattStruct.LattData.geometry.ref.Magnets.x2d_down=x2d_magdown_ref;
+    LattStruct.LattData.geometry.ref.Magnets.y2d_down=y2d_magdown_ref;
+    
+    [x2d_chaup_ref,y2d_chaup_ref] = shiftPath(x2d_ref,y2d_ref,a2d_ref,...
+                               chamberHAperture_ref*ones(npo_ref,1),1:npo_ref);   
+    LattStruct.LattData.geometry.ref.Chambers.x2d_up=x2d_chaup_ref;
+    LattStruct.LattData.geometry.ref.Chambers.y2d_up=y2d_chaup_ref;
+
+    [x2d_chadown_ref,y2d_chadown_ref] = shiftPath(x2d_ref,y2d_ref,a2d_ref,...
+                               -chamberHAperture_ref*ones(npo_ref,1),1:npo_ref); 
+    LattStruct.LattData.geometry.ref.Chambers.x2d_down=x2d_chadown_ref;
+    LattStruct.LattData.geometry.ref.Chambers.y2d_down=y2d_chadown_ref;
+
+    LattStruct.LattData.geometry.ref.chThick=distPath(x2d_chaup_ref,y2d_chaup_ref,x2d_chadown_ref,y2d_chadown_ref);
+    switch cLoptions.GOoptions.GOmode
+        case 1
+            if (isfield(cLoptions,'RBfams'))
+                if (not(isempty(cLoptions.RBfams)))
+                    if (verboselevel>0)
+                        fprintf('%s cLatt: calculating magnet and chamber geometry\n', datetime);
+                    end
+                    nRBs=numel(cLoptions.RBfams);
+                    I_RBs=[];
+                    for i=1:nRBs
+                        Is = find(atgetcells(ACHRO_SP, 'FamName', cLoptions.RBfams{i}));
+                        I_RBs=[I_RBs;Is];
+                    end
+                    dxrb = zeros(length(x2d),1);
+                    for i=1:numel(I_RBs)
+                        j=I_RBs(i);
+                        RB=ACHRO_SP{j};
+                        theta = RB.BendingAngle;
+                        rho = RB.Length/theta;
+                        dxrb(j) = 1/(RB.PolynomB(2)*rho);
+                    end
+                    [x2d_magce, y2d_magce] = shiftPath(x2d,y2d,a2d,...
+                                             -dxrb,I_RBs);  
+                    a2d_magce  = a2d;
+                    dist_magceTobeam = distPath(x2d,y2d,x2d_magce,y2d_magce)./cos(a2d_magce');
+                    magHAperture(1:npo) = magHAperture_ref;
+                    magHAperture(I_RBs) = magHAperture_ref +...
+                                          dist_magceTobeam(I_RBs) ; 
+
+
+                    x2d_chace = x2d;
+                    y2d_chace = y2d;
+                    a2d_chace = a2d;
+                    chaHAperture(1:npo) = chamberHAperture_ref;
+                else
+                    fprintf('%s cLatt Warning: Reverse Bend families not available for Magnet Centre calculation...\n', datetime);
+                    x2d_magce  = x2d;
+                    y2d_magce  = y2d;
+                    dist_magceTobeam = zeros(npo,1);                                   
+                    magHAperture(1:npo) = magHAperture_ref;
+                    chaHAperture(1:npo) = chamberHAperture_ref;
+                    x2d_chace = x2d;
+                    y2d_chace = y2d;
+                    a2d_chace = a2d;
+                end
+            else
+                fprintf('%s cLatt Warning: Reverse Bend families not available for Magnet Centre calculation...\n', datetime);
+                x2d_magce  = x2d;
+                y2d_magce  = y2d;
+                a2d_magce  = a2d;
+                dist_magceTobeam = zeros(npo,1);                                   
+                magHAperture(1:npo) = magHAperture_ref;
+                chaHAperture(1:npo) = chamberHAperture_ref;
+                x2d_chace = x2d;
+                y2d_chace = y2d;
+                a2d_chace = a2d;
             end
-            nRBs=numel(cLoptions.RBfams);
-            I_RBs=[];
-            for i=1:nRBs
-                Is = find(atgetcells(ACHRO_SP, 'FamName', cLoptions.RBfams{i}));
-                I_RBs=[I_RBs;Is];
+
+        case 2
+            if (verboselevel>0)
+                 fprintf('%s cLatt: calculating magnet and chamber geometry\n', datetime);
             end
-            for i=1:numel(I_RBs)
-                j=I_RBs(i);
-                RB=ACHRO_SP{j};
-                theta = RB.BendingAngle;
-                rho = RB.Length/theta;
-                dxrb = 1/(RB.PolynomB(2)*rho);
-                x2d_mag(j) = x2d_mag(j)-dxrb*sin(a2d(j)+theta/2);
-                y2d_mag(j) = y2d_mag(j)-dxrb*cos(a2d(j)+theta/2);
+            magHAperture(1:npo) = magHAperture_ref;
+            x2d_magce = x2d;
+            y2d_magce = y2d;
+            a2d_magce = a2d;
+            dist_magceTobeam = distPath(x2d,y2d,x2d_magce,y2d_magce)./cos(a2d_magce');                                   
+            chaHAperture(1:npo) = chamberHAperture_ref;
+            x2d_chace = x2d;
+            y2d_chace = y2d;
+            a2d_chace = a2d;
+            
+        case 3
+            iBPM = findcells(ACHRO_ref_SP,'FamName','BPM');
+            if (isempty(iBPM))
+                iBPM=findcells(ACHRO_ref_SP,'FamName','mon');
             end
-            dist_mag  = zeros(length(x2d),1);
-            [~, ia, ~] = unique(x2d);
-            x2d_u = x2d(ia);
-            y2d_u = y2d(ia);
-            for i = 1:length(x2d)
-                yinter_mag=interp1(x2d_u,y2d_u,x2d_mag(i));
-                dist_mag(i)    = abs(yinter_mag - y2d_mag(i));
+            %
+            % The region of interest for the chamber shift is from the
+            % third (U1/BPM-01) to the eighth (U5-BPM01) beam position
+            % monitor. The chamber returns to nominal alomng the chamber
+            % runnig from the second (M2/BPM-02) to the third BPMs and from
+            % the eigth to the nineth (M2_BPM-01) BPMs
+            %
+            SBPM=findspos(ACHRO_ref_SP,iBPM);           
+            chaHShift = zeros(npo_ref,1);
+            chaHShift(iBPM(3):iBPM(8))=chamberShift;
+ 
+            for i=iBPM(2):iBPM(3)
+                chaHShift(i)=chamberShift/(SBPM(3)-SBPM(2))*(s2d_ref(i)-SBPM(2));
             end
-        else
-            fprintf('%s cLatt Warning: Reverse Bends families not available for Magnet Centre calculation...\n', datetime);
-            dist_mag=nan(length(x2d),1);
-        end
+
+            for i=iBPM(8):iBPM(9)
+                chaHShift(i)=chamberShift-chamberShift/(SBPM(9)-SBPM(8))*(s2d_ref(i)-SBPM(8));
+            end
+ 
+            [x2d_chace,y2d_chace]=shiftPath(x2d_ref,y2d_ref,a2d_ref, chaHShift,1:npo_ref);
+            a2d_chace = a2d_ref;
+            chaHAperture(1:npo_ref) = chamberHAperture_ref;
+
+            [x2d_magce,y2d_magce]=shiftPath(x2d_ref,y2d_ref,a2d_ref, chaHShift,1:npo_ref);
+            
+            y2d_magce = yint(x2d_magce,y2d_magce,x2d);
+            a2d_magce = yint(x2d_magce,a2d_ref,x2d);
+            x2d_magce = x2d;
+
+            if (isfield(cLoptions,'RBfams'))
+                if (not(isempty(cLoptions.RBfams)))
+
+                    if (verboselevel>0)
+                        fprintf('%s cLatt: calculating magnet and chamber geometry\n', datetime);
+                    end
+                    nRBs=numel(cLoptions.RBfams);
+                    I_RBs=[];
+                    for i=1:nRBs
+                        Is = find(atgetcells(ACHRO_SP, 'FamName', cLoptions.RBfams{i}));
+                        I_RBs=[I_RBs;Is];
+                    end
+                    dxrb = zeros(length(x2d),1);
+                    for i=1:numel(I_RBs)
+                        j=I_RBs(i);
+                        RB=ACHRO_SP{j};
+                        theta = RB.BendingAngle;
+                        rho = RB.Length/theta;
+                        dxrb(j) = 1/(RB.PolynomB(2)*rho) + chamberShift;
+                    end
+                    [x2d_magce, y2d_magce] = shiftPath(x2d_magce,y2d_magce,...
+                                    a2d_magce,-dxrb,I_RBs);     
+                    dist_magceTobeam   = distPath(x2d,y2d,x2d_magce,y2d_magce)./cos(a2d_magce');
+                    magHAperture(1:npo) = magHAperture_ref;                
+                    
+                else
+                    fprintf('%s cLatt Warning: Reverse Bend families not available for Magnet Centre calculation...\n', datetime);
+                    x2d_magce  = x2d;
+                    y2d_magce  = y2d;
+                    dist_magce = zeros(length(x2d,1));
+                    magH
+                end
+            else
+                fprintf('%s cLatt Warning: Reverse Bend families not available for Magnet Centre calculation...\n', datetime);
+                x2d_magce  = x2d;
+                y2d_magce  = y2d;
+                dist_magce = zeros(length(x2d,1));
+            end            
+        otherwise
+                fprintf('%s cLatt Warning: Unknow GOmode %2i \n', datetime, cLoptions.GOmode);
+                x2d_magce  = x2d;
+                y2d_magce  = y2d;
+                dist_magce = zeros(length(x2d,1));    
     end
-    LattStruct.LattData.MagCentres.x2d=x2d_mag;
-    LattStruct.LattData.MagCentres.y2d=y2d_mag;
-    LattStruct.LattData.MagCentres.Deviation = dist_mag;
+
+    [x2d_magup,y2d_magup]     = shiftPath(x2d_magce,y2d_magce,a2d_magce,...
+                                      magHAperture,1:numel(x2d_magce)); 
+
+    [x2d_magdown,y2d_magdown] = shiftPath(x2d_magce,y2d_magce,a2d_magce,...
+                                      -magHAperture,1:numel(x2d_magce));   
+
+    [x2d_chaup,y2d_chaup]     = shiftPath(x2d_chace,y2d_chace,a2d_chace,...
+                                      chaHAperture,1:numel(x2d_chace)); 
+
+    [x2d_chadown,y2d_chadown] = shiftPath(x2d_chace,y2d_chace,a2d_chace,...
+                                      -chaHAperture,1:numel(x2d_chace)); 
+
+
+    dist_magup   = distPath(x2d_magup_ref,y2d_magup_ref,x2d_magup,y2d_magup);
+    dist_magdown = distPath(x2d_magdown_ref,y2d_magdown_ref,x2d_magdown,y2d_magdown);
+
+    dist_magce   = distPath(x2d_ref,y2d_ref,x2d_magce,y2d_magce);
+
+    dist_chaup   = distPath(x2d_chaup_ref,y2d_chaup_ref,x2d_chaup,y2d_chaup);
+
+    dist_chadown = distPath(x2d_chadown_ref,y2d_chadown_ref,x2d_chadown,y2d_chadown);
+    
+    dist_chace = distPath(x2d_ref,y2d_ref,x2d_chace,y2d_chace);
+   
+    dist_chaceTobeam = distPath(x2d,y2d,x2d_chace,y2d_chace)./cos(a2d_chace');
+
+    
+
+    dist_chaupTobeam   = distPath(x2d,y2d,x2d_chaup,y2d_chaup)./cos(a2d_chace');
+    dist_chadownTobeam = distPath(x2d,y2d,x2d_chadown,y2d_chadown)./cos(a2d_chace');   
+    effectiveAperture = min(dist_chaupTobeam ,dist_chadownTobeam);
+
+    LattStruct.LattData.geometry.Magnets.Centre.x2d = x2d_magce;
+    LattStruct.LattData.geometry.Magnets.Centre.y2d = y2d_magce;
+    LattStruct.LattData.geometry.Magnets.Centre.Deviation = dist_magce;
+    LattStruct.LattData.geometry.Magnets.HAperture = magHAperture;
+
+    LattStruct.LattData.geometry.Magnets.Walls.x2d_up   = x2d_magup;
+    LattStruct.LattData.geometry.Magnets.Walls.y2d_up   = y2d_magup;
+    LattStruct.LattData.geometry.Magnets.Walls.x2d_down = x2d_magdown;
+    LattStruct.LattData.geometry.Magnets.Walls.y2d_down = y2d_magdown;
+
+    LattStruct.LattData.geometry.Magnets.Walls.dev_up   = dist_magup;
+    LattStruct.LattData.geometry.Magnets.Walls.dev_down = dist_magdown;
+
+    LattStruct.LattData.geometry.Magnets.magceTobeam = dist_magceTobeam;
+
+    LattStruct.LattData.geometry.Chambers.Centre.x2d = x2d_chace;
+    LattStruct.LattData.geometry.Chambers.Centre.y2d = y2d_chace;
+    LattStruct.LattData.geometry.Chambers.Centre.Deviation = dist_chace;
+    LattStruct.LattData.geometry.Chambers.HAperture = chaHAperture;
+
+    LattStruct.LattData.geometry.Chambers.Walls.x2d_up   = x2d_chaup;
+    LattStruct.LattData.geometry.Chambers.Walls.y2d_up   = y2d_chaup;
+    LattStruct.LattData.geometry.Chambers.Walls.x2d_down = x2d_chadown;
+    LattStruct.LattData.geometry.Chambers.Walls.y2d_down = y2d_chadown;
+
+    LattStruct.LattData.geometry.Chambers.Walls.dev_up   = dist_chaup;
+    LattStruct.LattData.geometry.Chambers.Walls.dev_down = dist_chadown;
+
+    LattStruct.LattData.geometry.Chambers.chaceTobeam = dist_chaceTobeam;
+    LattStruct.LattData.geometry.Chambers.effectiveAperture = effectiveAperture;
 end
     
 %% Calculates magnet challenge levels
@@ -803,8 +1133,10 @@ if ((basicf||allf)&&not(isempty(fieldnames(MagnetStrengthLimits)))...
                    'ACHRO',ACHRO,'eqfam', eqfam,'eqsca',...
                     eqsca,'Fams',All_famsO,'verbose',verboselevel-1)';  
     LattStruct.LattData.CLv=CLv;
-    XAllO=CLv.outputs.X0;
-    LattStruct.LattData.XAllO=XAllO;
+    if (isfield(CLv,'outputs'))
+        XAllO=CLv.outputs.X0;
+        LattStruct.LattData.XAllO=XAllO;
+    end
 end
 
 %% Creates full ring structure if not yet available
@@ -903,7 +1235,7 @@ if getappdata(fb,'canceling')
 end
 %% Evaluates DAs for full RING
 if (not(isempty(RINGGRD)))
-%% Dynamic aperture for full ring without errors on (x,y) plane
+%% Calculates Dynamic aperture for full ring without errors on (x,y) plane
   if (DAxyf||allf||DAsf)
     if (verboselevel>0)
       fprintf('%s DA calculation without errors: on-momentum. \n', datetime);
@@ -951,7 +1283,7 @@ if (not(isempty(RINGGRD)))
       frac=frac+3*dfrac;
   end
   
-%% Dynamic aperture for full ring without errors on (x,dp) and (y,dp) planes
+%% Calculates Dynamic aperture for full ring without errors on (x,dp) and (y,dp) planes
   if (DAxydpf||allf||DAsf)
     if (verboselevel>0)
       fprintf('%s DA calculation without errors: (xy,dp) planes \n', datetime);
@@ -968,7 +1300,7 @@ if (not(isempty(RINGGRD)))
       exitflag = 'cancelled';
       return
   end  
-%% Dynamic aperture for full ring with errors on xy plane
+%% Calculates Dynamic aperture for full ring with errors on xy plane
   if ((DAdistxyf||allf||DAsf)&&(not(isempty(cLoptions.ringtune_fams))))
     if (verboselevel>0)
       fprintf('%s DA calculation with errors: on-momentum. \n', datetime);
@@ -991,7 +1323,7 @@ if (not(isempty(RINGGRD)))
       return
   end
 
-%% Dynamic aperture for full ring with errors on xdp an ydp planes
+%% Calculates Dynamic aperture for full ring with errors on xdp an ydp planes
   if ((DAdistxydpf||allf||DAsf)&&(not(isempty(cLoptions.ringtune_fams))))
     if (verboselevel>0)
       fprintf('%s DA calculation with errors: off-momentum. \n', datetime);
@@ -1018,7 +1350,7 @@ else
     end
 end
 
-%% Evaluates tune maps for an achromat
+%% Calculates tune maps for an achromat
 if (not(isempty(ACHRO_zc)))
   TMoptions=cLoptions.TMoptions;  
 %% Tune map along x and y axes
@@ -1127,7 +1459,7 @@ if getappdata(fb,'canceling')
    exitflag = 'cancelled';
    return
 end
-%% Evaluate tune map for a full ring with errors
+%% Calculates tune map for a full ring with errors
 if (not(isempty(RINGGRD)))
     if (TM_distf||allf)
         TMdist=calcTMdist(RINGGRD,cLoptions.ErrorModel,...
@@ -1146,19 +1478,19 @@ if getappdata(fb,'canceling')
    return
 end
 
-%% Evaluates LMA for a single achromat without errors
+%% Calculates LMA for full ring without errors
 
-if (not(isempty(ACHRO)))
+if (not(isempty(RINGGRD)))
     if (LMAf||allf)
         if (verboselevel>0)
             fprintf('%s Local Momentum Aperture without errors \n', datetime);
         end
-        LMA=calcLMA(ACHRO,cLoptions.MAoptions,'verbose',verboselevel-1);
+        LMA=calcLMA(RINGGRD,cLoptions.MAoptions,'verbose',verboselevel-1);
         LattStruct.LattPerf.LMA=LMA;
     end
 else
     if (verboselevel>0)
-        fprintf('%s cLatt Warning: ACHRO structure not available for LMA calculation. \n', datetime);
+        fprintf('%s cLatt Warning: RING structure not available for LMA calculation. \n', datetime);
     end
 end
 % waitbar
@@ -1170,7 +1502,7 @@ end
       exitflag = 'cancelled';
       return
   end
-%% Evaluates LMA for a full ring with errors
+%% Calculates LMA for a full ring with errors
 if (not(isempty(RINGGRD)))
     if ((LMAdistf||allf)&&(not(isempty(cLoptions.ringtune_fams))))
         if (verboselevel>0)
@@ -1196,13 +1528,15 @@ end
       exitflag = 'cancelled';
       return
   end
-%% Evaluates Touschek lifetime for a ring without errors
+%% Calculates Touschek lifetime for a ring without errors
 if (not(isempty(RINGGRD)))
     if (TLTf||allf)
         if (verboselevel>0)
             fprintf('%s Touschek lifetime without errors \n', datetime);
         end
-        TL=calcTLT(RINGGRD,cLoptions.TLoptions,cLoptions.MAoptions,'LMAPeriods',1,'verbose',verboselevel-1);
+        TL=calcTLT(RINGGRD,cLoptions.TLoptions,cLoptions.MAoptions,...
+            'LMA',LattStruct.LattPerf.LMA,...
+            'LMAPeriods',1,'verbose',verboselevel-1);
         LattStruct.LattPerf.TL=TL;
     end
 else
@@ -1210,7 +1544,7 @@ else
         fprintf('%s cLatt Warning: RING structure not available for Touschek lifetime calculation. \n', datetime);
     end
 end
-%% Evaluates Touschek lifetime for a full ring with errors
+%% Calculates Touschek lifetime for a full ring with errors
 %
 if (not(isempty(RINGGRD)))
     if ((TLTdistf||allf)&&(not(isempty(cLoptions.ringtune_fams))))
@@ -1219,10 +1553,11 @@ if (not(isempty(RINGGRD)))
         end
         TLdist=calcTLTdist(RINGGRD,cLoptions.ErrorModel,...
            cLoptions.TLoptions,cLoptions.MAoptions,...
-          'verbose',verboselevel-1,'corrorb',cLoptions.corrorb,...
-          'corrtun',cLoptions.corrtun,'tunfams',cLoptions.ringtune_fams,...
-          'nseeds',cLoptions.nseeds);
-        LattStruct.LattPerf.TLdist=TLdist;
+           'LMAdist',LattStruct.LattPerf.LMAdist,...
+           'verbose',verboselevel-1,'corrorb',cLoptions.corrorb,...
+           'corrtun',cLoptions.corrtun,'tunfams',cLoptions.ringtune_fams,...
+           'nseeds',cLoptions.nseeds);
+           LattStruct.LattPerf.TLdist=TLdist;
     end
 else
     if (verboselevel>0)
@@ -1236,7 +1571,7 @@ exitflag = 'normal';
 fprintf('%s Lattice structure creation/update/evaluation completed. \n', datetime);
 fprintf(' ************* \n');
 
-%% Auxiliary function
+%% Auxiliary functions
 
 function ringW=SetBPMWeights(ring)
 % In order to avoid issues with orbit correction routines, which all seem
@@ -1263,4 +1598,40 @@ function ringW=SetBPMWeights(ring)
         fprintf('%s SetBPMWeigths: Warning - no BPMs found. \n', datetime);
     end
 
-   
+function [x2d_s,y2d_s]=shiftPath(x2d,y2d,a2d,shift,Is)
+%
+% returns a path parallel to the input path shifted by a 
+% value dependent on the point along the path
+    x2d_s=x2d;
+    y2d_s=y2d;
+
+    for j = 1:numel(Is)
+        i=Is(j);
+        x2d_s(i)   = x2d(i) - shift(i)*sin(a2d(i));
+        y2d_s(i)   = y2d(i) + shift(i)*cos(a2d(i));
+    end
+
+function dist = distPath(x2d,y2d,x2d_s,y2d_s)
+%
+% returns vertical distance between two paths
+%
+    dist = zeros(length(x2d_s),1);
+    [~, ia, ~] = unique(x2d);
+    x2d_u = x2d(ia);
+    y2d_u = y2d(ia);
+    for i = 1:length(x2d_s)
+        yinter_s=interp1(x2d_u,y2d_u,x2d_s(i));
+        dist(i)    = abs(yinter_s - y2d_s(i));
+    end
+
+function yint = yint(x2d,y2d,x2dint)
+%
+    yint=zeros(length(x2dint),1);
+    [~, ia, ~] = unique(x2d);
+    x2d_u = x2d(ia);
+    y2d_u = y2d(ia);
+    for i=1:length(x2dint)
+        yint(i)=interp1(x2d_u,y2d_u,x2dint(i));
+    end
+
+              

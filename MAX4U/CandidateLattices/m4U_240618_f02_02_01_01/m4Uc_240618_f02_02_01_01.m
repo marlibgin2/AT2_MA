@@ -86,6 +86,12 @@ cLoptions.eqfam = {'dip';'dip';'dip';'';'';'';'';'';'';...
 cLoptions.eqsca = ones(1,44);
 cLoptions.RBfams = {'dqfa';'dqfb';'dqfc'};
 cLoptions.sext_fams={'sfi';'sfo';'sfm';'sdqd';'sdendq'};
+%
+cLoptions.GOoptions.GOmode = 1; 
+cLoptions.GOoptions.chamberHAperture   = 11.0E-3;
+cLoptions.GOoptions.chamberTomagnetGap =  0.5E-3;
+cLoptions.GOoptions.chamberThickness   =  1.0E-3;
+cLoptions.GOoptions.chamberShift       =  4.0E-3;
 
 cLoptions.ErrorModel = errormodel_DDRchallenging('gdran',1.0,...
                             'mgalran',1.0,'mulsys',1.0,'mulran',1.0, ...
@@ -99,4 +105,4 @@ ACHRO_ref = m4_standard.ACHROMAT;
 m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits);
 
 
-%plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'nogrid','caxrange',[-10 0], 'caxrange_r',[-10 0],'save');
+%plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.15,'dpmaxplotLMA',0.15,'nogrid','caxrange',[-10 0], 'caxrange_r',[-10 0],'save');

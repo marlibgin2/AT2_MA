@@ -241,6 +241,9 @@ if (verboselevel>0)
 end
 
 TMs=cell(nseeds+1,1);
+for i=1:nseeds+1
+    TMs{i}=struct();
+end
 stab = ones(nseeds+1,1);
 orb0_stds = zeros(6,nseeds+1);
 orb_stds  = zeros(6,nseeds+1);

@@ -134,7 +134,7 @@ if (plotorbrmsf)
    hold on;
    plot(DAdist.outputs.orb0_stds(3,2:end)*1000,'-o');
    legend({'X','Y'});
-   title(strcat(plottitle,' :rms orbit before correction'));
+   title(strcat(plottitle,{' :rms orbit before correction'}));
    nhandles=nhandles+1;
    phandles{nhandles}=gcf;
    figure; 
@@ -144,7 +144,7 @@ if (plotorbrmsf)
    hold on;
    plot(DAdist.outputs.orb_stds(3,2:end)*1000,'-o');
    legend({'X','Y'});
-   title(strcat(plottitle,' :rms orbit after correction'));
+   title(strcat(plottitle,{' :rms orbit after correction'}));
    nhandles=nhandles+1;
    phandles{nhandles}=gcf;
 end

@@ -27,10 +27,17 @@ function phandles=plotLMAdist(varargin)
 % PFT 2024/06/16
 % PFT 2024/07/03 added vertical scale control
 % PFT 2024/07/15 added optional plot title and output handles
+% PFT 2024/07/23 added handling of empty LMAdist structure
 
 %% Input argument parsing
 %
-LMAdist      = getargs(varargin,[]);
+LMAdist      = getargs(varargin,struct());
+if(isempty(fields(LMAdist)))
+   fprintf('%s Error in plotLMAdist. Empty LMAdist structure. \n', ...
+                   datetime);
+   phandles={};
+   return
+end
 plotorbrmsf  = any(strcmpi(varargin,'plotorbrms'));
 dpmaxplot    = getoption(varargin,'dpmaxplot', LMAdist.outputs.MAoptions.deltalimit);
 dpminplot    = getoption(varargin,'dpminplot',-LMAdist.outputs.MAoptions.deltalimit);
@@ -45,36 +52,41 @@ map_l_std = LMAdist.outputs.map_l_std;
 map_h_std = LMAdist.outputs.map_h_std;
 
 %% Plots LMA distribution
+
 nhandles=0;
 phandles={};
+
 figure;errorbar(Spos, map_l_av*100,map_l_std*100,'-o');
 hold on;errorbar(Spos,map_h_av*100,map_h_std*100 ,'o-');
 xlabel('S[m]');
 ylabel('Local Momentum Aperture [%]');
 grid on;
 ylim([dpminplot*100,dpmaxplot*100]);
-title(plottitle);
+title(strcat(plottitle, {' LMA with errors'}));
 nhandles=nhandles+1;
 phandles{nhandles}=gcf;
 
 if (plotorbrmsf)
+   nseeds=LMAdist.inputs.nseeds;
    figure; 
-   plot(LMAdist.outputs.orb0_stds(1,2:end)*1000,'-o');
+   plot(1:nseeds,LMAdist.outputs.orb0_stds(1,2:end)*1000,'-o');
    xlabel('seed #');
    ylabel('x/y[mm]');
+   xlim([1 nseeds]);
    hold on;
-   plot(LMAdist.outputs.orb0_stds(3,2:end)*1000,'-o');
+   plot(1:nseeds,LMAdist.outputs.orb0_stds(3,2:end)*1000,'-o');
    legend({'X','Y'});
    title(strcat(plottitle,'rms orbit before correction'));
    nhandles=nhandles+1;
    phandles{nhandles}=gcf;
 
    figure; 
-   plot(LMAdist.outputs.orb_stds(1,2:end)*1000,'-o');
+   plot(1:nseeds,LMAdist.outputs.orb_stds(1,2:end)*1000,'-o');
    xlabel('seed #');
    ylabel('x/y[mm]');
+   xlim([1 nseeds]);
    hold on;
-   plot(LMAdist.outputs.orb_stds(3,2:end)*1000,'-o');
+   plot(1:nseeds,LMAdist.outputs.orb_stds(3,2:end)*1000,'-o');
    legend({'X','Y'});
    title(strcat(plottitle,'rms orbit after correction'));
    nhandles=nhandles+1;

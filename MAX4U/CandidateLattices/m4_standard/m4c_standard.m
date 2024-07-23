@@ -61,8 +61,16 @@ cLoptions.All_famsO=LatticeOptData.All_famsO; %   optional, If empty m4_cLatt fi
 cLoptions.ringtune_fams = LatticeOptData.ringtune_fams;   % magnet families for tune matching
 cLoptions.chrom_fams    = LatticeOptData.chrom_fams; % magnet families for chromaticity matching
 cLoptions.eqfam         = LatticeOptData.eqfam;
+cLoptions.sext_fams     = LatticeOptData.sext_fams;
 
 cLoptions.eqsca         = LatticeOptData.eqsca;
+
+cLoptions.GOoptions.GOmode = 1; 
+cLoptions.GOoptions.chamberHAperture   = 11.0E-3;
+cLoptions.GOoptions.chamberTomagnetGap =  0.5E-3;
+cLoptions.GOoptions.chamberThickness   =  1.0E-3;
+cLoptions.GOoptions.chamberShift       =  4.0E-3;
+
 cLoptions.ErrorModel    = errormodel_DDRchallenging('gdran',1.0,...
                             'mgalran',1.0,'mulsys',1.0,'mulran',1.0, ...
                             'strran',1.0,'bpmran',1.0);
@@ -72,4 +80,4 @@ cLoptions.ErrorModel    = errormodel_DDRchallenging('gdran',1.0,...
 m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,...
     MagnetStrengthLimits);
 
-%plotLatt(m4UT,'all','ymaxplot_dm',0.005,'zoom',2.0,'ymaxplot',0.005,'xminplot',-0.012,'xmaxplot',0.012,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'caxrange',[-10 -2],'caxrange_r',[-10 -5],'nogrid','save');
+%plotLatt(m4UT,'all','ymaxplot_dm',0.005,'zoom',2.0,'ymaxplot',0.005,'xminplot',-0.012,'xmaxplot',0.012,'dpminplotLMA',-0.11,'dpmaxplotLMA',0.11,'caxrange',[-10 -2],'caxrange_r',[-10 -5],'nogrid','save');

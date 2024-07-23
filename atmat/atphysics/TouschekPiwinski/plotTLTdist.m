@@ -36,7 +36,8 @@ verboselevel = getoption(varargin,'verbose',0);
 nhandles=0;
 phandles={};
 
-figure; plot(TLdist.outputs.TLs/3600, '-o')
+nseeds=TLdist.inputs.nseeds;
+figure; plot(0:nseeds,TLdist.outputs.TLs/3600, '-o')
 xlabel('Seed');ylabel('Touschek LIfetime [hr]');
 grid on;
 title(plottitle);

@@ -1,14 +1,12 @@
 %% m4Uc_Template
-% This script is a template to set up workspace variables needed
-% to run the "m4U_cLatt" script, which in turn, runs all "cLatt" function 
+% This script is a template to set up variables needed
+% to run the "m4U_cLatt" function, which in turn, runs all "cLatt" function 
 % options in a series of steps creating/overwriting a structure named
 % "m4UT" in the matlab workspace, saving this variable
 % in a "m4UT.mat" file and saving all matlab output in a logfile
 %
 % The intended workflow is 
 %  1. Edit the statements in the "Lattice Specific Data" section below.
-%  2. Make sure the variables ACHROGRD_a1 and MagnetStrengthLimits are 
-%     available in the workspace (see below for their content)
 %  3. Run the script.
 %  4. Rename or copy the resulting "m4UT" structure accordingly.
 %  5. Execution may be interrupted at any moment and the most recent 
@@ -19,16 +17,16 @@
 %     many possible calls to cLatt.
 %  
 % The structure "cLoptions" is stored as a field in the "m4UT" structure 
-% and contains various optionallattice evaluation settings. These are
+% and contains various optional lattice evaluation settings. These are
 % listed in the "General initialisation" section of the m4Uc_Latt function 
-% (which sets their default values). If values different from the defauls 
+% (which sets their default values). If values different from the defaults 
 % are desired for fields in the cLoptions structure, these can be changed 
 % at anytime, e.g., by directly editing the correspondig fields or by 
 % typing:
 %    >>cLpptions = m4UT.cLoptions; % extracts cLoptions to the workspace.
 %    >>cLoptions.DAoptions.nturns = 2028 % implementi the desired changes -
 %    in this example, we change the number of turns used in dynamic
-%    aperture calcualations
+%    aperture calculations
 %
 %    >>m4UT=cLatt(m4UT, 'cLoptions',cLoptions,'verbose',1); % stores the
 %                                          changes in the "m4UT" structure.
@@ -46,13 +44,12 @@
 % 2024/07/10 : break up of the calculations into two setps - with and
 %              without errors
 % 2024/07/13 : restructured to call m4Uc_Latt as a function
-% 2024/07/17 : incrporrated Saroj's mod_IntSteps function
+% 2024/07/17 : incorporated Saroj's mod_IntSteps function
+% 2024/07/19 : incorporated geometry analysis and removed diary logs
 %
 %% Lattice specific data
 lattname = 'm4U-240618-f02-02-01-01';
-desc = 'From Åke, translated by Johan B. to Tracy 2024/07/02';
-%diary_file=strcat(lattname,'_log_',datestr(now,30));
-%diary(diary_file);
+desc = 'From Åke, symmetrized and translated by Johan B. to Tracy 2024/07/02';
 
 ACHRO = m4_20240618_M1a_QFAQFBQFCp175c_tracy(); % run or load tha ACHROMAT 
                                                 % cell array containing the 
@@ -75,6 +72,8 @@ cLoptions.All_famsO={}; %   optional, If empty m4_cLatt finds out the magnet
 cLoptions.ringtune_fams = {'qfend';'qdend'};   % magnet families for tune matching
 cLoptions.chrom_fams    = {'sdqd','sfi'}; % magnet families for chromaticity matching
 cLoptions.sext_fams     = {'sfi';'sfo';'sfm';'sdqd';'sdendq'}; % list of all sextupole families 
+cLoptions.RBfams        = {'dqfa';'dqfb';'dqfc'}; % reverse bend families
+
 cLoptions.eqfam = {'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';...
                    'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';...
                    'dipm';'dipm';'dipm';'dipm';'dipm';...
@@ -84,18 +83,44 @@ cLoptions.eqfam = {'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';...
                    'Qfend_Qdend';'Qfend_Qdend';'Qf_Qfm';...
                    'Sfi_Sfo';'Sfm';'Sfi_Sfo'};
 cLoptions.eqsca = ones(1,44);
-cLoptions.RBfams = {'dqfa';'dqfb';'dqfc'};
+
+cLoptions.GOoptions.GOmode = 1; % selects how the chamber and magnet aperture 
+    %                        geometries are calculated
+    %    Mode 1: Vacuum chamber follows the design orbit,
+    %            Reverse bends are built as symmetric quadrupoles and
+    %            have their apertures increased by the amount
+    %            necesary to accomodate the chamber aperture.
+    %                
+    %    Mode 2: Vacuum chamber follows the design orbit,
+    %            Reverse bends are built as asymmetric quadrupoles 
+    %            so that their aperture does not need to be changed.
+    %
+    %    Mode 3: Vacuum chamber is moved by a fixed amount in the
+    %            horizontal plane and magnet apertures are not changed. 
+    %            This causes a reduction of physical aperture
+    %            and makes the design orbit go off-centre in various 
+    %            magnets, For the reverse bends this is desired as in this
+    %            case we assume they are symmetric quadrupoles (as in case
+    %            1). For sextupoles/octupoles this will generate feed-down
+    %            to be evaluated
+    %
+cLoptions.GOoptions.chamberHAperture   = 11.0E-3;
+cLoptions.GOoptions.chamberTomagnetGap =  0.5E-3;
+cLoptions.GOoptions.chamberThickness   =  1.0E-3;
+cLoptions.GOoptions.chamberShift       =  4.0E-3;
 
 cLoptions.ErrorModel = errormodel_DDRchallenging('gdran',1.0,...
                             'mgalran',1.0,'mulsys',1.0,'mulran',1.0, ...
                             'strran',1.0,'bpmran',1.0);
 
+load('/home/pedtav/Documents/Codes/AT/AT2.0/MAX4U/MagnetStrengthLimits.mat');
+load('/home/pedtav/Documents/Codes/AT/AT2.0/MAX4U/CandidateLattices/m4_standard/m4_standard.mat');
+ACHRO_ref = m4_standard.ACHROMAT;
 
 %% Run cLatt options
 m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits);
 
-%diary off
-
-% Below an examploi of how the 'plotLatt' function can be used to prodcue
+% Below an example of how the 'plotLatt' function can be used to produce
 % plots from the m4UT structure and save the results on a file.
-% plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'nogrid','save');
+%
+% plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'caxrange',[-10 0],'caxrange_r',[-10 -5],'nogrid','save');
