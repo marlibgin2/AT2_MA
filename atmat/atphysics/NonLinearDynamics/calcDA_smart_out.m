@@ -20,8 +20,7 @@ function DAV = calcDA_smart_out( RING, nsteps, nturns, dp, z0, res, xmax, xmin, 
 % xmax=0.012;xmin=-0.012;ymax=0.007
 % DAV=calcDA_smart(RING,24,2000,0,0,100e-6,12e-3,-12e-3,7e-3)
 %% History
-% Based on model_DA written by M. Munoz
-% Modified by Pedro F. Tavares, allows parallel computation
+% 2024/06/10 Saroj
 
 angle_step=pi/nsteps;
 DAV   = zeros(nsteps+1,2);

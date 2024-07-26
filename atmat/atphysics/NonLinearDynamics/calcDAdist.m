@@ -176,7 +176,7 @@ function DAdist = calcDAdist(varargin)
 %                 and standard deviation
 % PFT 2024/07/25: replaced code for error generation and correction by
 %                 call to "generate_errlatt".
-%                 added possibility of input of Erlat structure
+%                 added possibility of input of ERlat structure
 %                 added possibility of fixing the response matrix for all
 %                 seeds.
 %

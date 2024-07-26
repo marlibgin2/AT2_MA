@@ -106,7 +106,7 @@ function LMAdist = calcLMAdist(varargin)
 %% History
 % PFT 2024/06/16: first version
 % PFT 2024/06/26: restructuring and documentation
-% pft 2024/07/23: better handling and flagging of unstable lattices
+% PFT 2024/07/23: better handling and flagging of unstable lattices
 %% Input argument parsing
 [RING,ErrorModel,MAoptions] = getargs(varargin,[],[],[]);
 if (isempty(ErrorModel))

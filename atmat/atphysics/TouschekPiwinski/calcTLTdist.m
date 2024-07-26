@@ -119,7 +119,7 @@ function TLdist = calcTLTdist(varargin)
 %                  as input. If available, LMA calculation can be skipped
 % PFT 2024/07/23 : improved handling of unstable lattices (removed from mean
 %                  values)
-%
+% PFT 2024/07/26 : removed unperturbed lattice from statistics
 %% Input argument parsing
 [RING,ErrorModel,TLoptions,MAoptions]= getargs(varargin,[],[],[],[]);
 
@@ -294,8 +294,8 @@ parfor i=1:nseeds+1
           'sig',sigp,'sigs',sigs,'abstol',abstol,'reltol', reltol, 'integrationmethod', ...
           integrationmethod,'verbose',verboselevel-2);
 end
-TLav  = mean(TLs,'omitnan');
-TLstd = std(TLs,'omitnan');
+TLav  = mean(TLs(2:nseeds+1),'omitnan');
+TLstd = std(TLs(2:nseeds+1),'omitnan');
 
 %% Collects output structure data
 TLdist.inputs.RING =RING;

@@ -36,9 +36,9 @@ function [LattStruct, exitflag] = cLatt(varargin)
 % cLoptions : structure with various optional settings, default = struct;
 %               cLoptions may be a copy of the LatticeOptData structure 
 %               created by the "m4U.m" function or it maybe created 
-%               separately as done in the "m4Tc_Template" and 
-%               "m4_cLatt scripts". It needs to contain (at least) the 
-%               following fields: (if not given, defaults are set)
+%               separately as done in the "m4Uc_Template" script and 
+%               "m4_cLatt" function. If structure is not available or is 
+%               empty, defaults are set.
 %
 % cLoptions.All_famsO  : cell array of string with the names of 
 %                               all families including octupoles
@@ -116,9 +116,9 @@ function [LattStruct, exitflag] = cLatt(varargin)
 % cLoptions.ringtune_fams: (1x2) cell array of strings with names
 %                                of magnet families to use for 
 %                                ring tune correction, default =
-% cLoptions.corrorbf: if true,perforam orbit correction for 
+% cLoptions.corrorbf: if true,perform orbit correction for 
 %                    ring with errors, default = true
-% cLoptions.corrtunf: if true,perforam orbit correction for 
+% cLoptions.corrtunf: if true,perform orbit correction for 
 %                    ring with errors, default = true
 % cLoptions.useORM0f: if true, sets the orbit correction to use the orbit respose
 %               matrix for the unperturbed ring for all iterations, 
@@ -377,7 +377,7 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %        is itself a structure with several fields (see calcDA for
 %        details).
 %
-% LattStruct.LattPerf.ERlat     : structure ceated by "generate_errlat".
+% LattStruct.LattPerf.ERlat     : structure created by "generate_errlatt".
 %                                 contains lattices withe errors and
 %                                 corrections.
 % LattStruct.LattPerf.DA.xy_0   : Dynamic aperture on (x,y) plane for

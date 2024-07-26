@@ -22,10 +22,12 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 % lattname  : string containigg the lattice name
 % desc      : descriptive string 
 % MagnetStrengthLimits : structure containing hardware limits for magnets 
-% ACHRO_ref : reference achromat for calcualtion of desing orbit
-%             deviations. if = {} deviations are not calcualted
+% ACHRO_ref : reference achromat for calculation of design orbit
+%             deviations. if = {} deviations are not calculated
 %
-% cLoptions : structure containing at least the fields below
+% cLoptions : structure containing at least the fields below. Other fields
+%             are added at default values. See the full list in the cLatt
+%             function.
 %   cLoptions.All_famsO : list of all magnet fanilies. If empty, the
 %                         function attempst to find all magnet families
 %                         in the input lattice                    
@@ -56,6 +58,16 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 %    Mode 3: Vacuum chamber is moved by a fixed amount in the
 %            horizontal plane and magnet apertures are not changed. 
 %            This causes a reduction of physical aperture
+%            and makes the design orbit go off-centre in various 
+%            magnets, For the reverse bends this is desired as in this
+%            case we assume they are symmetric quadrupoles (as in case
+%            1). For sextupoles/octupoles this will generate feed-down
+%            to be evaluated
+%
+% Mode 4: Vacuum chamber is moved by a fixed amount in the
+%            horizontal plane for blocks U2 to U4 and magnet 
+%            apertures are not changed. This causes a reduction of 
+%            physical aperture
 %            and makes the design orbit go off-centre in various 
 %            magnets, For the reverse bends this is desired as in this
 %            case we assume they are symmetric quadrupoles (as in case
@@ -159,11 +171,11 @@ cLoptions.TMoptions.ymin_dm = 0.0;
 cLoptions.TMoptions.ymax_dm = 0.007;
 cLoptions.TMoptions.dpmin_dm = -0.06;
 cLoptions.TMoptions.dpmax_dm = +0.06;
-cLoptions.TMoptions.nturns = 1024;
-cLoptions.TMoptions.minampx= 30E-6;
-cLoptions.TMoptions.minampy= 30E-6;
-cLoptions.TMoptions.method = 4;
-cLoptions.TMoptions.smooth = false;
+cLoptions.TMoptions.nturns   = 1024;
+cLoptions.TMoptions.minampx  = 30E-6;
+cLoptions.TMoptions.minampy  = 30E-6;
+cLoptions.TMoptions.method   = 4;
+cLoptions.TMoptions.smooth   = false;
 %
 cLoptions.MAoptions.nperiods           = 20;
 cLoptions.MAoptions.lmafams            = 'all';
@@ -285,7 +297,6 @@ save('m4UT', 'm4UT');
 if (strcmpi(exitflag,'cancelled'))
     return
 end
-
 
 % Momentum Aperture
 [m4UT,exitflag] = cLatt(m4UT,'LMAdist','verbose',3);  
