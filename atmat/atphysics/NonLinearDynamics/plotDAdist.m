@@ -44,6 +44,7 @@ function phandles=plotDAdist(varargin)
 % PFT 2024/07/06 : changed hold statement to avoid clutter
 % PFT 2024/07/09 : added optional plot title
 % PFT 2024/07/15 : fixed axis scales, added plot handles output
+% PFT 2024/07/24 : changed units for orbit plots after correction
 
 %% Input argument parsing
 %
@@ -138,11 +139,11 @@ if (plotorbrmsf)
    nhandles=nhandles+1;
    phandles{nhandles}=gcf;
    figure; 
-   plot(DAdist.outputs.orb_stds(1,2:end)*1000,'-o');
+   plot(DAdist.outputs.orb_stds(1,2:end)*1E6,'-o');
    xlabel('seed #');
-   ylabel('x/y[mm]');
+   ylabel('x/y[µm]');
    hold on;
-   plot(DAdist.outputs.orb_stds(3,2:end)*1000,'-o');
+   plot(DAdist.outputs.orb_stds(3,2:end)*1E6,'-o');
    legend({'X','Y'});
    title(strcat(plottitle,{' :rms orbit after correction'}));
    nhandles=nhandles+1;

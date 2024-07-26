@@ -7,6 +7,7 @@ function [RINGc,orb0,orb] = calcOrb(varargin)
 % RING : AT2 lattice array
 %
 %% Optional input parameters
+% ORM     : orbit reponse matrix
 % verbose : defines level of verbose output, default=0, i.e. no output
 %
 %% Optional flags
@@ -31,9 +32,11 @@ function [RINGc,orb0,orb] = calcOrb(varargin)
 % PFT 2024/07/08: added search for BPM indices based on alternative family
 %                 names
 % PFT 2024/07/16: improved handling of verbose option
+% PFT 2024/07/25: added possibility of fixing the orbit repose matrix
 %
 %% Input argument parsing
 RING           = getargs(varargin,[]);
+ORM            = getoption(varargin,'ORM',[]);
 plotf          = any(strcmpi(varargin,'plot'));
 correctf       = any(strcmpi(varargin,'correct'));
 verboselevel   = getoption(varargin,'verbose',0);
@@ -77,7 +80,7 @@ if (correctf)
 %                           [],[],[0.38, 0.38]*1e-3,verbosef);
      
      RINGc = atcorrectorbit(RING,iBPM,indHCor,indVCor,[],[],[true true],0.75,...
-                           [],[],[0.38, 0.38]*1e-3,(verboselevel-1)>0);
+                           ORM,[],[0.38, 0.38]*1e-3,(verboselevel-1)>0);
      
     % Calculate the new orbit and plot in the former figure
     orb = findorbit6Err(RINGc,iBPM);

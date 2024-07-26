@@ -90,8 +90,9 @@ cLoptions.GOoptions.chamberTomagnetGap =  0.5E-3;
 cLoptions.GOoptions.chamberThickness   =  1.0E-3;
 cLoptions.GOoptions.chamberShift       =  4.0E-3;
 
-load('/home/pedtav/Documents/Codes/AT/AT2.0/MAX4U/MagnetStrengthLimits.mat');
-load('/home/pedtav/Documents/Codes/AT/AT2.0/MAX4U/CandidateLattices/m4_standard/m4_standard.mat');
+load(strcat(erase(atroot,'atmat'),'/MAX4U/MagnetStrengthLimits.mat'));
+load(strcat(erase(atroot,'atmat'),'/MAX4U/CandidateLattices/m4_standard/m4_standard.mat'));
+
 ACHRO_ref = m4_standard.ACHROMAT;
 
 %% Run cLatt options
@@ -99,4 +100,4 @@ m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits)
 
 % Below an example of how the 'plotLatt' function can be used to prodcue
 % plots from the m4UT structure and save the results on a file.
-% plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'caxrange',[-10 0],'caxrange_r',[-10 -5],'nogrid','save');
+% plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'caxrange',[-10 0],'caxrange_r',[-10 -5],'nogrid');

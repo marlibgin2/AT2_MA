@@ -21,12 +21,13 @@ function plotGO(LattStruct,varargin)
 %                 reference
 % 'magceTobeam' : plots magnet centre-to-beam deviation
 % 'chace'       : plots chamber centres
-% 'chacedev'    : lots deviation of chamber centres to reference
+% 'chacedev'    : plots deviation of chamber centres to reference
 % 'chaap'       : plots chamber apertures
 % 'chageo'      : plots limits of chamber aperture
 % 'chageodev'   : plots deviations of limits of chamber aperture wrt to
-% 'chceTobeam'  : plots verticaldistance from  chamber centre to the beam.
+% 'chaceTobeam' : plots vertical distance from  chamber centre to the beam.
 %               reference 
+% 'effap'       : plots effective aperture
 
 % 'all'         : do all plots
 % 'dos'         : do all design orbit plots
@@ -35,7 +36,7 @@ function plotGO(LattStruct,varargin)
 %
 % 'env'         : plots magnet walls, chamber walls and beam
 %% Usage examples
-% plotDO(m4_standard);
+% plotGO(m4_standard);
 
 %% History
 % PFT 2024/06/13, first version
@@ -150,7 +151,7 @@ if(plotmagcedevf||plotmagsf||plotallf)
     grid on;
     title(strcat(lattname, ' Deviation Magnet Centres'));
 end
-%% Plots magnet centre to beam deviatio
+%% Plots magnet centre to beam deviation
 if(plotmagceTobeamf||plotmagsf||plotallf)
     figure;plot(x2d, magceTobeam*1000, '-b'); 
     xlabel('X[m]');ylabel('dZ[mm]');

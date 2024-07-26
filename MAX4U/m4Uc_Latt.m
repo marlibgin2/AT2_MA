@@ -81,7 +81,8 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 %                  alrady contains calcLMAdist
 %                  incorporated latest change to calcTLT, having fixed
 %                  vertical emittance (rather than coupling ratio) 
-%                  as a default,
+%                  as a default.
+% PFT 2024/07/26 : added calls to generate_errlatt
 
 %% General initialisation
 
@@ -90,13 +91,16 @@ if(isempty(cLoptions.All_famsO))
     cLoptions.All_famsO=[Allfams.Dipoles;Allfams.Multipoles];
 end
 %
-cLoptions.nseeds   = 10;    % number of seeds in calculations with errors
-cLoptions.corrorb  = true;  % if trure, corrects the orbit in calculation with errors
-cLoptions.corrtun  = true;  % if trure, corrects the tunes in calculation with errors
-cLoptions.tunfrac  = 1.0;   % fraction of quad change to be applied aty each step during tune correction
-cLoptions.TolTune  = 1E-3;  % tolerance for tune matching
-cLoptions.tunfrac  = 1.0;   % fraction of quad change to be applied aty each step during tune correction
-%
+cLoptions.nseeds   = 10;     % number of seeds in calculations with errors
+cLoptions.corrorbf = true;   % if true, corrects the orbit in calculation with errors
+cLoptions.corrtunf = true;   % if true, corrects the tunes in calculation with errors
+cLoptions.tunfrac  = 1.0;    % fraction of quad change to be applied aty each step during tune correction
+cLoptions.TolTune  = 1E-3;   % tolerance for tune matching
+cLoptions.nittune  = 5;      % max n. of iterations for tune mtaching
+cLoptions.tunfrac  = 1.0;    % fraction of quad change to be applied aty each step during tune correction
+cLoptions.useORM0f = true;   % if true, sets the orbit correction to use the orbit respose
+%                             matrix for the unperturbed ring for all iterations
+%                             
 cLoptions.DAoptions.DAmode   = 'border'; % dynamics aperture calculation mode: "border", "grid", "smart_in" or "smart_out"
 cLoptions.DAoptions.nturns   = 1024; % number of turns
 cLoptions.DAoptions.betax0   = NaN; % horizontal beta for normalization - if NaN, no normalization is don
@@ -190,7 +194,7 @@ cLoptions.TLoptions.emity             = 8.0E-12;
                   'MagnetStrengthLimits',MagnetStrengthLimits,...
                   'verbose',1);
 
-%[m4UT, ~] = cLatt(m4UT,'ACHRO',ACHRO,'ACHRO_ref',ACHRO_ref,'verbose',1);
+%[m4UT, ~] = cLatt(m4UT,'ACHRO',ACHRO,m4U'ACHRO_ref',ACHRO_ref,'verbose',1);
 
 %[m4UT, ~] = cLatt(m4UT,'MagnetStrengthLimits',MagnetStrengthLimits,'verbose',1);
 
@@ -252,6 +256,14 @@ if (strcmpi(exitflag,'cancelled'))
 end
 
 %% Lattice with errors
+% Generates lattices with errors and corrects them
+[m4UT, exitflag] = cLatt(m4UT,'bascor','verbose',2);
+
+save('m4UT', 'm4UT');
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
+
 % Tune Maps
 [m4UT, exitflag] = cLatt(m4UT,'TMdist','verbose',3);
 

@@ -44,6 +44,7 @@ function plotLatt(LS,varargin)
 %
 % 'all'       : all plots
 % 'basic'     : basic plots: lattice parameters, design orbit
+% 'bascor'    : corrected orbit rms
 % 'DAxy'      : dynamic aperture on the (x,y) plane on-energy 
 %               and off-energy without errors.
 % 'DAxydp'    : dynamic aperture on the (x,dp) and (y,dp) planes  
@@ -84,10 +85,13 @@ function plotLatt(LS,varargin)
 %                  for which no equivalent family in the MagnetStrengthLimits
 %                  has been defined
 % PFT 2024/07/22 : changed name from plotDO to plotGO 
+% PFT 2024/07/26 : added plots of corrected orbit based on ERlat structure
+%                  calculated by the "generate_errlatt" function
 %% Input argument parsing
 
 basicf      = any(strcmpi(varargin,'basic'));
 allf        = any(strcmpi(varargin,'all'));
+bascorf     = any(strcmpi(varargin,'bascor'));
 DAsf        = any(strcmpi(varargin,'DAs'));
 DAxyf       = any(strcmpi(varargin,'DAxy'));
 DAxydpf     = any(strcmpi(varargin,'DAxydp'));
@@ -318,6 +322,21 @@ if (allf||DAsf||DAxydpf)
     end
 end
 
+%% Orbit RMS for lattices with errors
+if (allf||bascorf)
+    if(not(isempty(fields(LS.LattPerf.ERlat))))
+        phandles=plotOrbdist(LS.LattPerf.ERlat,'plottitle', LS.Lattice_Name);
+        if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
+    else
+        fprintf('%s plotLattice: Warning - ERlat structure empty. \n', datetime);
+    end
+end
+
 %% Dynamic aperture with errors on(x,y) plane
 if (allf||DAsf||DAdistxyf)
     if(not(isempty(fieldnames(LS.LattPerf.DAdist.xy))))
@@ -415,8 +434,8 @@ if((allf||TMsf||TM_gridxdpf)&&not(nogridf))
     end
 end
 
-if((allf||TMsf||TM_gridxdpf)&&not(nogridf))
-    if(not(isempty(fieldnames(LS.LattPerf.TM.gridxdp))))
+if((allf||TMsf||TM_gridydpf)&&not(nogridf))
+    if(not(isempty(fieldnames(LS.LattPerf.TM.gridydp))))
         phandles=plotTuneMap(LS.LattPerf.TM.gridydp,...
             'plottitle',LS.Lattice_Name);
         if (savef)
@@ -588,7 +607,7 @@ if (allf||LMAdistf)
             end
         end
     else
-        fprintf('%s plotLattice: Warning - LMAdist structure empty. \n', datetime);
+        fprintf('%s plotLattice: Warning - LMAdist structure empty. trying TLdist structure \n', datetime);
         if(not(isempty(fieldnames(LS.LattPerf.TLdist))))
             phandles=plotLMAdist(LS.LattPerf.TLdist.outputs.LMAdist,...
                 'dpminplot',dpminplotLMA,'dpmaxplot',dpmaxplotLMA,...

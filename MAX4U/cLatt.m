@@ -79,8 +79,19 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %            so that their aperture does not need to be changed.
 %
 %    Mode 3: Vacuum chamber is moved by a fixed amount in the
-%            horizontal plane and magnet apertures are not changed. 
-%            This causes a reduction of physical aperture
+%            horizontal plane between for blocks U1 to U5 and magnet 
+%            apertures are not changed. This causes a reduction of 
+%            physical aperture
+%            and makes the design orbit go off-centre in various 
+%            magnets, For the reverse bends this is desired as in this
+%            case we assume they are symmetric quadrupoles (as in case
+%            1). For sextupoles/octupoles this will generate feed-down
+%            to be evaluated
+%
+%    Mode 4: Vacuum chamber is moved by a fixed amount in the
+%            horizontal plane for blocks U2 to U4 and magnet 
+%            apertures are not changed. This causes a reduction of 
+%            physical aperture
 %            and makes the design orbit go off-centre in various 
 %            magnets, For the reverse bends this is desired as in this
 %            case we assume they are symmetric quadrupoles (as in case
@@ -105,10 +116,13 @@ function [LattStruct, exitflag] = cLatt(varargin)
 % cLoptions.ringtune_fams: (1x2) cell array of strings with names
 %                                of magnet families to use for 
 %                                ring tune correction, default =
-% cLoptions.corrorb: if true,perforam orbit correction for 
+% cLoptions.corrorbf: if true,perforam orbit correction for 
 %                    ring with errors, default = true
-% cLoptions.corrtun: if true,perforam orbit correction for 
+% cLoptions.corrtunf: if true,perforam orbit correction for 
 %                    ring with errors, default = true
+% cLoptions.useORM0f: if true, sets the orbit correction to use the orbit respose
+%               matrix for the unperturbed ring for all iterations, 
+%               default=true
 %
 % cLoptions.RBfams: (1XN ) cell array of strings with names of reverse bend
 %                          families
@@ -233,7 +247,10 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %% Optional flags
 %
 % 'basic'     : calculates basic lattice performance data - atsummary
+% 'bascor'    : generates lattices with errors and perform corrections
 % 'all'       : performs all calculations
+% 'cont'      : same as 'all' but only calculations not yet done 
+%               are carried out 
 % 'DAs'       : performs dynamic aperture calculations calculations
 % 'TMs'       : performs tunemap calculations
 % 'DAxy'      : calculates dynamic aperture on the (x,y) plane on-energy 
@@ -258,6 +275,7 @@ function [LattStruct, exitflag] = cLatt(varargin)
 % 'TLTdist'   : calculates Touschek lifetime for ring with errors
 %
 % 'TMdist'    : Tune map(diffusion in xy plane) for ring with errors
+%
 %% Outputs
 % LattStruct is a structure with fields
 % LattStruct.Lattice_Name: string with lattice name following naming convention
@@ -359,6 +377,9 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %        is itself a structure with several fields (see calcDA for
 %        details).
 %
+% LattStruct.LattPerf.ERlat     : structure ceated by "generate_errlat".
+%                                 contains lattices withe errors and
+%                                 corrections.
 % LattStruct.LattPerf.DA.xy_0   : Dynamic aperture on (x,y) plane for
 %                                 on-momentum particles without errors
 % LattStruct.LattPerf.DA.xy_p3  : Dynamic aperture on (x,y) plane for +3%
@@ -417,17 +438,19 @@ function [LattStruct, exitflag] = cLatt(varargin)
 % Now adds Structure with data for DA calculations and Magnet Strength
 % Limit Checks. 
 %
-% m4UT=cLatt(m4UT,'cLoptions', LattiuceOptData, 'verbose', 2);
+% m4UT=cLatt(m4UT,'cLoptions', LatticeOptData, 'verbose', 2);
 % m4UT=cLatt(m4UT,'MagnetStrengthLimits', MagnetStrengthLimits);
 %
 % And now adds results of DA calculation with errors (xy plane)
 % m4UT=cLatt(m4UT,'DAdistxy','verbose', 2);
 %
-% And now adds a reference lattice to allow calcuyaltion of the deviation of
+% And now adds a reference lattice to allow calculation of the deviation of
 % the design orbit
 %
 % m4UT=cLatt(m4UT,'ACHRO_ref',ACHRO_a1);
 %
+% And now performs all calculations not yet done
+% m4UT=cLatt(m4UT, 'cont');
 
 %% History
 % PFT 2024/05 first version
@@ -466,6 +489,8 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                  of coupling.
 %                  added possibility of using existing LMA structure as
 %                  input .
+% PFT 2024/07/26 : introduced call to "generate_errlatt" and updated 
+%                  calls to "calcDAdist"
 %
 %% Input argument parsing
 LattSt               = getargs(varargin,[]);
@@ -483,7 +508,9 @@ V0                   = getoption(varargin,'V0',1.8E6);
 verboselevel         = getoption(varargin,'verbose',0);
 
 basicf      = any(strcmpi(varargin,'basic'));
+bascorf     = any(strcmpi(varargin,'bascor'));
 allf        = any(strcmpi(varargin,'all'));
+contf       = any(strcmpi(varargin,'cont'));
 DAxyf       = any(strcmpi(varargin,'DAxy'));
 DAxydpf     = any(strcmpi(varargin,'DAxydp'));
 DAdistxyf   = any(strcmpi(varargin,'DAdistxy'));
@@ -507,6 +534,9 @@ TM_distf    = any(strcmpi(varargin,'TMdist'));
 %% Constructs output structure template
 fprintf(' ************* \n');
 fprintf('%s Starting lattice structure creation/update/evaluation. \n', datetime);
+if (contf)
+    fprintf('%s This is a continuation run \n', datetime);
+end
 
 if (isempty(LattSt))
     answer = questdlg('Output Structure will be overwritten !', ...
@@ -548,8 +578,9 @@ if (isempty(LattSt))
     LattStruct.LattData.XAllO=[];
     %
     LattStruct.LattData.MagnetStrengthLimits=MagnetStrengthLimits;
-    LattStruct.LattData.CLv=struct;
+    LattStruct.LattData.CLv=struct();
     LattStruct.LattData.ACHROMAT_ZC={};
+    LattStruct.LattData.ACHROMAT_zs={};
     LattStruct.LattData.RINGGRD=RING;
     %
     LattStruct.LattData.geometry=struct();
@@ -559,6 +590,7 @@ if (isempty(LattSt))
 
     %
     LattStruct.LattPerf.atsummary = struct;
+    LattStruct.LattPerf.ERlat     = struct;
     LattStruct.LattPerf.DA.xy_0   = struct;
     LattStruct.LattPerf.DA.xy_p3  = struct;
     LattStruct.LattPerf.DA.xy_m3  = struct;
@@ -566,7 +598,6 @@ if (isempty(LattSt))
     LattStruct.LattPerf.DAdist.xy   = struct;
     LattStruct.LattPerf.DAdist.xydp = struct;
 
-    LattStruct.LattPerf.TM.xy      = struct;
     LattStruct.LattPerf.TM.xy      = struct;
     LattStruct.LattPerf.TM.gridxy  = struct;
     LattStruct.LattPerf.TM.gridxdp = struct;
@@ -675,8 +706,9 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.TolTune       = 1E-3;
     cLoptions.tunfrac       = 1.0; % fraction of quad change to be applied aty each step during tune correction
     cLoptions.nseeds        = 10;
-    cLoptions.corrorb       = true;
-    cLoptions.corrtun       = true;
+    cLoptions.corrorbf      = true;
+    cLoptions.corrtunf      = true;
+    cLoptions.useORM0f      = true;
     cLoptions.ACHRO         = {};
     cLoptions.ACHROGRD      = {};
     cLoptions.RING          = {};
@@ -821,7 +853,7 @@ if (basicf||allf)
     LattStruct.LattData.famLayout=fLO;
 end
 %% Calculates design orbit
-if (basicf||allf)
+if (basicf||allf||(contf&&isempty(fields(LattStruct.LattData.geometry))))
     if (verboselevel>0)
         fprintf('%s cLatt: calculating design orbit \n', datetime);
     end
@@ -871,7 +903,7 @@ if (basicf||allf)
     LattStruct.LattData.geometry.DesignOrbit.Deviation = dist;
 end
 %% Calculates magnet and chamber geometry
-if (basicf||allf)
+if (basicf||allf||(contf&&isempty(fields(LattStruct.LattData.geometry))))
     
     chamberHAperture_ref   = cLoptions.GOoptions.chamberHAperture;
     chamberTomagnetGap     = cLoptions.GOoptions.chamberTomagnetGap; 
@@ -984,7 +1016,7 @@ if (basicf||allf)
             %
             % The region of interest for the chamber shift is from the
             % third (U1/BPM-01) to the eighth (U5-BPM01) beam position
-            % monitor. The chamber returns to nominal alomng the chamber
+            % monitor. The chamber returns to nominal along the chamber
             % runnig from the second (M2/BPM-02) to the third BPMs and from
             % the eigth to the nineth (M2_BPM-01) BPMs
             %
@@ -1040,14 +1072,89 @@ if (basicf||allf)
                     x2d_magce  = x2d;
                     y2d_magce  = y2d;
                     dist_magce = zeros(length(x2d,1));
-                    magH
                 end
             else
                 fprintf('%s cLatt Warning: Reverse Bend families not available for Magnet Centre calculation...\n', datetime);
                 x2d_magce  = x2d;
                 y2d_magce  = y2d;
                 dist_magce = zeros(length(x2d,1));
-            end            
+            end
+
+        case 4
+            iGS = findcells(ACHRO_ref_SP,'FamName','GS');
+            iGE = findcells(ACHRO_ref_SP,'FamName','GE');
+            if (not(isempty(iGS)||isempty(iGE)))
+                %
+                % The region of interest for the chamber shift is from the
+                % U2 block to to the U4 block
+                %
+                S_EU1 = findspos(ACHRO_ref_SP,iGE(2));    
+                S_SU2 = findspos(ACHRO_ref_SP,iGS(3));    
+                S_EU4 = findspos(ACHRO_ref_SP,iGE(5));
+                S_SU5 = findspos(ACHRO_ref_SP,iGS(6));
+                chaHShift = zeros(npo_ref,1);
+                chaHShift(iGS(3):iGE(5))=chamberShift;
+ 
+                for i=iGE(2):iGS(3)
+                    chaHShift(i)=chamberShift/(S_SU2-S_EU1)*(s2d_ref(i)-S_EU1);
+                end
+
+                for i=iGE(5):iGS(6)
+                    chaHShift(i)=chamberShift-chamberShift/(S_SU5-S_EU4)*(s2d_ref(i)-S_EU4);
+                end
+    
+                [x2d_chace,y2d_chace]=shiftPath(x2d_ref,y2d_ref,a2d_ref, chaHShift,1:npo_ref);
+                a2d_chace = a2d_ref;
+                chaHAperture(1:npo_ref) = chamberHAperture_ref;
+
+                [x2d_magce,y2d_magce]=shiftPath(x2d_ref,y2d_ref,a2d_ref, chaHShift,1:npo_ref);
+            
+                y2d_magce = yint(x2d_magce,y2d_magce,x2d);
+                a2d_magce = yint(x2d_magce,a2d_ref,x2d);
+                x2d_magce = x2d;
+    
+                if (isfield(cLoptions,'RBfams'))
+                    if (not(isempty(cLoptions.RBfams)))
+
+                        if (verboselevel>0)
+                            fprintf('%s cLatt: calculating magnet and chamber geometry\n', datetime);
+                        end
+                        nRBs=numel(cLoptions.RBfams);
+                        I_RBs=[];
+                        for i=1:nRBs
+                            Is = find(atgetcells(ACHRO_SP, 'FamName', cLoptions.RBfams{i}));
+                            I_RBs=[I_RBs;Is];
+                        end
+                        dxrb = zeros(length(x2d),1);
+                        for i=1:numel(I_RBs)
+                            j=I_RBs(i);
+                            RB=ACHRO_SP{j};
+                            theta = RB.BendingAngle;
+                            rho = RB.Length/theta;
+                            dxrb(j) = 1/(RB.PolynomB(2)*rho) + chamberShift;
+                        end
+                        [x2d_magce, y2d_magce] = shiftPath(x2d_magce,y2d_magce,...
+                                    a2d_magce,-dxrb,I_RBs);     
+                        dist_magceTobeam   = distPath(x2d,y2d,x2d_magce,y2d_magce)./cos(a2d_magce');
+                        magHAperture(1:npo) = magHAperture_ref;                
+                    
+                    else
+                        fprintf('%s cLatt Warning: Reverse Bend families not available for Magnet Centre calculation...\n', datetime);
+                        x2d_magce  = x2d;
+                        y2d_magce  = y2d;
+                        dist_magce = zeros(length(x2d,1));
+                        magH
+                    end  
+                else
+                    fprintf('%s cLatt Warning: Reverse Bend families not available for Magnet Centre calculation...\n', datetime);
+                    x2d_magce  = x2d;
+                    y2d_magce  = y2d;
+                    dist_magce = zeros(length(x2d,1));
+                end 
+           else
+               fprintf('%s cLatt Warning: Girder Markes not available for geometry calcualtion mode %d3 \n', datetime, cLoptions.GOoptions.GOmode);
+           end
+
         otherwise
                 fprintf('%s cLatt Warning: Unknow GOmode %2i \n', datetime, cLoptions.GOmode);
                 x2d_magce  = x2d;
@@ -1120,7 +1227,8 @@ if (basicf||allf)
 end
     
 %% Calculates magnet challenge levels
-if ((basicf||allf)&&not(isempty(fieldnames(MagnetStrengthLimits)))...
+if ((basicf||allf||(contf&&isempty(fields(LattStruct.LattData.CLv))))...
+                  &&not(isempty(fieldnames(MagnetStrengthLimits)))...
                   &&(not(isempty(cLoptions.eqfam)))...
                   &&(not(isempty(cLoptions.eqsca))))
     if (verboselevel>0)
@@ -1169,7 +1277,7 @@ if(isempty(RINGGRD))
 end
 
 %% Calculates field and gradient profiles
-if (basicf||allf)
+if (basicf||allf||(contf&&isempty(fields(LattStruct.LattData.FG))))
     if (verboselevel>0)
         fprintf('%s cLatt: calculating field and gradient profiles \n', datetime);
     end
@@ -1178,7 +1286,7 @@ if (basicf||allf)
 end
 
 %% Calculates atsummary for full ring (or an achromat if ring not available)
-if (basicf||allf)
+if (basicf||allf||(contf&&isempty(fields(LattStruct.LattPerf.atsummary))))
     if (verboselevel>0)
         fprintf('%s AT summary calculation. \n', datetime);
     end
@@ -1189,7 +1297,8 @@ if (basicf||allf)
     end
 end
 %% Generates lattice at zero chromaticity
-if ( (basicf||allf)&&not(isempty(cLoptions.chrom_fams)))
+if ( (basicf||allf||(contf&&isempty(LattStruct.LattData.ACHROMAT_ZC)))...
+        &&not(isempty(cLoptions.chrom_fams)))
     if (verboselevel>0)
          fprintf('%s cLatt: creating zero chromaticity lattice\n',datetime);
     end
@@ -1207,7 +1316,7 @@ if ( (basicf||allf)&&not(isempty(cLoptions.chrom_fams)))
 end
 ACHRO_zc=LattStruct.LattData.ACHROMAT_ZC;
 %% Generates lattice with all sextupoles at zero
-if ( (basicf||allf)&&not(isempty(cLoptions.sext_fams)))
+if ( (basicf||allf||(contf&&isempty(LattStruct.LattData.ACHROMAT_zs)))&&not(isempty(cLoptions.sext_fams)))
     if (verboselevel>0)
          fprintf('%s cLatt: creating lattice with all sextupoles at zero\n',datetime);
     end
@@ -1233,10 +1342,32 @@ if getappdata(fb,'canceling')
        exitflag = 'cancelled';
        return
 end
+%% Generate lattices with errors and performs corrections
+if ( (bascorf||allf||(contf&&isempty(LattStruct.LattPerf.ERlat))))
+    if (verboselevel>0)
+         fprintf('%s cLatt: generating lattices with errors and correcting\n',datetime);
+    end
+    if (not(isempty(RINGGRD)))
+        ERlat = generate_errlatt(RINGGRD,cLoptions.ErrorModel,...
+            'tunfams',cLoptions.ringtune_fams, ...
+            'nseeds',cLoptions.nseeds,'nittune', cLoptions.nittune, ...
+            'TolTune', cLoptions.TolTune,'frac',cLoptions.tunfrac, 'useORM0', ...
+            cLoptions.useORM0f, 'verbose', verboselevel-1);
+        LattStruct.LattPerf.ERlat = ERlat;
+        if (verboselevel>0)
+            fprintf('%s cLatt: survival rate = %3.1f %% \n', datetime, ERlat.outputs.survivalrate);
+        end
+    else
+        if (verboselevel>0)
+            fprintf('%s cLatt Warning : RINGRD structure not available for ERlat evaluation \n', datetime);
+        end
+    end
+end
 %% Evaluates DAs for full RING
 if (not(isempty(RINGGRD)))
+    ERlat = LattStruct.LattPerf.ERlat;
 %% Calculates Dynamic aperture for full ring without errors on (x,y) plane
-  if (DAxyf||allf||DAsf)
+  if (DAxyf||allf||DAsf||(contf&&isempty(fields(LattStruct.LattPerf.DA.xy_0))))
     if (verboselevel>0)
       fprintf('%s DA calculation without errors: on-momentum. \n', datetime);
     end
@@ -1284,7 +1415,7 @@ if (not(isempty(RINGGRD)))
   end
   
 %% Calculates Dynamic aperture for full ring without errors on (x,dp) and (y,dp) planes
-  if (DAxydpf||allf||DAsf)
+  if (DAxydpf||allf||DAsf||(contf&&isempty(fields(LattStruct.LattPerf.DA.xydp))))
     if (verboselevel>0)
       fprintf('%s DA calculation without errors: (xy,dp) planes \n', datetime);
     end
@@ -1301,15 +1432,28 @@ if (not(isempty(RINGGRD)))
       return
   end  
 %% Calculates Dynamic aperture for full ring with errors on xy plane
-  if ((DAdistxyf||allf||DAsf)&&(not(isempty(cLoptions.ringtune_fams))))
+  if ((DAdistxyf||allf||DAsf||...
+      (contf&&isempty(fields(LattStruct.LattPerf.DAdist.xy))))...
+      &&(not(isempty(cLoptions.ringtune_fams))))
     if (verboselevel>0)
       fprintf('%s DA calculation with errors: on-momentum. \n', datetime);
     end
+    if (isempty(fields(ERlat)))
+        if (verboselevel>0)
+            fprintf('%s cLatt Warning: ERLat structure not available, calculating... \n', datetime);
+        end
+        ERlat = generate_errlatt(RINGGRD,cLoptions.ErrorModel,...
+            'tunfams',cLoptions.ringtune_fams, ...
+            'nseeds',cLoptions.nseeds,'nittune', cLoptions.nittune, ...
+            'TolTune', cLoptions.TolTune,'frac',cLoptions.tunfrac, ...
+            'useORM0',cLoptions.useORM0f, 'verbose', verboselevel-1);
+        LattStruct.LattPerf.ERlat = ERlat;
+        if (verboselevel>0)
+            fprintf('%s cLatt: survival rate = %3.1f %% \n', datetime, ERlat.outputs.survivalrate);
+        end
+    end
     DAdist = calcDAdist(RINGGRD,cLoptions.ErrorModel,cLoptions.DAoptions,...
-             'tunfams',cLoptions.ringtune_fams,'mode','xy',...
-             'corrorb',cLoptions.corrorb,'corrtun',cLoptions.corrtun,...
-             'frac',cLoptions.tunfrac,'nseeds',cLoptions.nseeds,...
-             'verbose', verboselevel-1);
+             'mode','xy','ERlat',ERlat,'verbose', verboselevel-1);
     LattStruct.LattPerf.DAdist.xy = DAdist;
   end
   
@@ -1324,15 +1468,28 @@ if (not(isempty(RINGGRD)))
   end
 
 %% Calculates Dynamic aperture for full ring with errors on xdp an ydp planes
-  if ((DAdistxydpf||allf||DAsf)&&(not(isempty(cLoptions.ringtune_fams))))
+  if ((DAdistxydpf||allf||DAsf|| ...
+      (contf&&isempty(fields(LattStruct.LattPerf.DAdist.xydp))))...
+      &&(not(isempty(cLoptions.ringtune_fams))))
     if (verboselevel>0)
       fprintf('%s DA calculation with errors: off-momentum. \n', datetime);
     end
+    if (isempty(fields(ERlat)))
+        if (verboselevel>0)
+            fprintf('%s cLatt Warning: ERLat structure not available, calculating... \n', datetime);
+        end
+        ERlat = generate_errlatt(RINGGRD,cLoptions.ErrorModel,...
+            'tunfams',cLoptions.ringtune_fams, ...
+            'nseeds',cLoptions.nseeds,'nittune', cLoptions.nittune, ...
+            'TolTune', cLoptions.TolTune,'frac',cLoptions.tunfrac, ...
+            'useORM0',cLoptions.useORM0f, 'verbose', verboselevel-1);
+        LattStruct.LattPerf.ERlat = ERlat;
+        if (verboselevel>0)
+            fprintf('%s cLatt: survival rate = %3.1f %% \n', datetime, ERlat.outputs.survivalrate);
+        end
+    end
     DAdist = calcDAdist(RINGGRD,cLoptions.ErrorModel,cLoptions.DAoptions,...
-             'tunfams',cLoptions.ringtune_fams,'mode','xydp',...
-             'corrorb',cLoptions.corrorb,'corrtun',cLoptions.corrtun,...
-             'frac',cLoptions.tunfrac,'nseeds',cLoptions.nseeds,...
-             'verbose', verboselevel-1);
+             'mode','xydp','ERlat',ERlat,'verbose', verboselevel-1);
     LattStruct.LattPerf.DAdist.xydp = DAdist;
     % waitbar
     frac=frac+dfrac;
@@ -1346,7 +1503,7 @@ if (not(isempty(RINGGRD)))
   end
 else
     if (verboselevel>0)
-        fprintf('%s cLatt Warning : RINGRD structure not available. \n', datetime);
+        fprintf('%s cLatt Warning : RINGRD structure not available for DA evaluation. \n', datetime);
     end
 end
 
@@ -1354,7 +1511,7 @@ end
 if (not(isempty(ACHRO_zc)))
   TMoptions=cLoptions.TMoptions;  
 %% Tune map along x and y axes
-  if(TM_xyf||allf||TMsf)
+  if(TM_xyf||allf||TMsf||(contf&&isempty(fields(LattStruct.LattPerf.TM.xy))))
       if (verboselevel>0)
         fprintf('%s Tune Map xy (ADTS) \n', datetime);
       end
@@ -1366,7 +1523,7 @@ if (not(isempty(ACHRO_zc)))
   end
 
 %% Tune map on a grid of points in (x,y) plane.
-  if (TM_gridxyf||allf||TMsf)
+  if (TM_gridxyf||allf||TMsf||(contf&&isempty(fields(LattStruct.LattPerf.TM.gridxy))))
        if (verboselevel>0)
             fprintf('%s Tune Map grid (x,y) (ADTS). \n', datetime);
        end
@@ -1377,7 +1534,7 @@ if (not(isempty(ACHRO_zc)))
        LattStruct.LattPerf.TM.gridxy=tunemap;
   end
 %% Tune map on a grid of points in (x,dp) plane
-  if (TM_gridxdpf||allf||TMsf)
+  if (TM_gridxdpf||allf||TMsf||(contf&&isempty(fields(LattStruct.LattPerf.TM.gridxdp))))
     if (verboselevel>0)
         fprintf('%s Tune Map grid (x,dp). \n', datetime);
     end
@@ -1389,7 +1546,7 @@ if (not(isempty(ACHRO_zc)))
   end
 
 %% Tune map on a grid of points in (y,dp) plane
-  if (TM_gridydpf||allf||TMsf)
+  if (TM_gridydpf||allf||TMsf||(contf&&isempty(fields(LattStruct.LattPerf.TM.gridydp))))
     if (verboselevel>0)
         fprintf('%s Tune Map grid (y,dp). \n', datetime);
     end
@@ -1401,7 +1558,8 @@ if (not(isempty(ACHRO_zc)))
   end
 
 %% Tune diffusion map on a grid of points in (x,y) plane
-  if (TM_difxyf||allf||TMsf)
+  if (TM_difxyf||allf||TMsf||...
+     (contf&&isempty(fields(LattStruct.LattPerf.TM.difxy))))
     if (verboselevel>0)
         fprintf('%s Tune diffusion map (x,y). \n', datetime);
     end
@@ -1413,7 +1571,8 @@ if (not(isempty(ACHRO_zc)))
   end
 
 %% Tune diffusion map on a grid of points in (x,dp) plane
-  if (TM_difxdpf||allf||TMsf)
+  if (TM_difxdpf||allf||TMsf||...
+     (contf&&isempty(fields(LattStruct.LattPerf.TM.difxdp))))
     if (verboselevel>0)
         fprintf('%s Tune diffusion map (x,dp). \n', datetime);
     end
@@ -1425,7 +1584,8 @@ if (not(isempty(ACHRO_zc)))
   end
 
 %% Tune diffusion map on a grid of points in (y,dp) plane
-  if (TM_difydpf||allf||TMsf)
+  if (TM_difydpf||allf||TMsf||...
+     (contf&&isempty(fields(LattStruct.LattPerf.TM.difydp))))
     if (verboselevel>0)
         fprintf('%s Tune diffusion map (y,dp). \n', datetime);
     end
@@ -1437,7 +1597,7 @@ if (not(isempty(ACHRO_zc)))
   end
 
 %% Chromatic tune map
-  if (TM_chrof||allf||TMsf)
+  if (TM_chrof||allf||TMsf||(contf&&isempty(fields(LattStruct.LattPerf.TM.chro))))
     if (verboselevel>0)
         fprintf('%s Chromatic tune map. \n', datetime);
     end
@@ -1461,7 +1621,8 @@ if getappdata(fb,'canceling')
 end
 %% Calculates tune map for a full ring with errors
 if (not(isempty(RINGGRD)))
-    if (TM_distf||allf)
+    if (TM_distf||allf||...
+       (contf&&(isempty(fields(LattStruct.LattPerf.TMdist)))))
         TMdist=calcTMdist(RINGGRD,cLoptions.ErrorModel,...
             cLoptions.TMoptions,'tunfams',cLoptions.ringtune_fams,...
             'nseeds',1,'mode','difxy','verbose',verboselevel-1);
@@ -1481,7 +1642,7 @@ end
 %% Calculates LMA for full ring without errors
 
 if (not(isempty(RINGGRD)))
-    if (LMAf||allf)
+    if (LMAf||allf||(contf&&isempty(fields(LattStruct.LattPerf.LMA))))
         if (verboselevel>0)
             fprintf('%s Local Momentum Aperture without errors \n', datetime);
         end
@@ -1504,13 +1665,15 @@ end
   end
 %% Calculates LMA for a full ring with errors
 if (not(isempty(RINGGRD)))
-    if ((LMAdistf||allf)&&(not(isempty(cLoptions.ringtune_fams))))
+    if ((LMAdistf||allf||...
+        (contf&&isempty(fields(LattStruct.LattPerf.LMAdist))))...
+        &&(not(isempty(cLoptions.ringtune_fams))))
         if (verboselevel>0)
             fprintf('%s Local Momentum Aperture with errors \n', datetime);
         end
         LMAdist=calcLMAdist(RINGGRD,cLoptions.ErrorModel,...
              cLoptions.MAoptions,'verbose',verboselevel-1,...
-             'corrorb',cLoptions.corrorb,'corrtun',cLoptions.corrtun,...
+             'corrorb',cLoptions.corrorbf,'corrtun',cLoptions.corrtunf,...
              'tunfams',cLoptions.ringtune_fams,'nseeds',cLoptions.nseeds);
         LattStruct.LattPerf.LMAdist=LMAdist;
     end
@@ -1530,7 +1693,7 @@ end
   end
 %% Calculates Touschek lifetime for a ring without errors
 if (not(isempty(RINGGRD)))
-    if (TLTf||allf)
+    if (TLTf||allf||(contf&&isempty(fields(LattStruct.LattPerf.TL))))
         if (verboselevel>0)
             fprintf('%s Touschek lifetime without errors \n', datetime);
         end
@@ -1547,15 +1710,17 @@ end
 %% Calculates Touschek lifetime for a full ring with errors
 %
 if (not(isempty(RINGGRD)))
-    if ((TLTdistf||allf)&&(not(isempty(cLoptions.ringtune_fams))))
-         if (verboselevel>0)
-            fprintf('%s Touchek lifetime with errors \n', datetime);
+    if ((TLTdistf||allf||...
+       (contf&&isempty(fields(LattStruct.LattPerf.TLdist))))...
+        &&(not(isempty(cLoptions.ringtune_fams))))
+        if (verboselevel>0)
+            fprintf('%s Touschek lifetime with errors \n', datetime);
         end
         TLdist=calcTLTdist(RINGGRD,cLoptions.ErrorModel,...
            cLoptions.TLoptions,cLoptions.MAoptions,...
            'LMAdist',LattStruct.LattPerf.LMAdist,...
-           'verbose',verboselevel-1,'corrorb',cLoptions.corrorb,...
-           'corrtun',cLoptions.corrtun,'tunfams',cLoptions.ringtune_fams,...
+           'verbose',verboselevel-1,'corrorb',cLoptions.corrorbf,...
+           'corrtun',cLoptions.corrtunf,'tunfams',cLoptions.ringtune_fams,...
            'nseeds',cLoptions.nseeds);
            LattStruct.LattPerf.TLdist=TLdist;
     end
