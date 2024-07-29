@@ -56,7 +56,7 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 %% Collects data from DAoptions structure
 betax0     = DAoptions.betax0;  % hor beta for normalization - if NaN no normalizatinis done
 betay0     = DAoptions.betay0;  % ver beta for normalization - if NaN no normalization is done
-DAmode     = DAoptions.DAmode;  % DAmode  = 'border', 'grid' or 'smart';
+DAmode     = DAoptions.DAmode;  % DAmode  = 'border', 'grid', 'smart_in' or 'smart_out;
 xmaxdas    = DAoptions.xmaxdas;
 xmindas    = DAoptions.xmindas;
 ymaxdas    = DAoptions.ymaxdas;

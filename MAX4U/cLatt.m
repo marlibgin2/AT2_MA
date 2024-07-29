@@ -242,6 +242,7 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %
 % MagnetStrengthLimits :structure with magnet strength Limits, defaut =
 %                                                               struct
+% corchro              :if true, chromaticity is correted, deafult=false
 % verbose              :defines level of verbose output, default=0, i.e. no output 
 %
 %% Optional flags
@@ -287,12 +288,13 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %
 % *******************************************************************
 %
-% LattStruct.LattData.V0          : total Rf voltage (echo of input)
-% LattStruc.LattData.XAllO   :strengths of all families (includes octupoles)
+% LattStruct.LattData.V0        : total Rf voltage (echo of input)
+% LattStruct.LattData.corchrof  : corret chromaticity flag (echo of input)
+% LattStruc.LattData.XAllO      :strengths of all families (includes octupoles)
 % LattStruct.LattData.ACHROMAT_ref: AT2 lattice cell array for one reference achromat (an echo of the input)
-% LattStruc.LattData.RINGGRD  : Full ring latice 6d enabled with same magnet strengths as
+% LattStruc.LattData.RINGGRD    : Full ring latice 6d enabled with same magnet strengths as
 %            ACHROMAT. Octupoles are the same as in ACHRO (if they exist
-%            there). Otehrwise they are zero.
+%            there). Otherwise they are zero.
 %
 % LattStruct.LattData.ACHROMAT_ZC : achromat for whih the chromatoicity is
 %                                   set to zero
@@ -371,6 +373,58 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %              of tose elentes - the PolynomB array field of the element.
 % ******************************************************************
 % LattStruct.LattPerf.atsummary : output of atsummary run on RINGGRD
+%                                 complemented with the following fields 
+%                                 if available
+%     LattStruct.LattPerf.atsummary.achrnatchrom : natural chromaticity
+%                                 single achromat
+%     LattStruct.LattPerf.atsummary.achrtunes : tunes single achromat
+%     LattStruct.LattPerf.atsummary.LMA.map_l : local momentum aperture
+%                                               without errors at centre 
+%                                               of long straight,negative
+%                                               border
+%                
+%      LattStruct.LattPerf.atsummary.LMA.map_h : local momentum aperture
+%                                               without errors at centre 
+%                                               of long straight,positive
+%                                               border
+%
+%      LattStruct.LattPerf.atsummary.LMAdist.map_l_av: average of  
+%                                               local momentum aperture
+%                                               with errors at centre 
+%                                               of long straight,negative 
+%                                               border
+%      LattStruct.LattPerf.atsummary.LMAdist.map_h_av  = average of  
+%                                               local momentum aperture
+%                                               with errors at centre 
+%                                               of long straight,positive 
+%                                               border
+%      LattStruct.LattPerf.atsummary.LMAdist.map_l_std : standard deviation 
+%                                               of   local momentum aperture
+%                                               with errors at centre 
+%                                               of long straight,negative 
+%                                               border
+%      LattStruct.LattPerf.atsummary.LMAdist.map_h_std :  standard deviation 
+%                                               of   local momentum aperture
+%                                               with errors at centre 
+%                                               of long straight,negative 
+%                                               border
+%      LattStruct.LattPerf.atsummary.TL : Touscheck lifetime wo errors
+%      LattStruct.LattPerf.atsummary.TLdist.TLav : average of Touschek 
+%                                                  lifetime with errors [hr]
+%      LattStruct.LattPerf.atsummary.TLdist.TLstd: standad deviation of
+%                                                  Touschek lifetime with 
+%                                                  errors [hr]
+%   
+%      LattStruct.LattPerf.atsummary.DA: Dynamic aperture wo errors [mm**2]
+%      LattStruct.LattPerf.atsummary.DAdist.DAav: average of dynamic 
+%                                                  aperture with errors 
+%                                                  [mm**2]
+%      LattStruct.LattPerf.atsummary.DAdist.DAstd : standad deviation of 
+%                                                  dynamic aperture with errors 
+%                                                  [mm**2] 
+%                                 
+%      LattStruct.LattPerf.atsummary.maxorbdev : maximum orbit deviation  
+%                                                wrt reference [mm]
 %
 % Note: The DAs calculated below are for the full ring with the
 %        chromaticity as given in the input lattice. Each output field
@@ -491,6 +545,16 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                  input .
 % PFT 2024/07/26 : introduced call to "generate_errlatt" and updated 
 %                  calls to "calcDAdist"
+% PFT 2024/07/27 : updated MAoptions defaults of deltalimit and delta step size
+% PFT 2024/07/28 : updated default of DAoptions.DAmode to 'smart_in'    
+% PFT 2024/07/29 : added fields to atsummary collecting data from all
+%                  all substructures
+% SJ  2024/07/29 : introduced call to "generate_errlatt" and updated 
+%                  calls to "calcLMAdist", "calcTLTdist" and 
+%                  "calc_TMdist"
+% PFT 2024/07/29 : added posibility f chromatocty correction of input
+%                  lattice. The chromatricty corrected achromat overwrites
+%                  the inpout achromat.
 %
 %% Input argument parsing
 LattSt               = getargs(varargin,[]);
@@ -504,11 +568,13 @@ cLoptions            = getoption(varargin,'cLoptions',struct);
 MagnetStrengthLimits = getoption(varargin,'MagnetStrengthLimits',struct);
 split                = getoption(varargin,'split',1);
 V0                   = getoption(varargin,'V0',1.8E6);
+corchrof             = getoption(varargin,'corchro',false);
 
 verboselevel         = getoption(varargin,'verbose',0);
 
 basicf      = any(strcmpi(varargin,'basic'));
 bascorf     = any(strcmpi(varargin,'bascor'));
+
 allf        = any(strcmpi(varargin,'all'));
 contf       = any(strcmpi(varargin,'cont'));
 DAxyf       = any(strcmpi(varargin,'DAxy'));
@@ -574,6 +640,7 @@ if (isempty(LattSt))
     LattStruct.cLoptions    = cLoptions;
     %
     LattStruct.LattData.ACHROMAT_ref = ACHRO_ref;
+    LattStruct.LattData.corchrof = corchrof;
     LattStruct.LattData.V0 = V0;
     LattStruct.LattData.XAllO=[];
     %
@@ -741,7 +808,7 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.GOoptions.chamberShift       =  0.5E-3;
 
     %
-    cLoptions.DAoptions.DAmode   = 'border';
+    cLoptions.DAoptions.DAmode   = 'smart_in';
     cLoptions.DAoptions.nturns   = 1024;
     cLoptions.DAoptions.betax0   = NaN; 
     cLoptions.DAoptions.betay0   = NaN;
@@ -810,7 +877,7 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.MAoptions.deltalimit         = 0.3;
     cLoptions.MAoptions.initcoord          = [0 0];
     cLoptions.MAoptions.delta              = 0.01;
-    cLoptions.MAoptions.deltastepsize      = 0.001;
+    cLoptions.MAoptions.deltastepsize      = 0.1;
     cLoptions.MAoptions.splits             = 10;
     cLoptions.MAoptions.split_step_divisor = 2;
     cLoptions.MAoptions.nturns             = 1024; 
@@ -844,6 +911,24 @@ fb=waitbar(0,'Lattice Structure Creation/Update', 'Name','Progress', 'CreateCanc
 setappdata(fb,'canceling',0);
 frac=0.0;
 dfrac=100/11;
+%% Corrects chromaticity
+if (corchrof&&not(isempty(cLoptions.chrom_fams)))
+    
+    TolChrom     = cLoptions.DAoptions.TolChrom; % Chromaticity tolerances
+    Nitchro      = cLoptions.DAoptions.Nitchro;  % Max n. iterations of chromaticity correction
+    chrom_fams   = cLoptions.chrom_fams;
+    chroms0      = cLoptions.DAoptions.chroms0;
+    if (verboselevel>0)
+         fprintf('%s cLatt: correcting achromat chromaticity to %3.2f / %3.2f\n',datetime, chroms0(1), chroms0(2));
+    end
+    try 
+        [ACHRO, ~, ~]=fitchroit(ACHRO, chrom_fams, chroms0, Nitchro, TolChrom); 
+        LattStruct.LattData.ACHROMAT = ACHRO;
+    catch ME
+        fprintf('%s cLatt: Error in fitting chromaticity ', datetime);
+        fprintf('Error message was:%s \n',ME.message);
+    end
+end
 %% Lattice family layout
 if (basicf||allf)
     if (verboselevel>0)
@@ -852,6 +937,7 @@ if (basicf||allf)
     fLO = famLayout(ACHRO);
     LattStruct.LattData.famLayout=fLO;
 end
+
 %% Calculates design orbit
 if (basicf||allf||(contf&&isempty(fields(LattStruct.LattData.geometry))))
     if (verboselevel>0)
@@ -1291,7 +1377,7 @@ if (basicf||allf||(contf&&isempty(fields(LattStruct.LattPerf.atsummary))))
         fprintf('%s AT summary calculation. \n', datetime);
     end
     if (isempty(RINGGRD))
-        LattStruct.LattPerf.atsummary = atsummary(LattStruct.LattData.ACHRO);
+        LattStruct.LattPerf.atsummary = atsummary(LattStruct.ACHROMAT);
     else
         LattStruct.LattPerf.atsummary = atsummary(LattStruct.LattData.RINGGRD);
     end
@@ -1329,8 +1415,6 @@ if ( (basicf||allf||(contf&&isempty(LattStruct.LattData.ACHROMAT_zs)))&&not(isem
     end
     LattStruct.LattData.ACHROMAT_zs = ACHRO_zs;
     ats_zs=atsummary(ACHRO_zs);
-    LattStruct.LattPerf.atsummary.achrnatchrom=ats_zs.chromaticity;
-    LattStruct.LattPerf.atsummary.achrtunes=ats_zs.Itunes;
 end
 
 % waitbar
@@ -1623,8 +1707,22 @@ end
 if (not(isempty(RINGGRD)))
     if (TM_distf||allf||...
        (contf&&(isempty(fields(LattStruct.LattPerf.TMdist)))))
+        if (isempty(fields(ERlat)))
+            if (verboselevel>0)
+                fprintf('%s cLatt Warning: ERLat structure not available, calculating... \n', datetime);
+            end
+            ERlat = generate_errlatt(RINGGRD,cLoptions.ErrorModel,...
+                'tunfams',cLoptions.ringtune_fams, ...
+                'nseeds',cLoptions.nseeds,'nittune', cLoptions.nittune, ...
+                'TolTune', cLoptions.TolTune,'frac',cLoptions.tunfrac, ...
+                'useORM0',cLoptions.useORM0f, 'verbose', verboselevel-1);
+            LattStruct.LattPerf.ERlat = ERlat;
+            if (verboselevel>0)
+                fprintf('%s cLatt: survival rate = %3.1f %% \n', datetime, ERlat.outputs.survivalrate);
+            end
+        end
         TMdist=calcTMdist(RINGGRD,cLoptions.ErrorModel,...
-            cLoptions.TMoptions,'tunfams',cLoptions.ringtune_fams,...
+            cLoptions.TMoptions,'ERlat',ERlat,'tunfams',cLoptions.ringtune_fams,...
             'nseeds',1,'mode','difxy','verbose',verboselevel-1);
         LattStruct.LattPerf.TMdist=TMdist;
     end
@@ -1671,10 +1769,26 @@ if (not(isempty(RINGGRD)))
         if (verboselevel>0)
             fprintf('%s Local Momentum Aperture with errors \n', datetime);
         end
+        if (isempty(fields(ERlat)))
+            if (verboselevel>0)
+                fprintf('%s cLatt Warning: ERLat structure not available, calculating... \n', datetime);
+            end
+            ERlat = generate_errlatt(RINGGRD,cLoptions.ErrorModel,...
+            'tunfams',cLoptions.ringtune_fams, ...
+            'nseeds',cLoptions.nseeds,'nittune', cLoptions.nittune, ...
+            'TolTune', cLoptions.TolTune,'frac',cLoptions.tunfrac, ...
+            'useORM0',cLoptions.useORM0f, 'verbose', verboselevel-1);
+            LattStruct.LattPerf.ERlat = ERlat;
+            if (verboselevel>0)
+                fprintf('%s cLatt: survival rate = %3.1f %% \n', datetime, ERlat.outputs.survivalrate);
+            end
+        end
+
         LMAdist=calcLMAdist(RINGGRD,cLoptions.ErrorModel,...
              cLoptions.MAoptions,'verbose',verboselevel-1,...
              'corrorb',cLoptions.corrorbf,'corrtun',cLoptions.corrtunf,...
-             'tunfams',cLoptions.ringtune_fams,'nseeds',cLoptions.nseeds);
+             'tunfams',cLoptions.ringtune_fams,'nseeds',cLoptions.nseeds,...
+             'ERlat',ERlat);
         LattStruct.LattPerf.LMAdist=LMAdist;
     end
 else
@@ -1716,9 +1830,23 @@ if (not(isempty(RINGGRD)))
         if (verboselevel>0)
             fprintf('%s Touschek lifetime with errors \n', datetime);
         end
+        if (isempty(fields(ERlat)))
+            if (verboselevel>0)
+                fprintf('%s cLatt Warning: ERLat structure not available, calculating... \n', datetime);
+            end
+            ERlat = generate_errlatt(RINGGRD,cLoptions.ErrorModel,...
+                'tunfams',cLoptions.ringtune_fams, ...
+                'nseeds',cLoptions.nseeds,'nittune', cLoptions.nittune, ...
+                'TolTune', cLoptions.TolTune,'frac',cLoptions.tunfrac, ...
+                'useORM0',cLoptions.useORM0f, 'verbose', verboselevel-1);
+            LattStruct.LattPerf.ERlat = ERlat;
+            if (verboselevel>0)
+                fprintf('%s cLatt: survival rate = %3.1f %% \n', datetime, ERlat.outputs.survivalrate);
+            end
+        end
         TLdist=calcTLTdist(RINGGRD,cLoptions.ErrorModel,...
            cLoptions.TLoptions,cLoptions.MAoptions,...
-           'LMAdist',LattStruct.LattPerf.LMAdist,...
+           'LMAdist',LattStruct.LattPerf.LMAdist,'ERlat',ERlat,...
            'verbose',verboselevel-1,'corrorb',cLoptions.corrorbf,...
            'corrtun',cLoptions.corrtunf,'tunfams',cLoptions.ringtune_fams,...
            'nseeds',cLoptions.nseeds);
@@ -1727,6 +1855,51 @@ if (not(isempty(RINGGRD)))
 else
     if (verboselevel>0)
         fprintf('%s Error: RING structure not available for TLTdist calculation. \n', datetime);
+    end
+end
+
+%% Collects atsummary data
+if(verboselevel>0)
+    fprintf('%s Collecting summary data\n', datetime);
+end
+if (not(isempty(fields(LattStruct.LattPerf.atsummary))))
+    if (exist('ats_zs','var'))
+       LattStruct.LattPerf.atsummary.achrnatchrom=ats_zs.chromaticity;
+       LattStruct.LattPerf.atsummary.achrtunes=ats_zs.Itunes;
+    end
+
+    if(not(isempty(fields(LattStruct.LattPerf.LMA))))
+        LattStruct.LattPerf.atsummary.LMA.map_l = LattStruct.LattPerf.LMA.outputs.map_l(1);
+        LattStruct.LattPerf.atsummary.LMA.map_h = LattStruct.LattPerf.LMA.outputs.map_h(1);
+    end
+
+    if(not(isempty(fields(LattStruct.LattPerf.LMAdist))))
+        LattStruct.LattPerf.atsummary.LMAdist.map_l_av  = LattStruct.LattPerf.LMAdist.outputs.map_l_av(1);
+        LattStruct.LattPerf.atsummary.LMAdist.map_h_av  = LattStruct.LattPerf.LMAdist.outputs.map_h_av(1);
+        LattStruct.LattPerf.atsummary.LMAdist.map_l_std = LattStruct.LattPerf.LMAdist.outputs.map_l_std(1);
+        LattStruct.LattPerf.atsummary.LMAdist.map_h_std = LattStruct.LattPerf.LMAdist.outputs.map_h_std(1);
+    end
+
+    if(not(isempty(fields(LattStruct.LattPerf.TL))))
+        LattStruct.LattPerf.atsummary.TL = LattStruct.LattPerf.TL.outputs.TL/3600;
+    end
+
+    if(not(isempty(fields(LattStruct.LattPerf.TLdist))))
+        LattStruct.LattPerf.atsummary.TLdist.TLav  = LattStruct.LattPerf.TLdist.outputs.TLav/3600;
+        LattStruct.LattPerf.atsummary.TLdist.TLstd = LattStruct.LattPerf.TLdist.outputs.TLstd/3600;
+    end
+
+    if(not(isempty(fields(LattStruct.LattPerf.DA.xy_0))))
+        LattStruct.LattPerf.atsummary.DA = LattStruct.LattPerf.DA.xy_0.outputs.DA;
+    end
+
+    if(not(isempty(fields(LattStruct.LattPerf.DAdist.xy))))
+        LattStruct.LattPerf.atsummary.DAdist.DAav  = LattStruct.LattPerf.DAdist.xy.outputs.DAav;
+        LattStruct.LattPerf.atsummary.DAdist.DAstd = LattStruct.LattPerf.DAdist.xy.outputs.DAstd;
+    end
+
+    if(not(isempty(fields(LattStruct.LattData.geometry))))
+        LattStruct.LattPerf.atsummary.maxorbdev = max(abs(LattStruct.LattData.geometry.DesignOrbit.Deviation))*1000;
     end
 end
 

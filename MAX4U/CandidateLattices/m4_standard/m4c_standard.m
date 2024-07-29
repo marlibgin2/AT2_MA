@@ -81,4 +81,4 @@ load(strcat(erase(atroot,'atmat'),'/MAX4U/MagnetStrengthLimits.mat'));
 m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,...
     MagnetStrengthLimits);
 
-%plotLatt(m4UT,'all','ymaxplot_dm',0.005,'zoom',2.0,'ymaxplot',0.005,'xminplot',-0.012,'xmaxplot',0.012,'dpminplotLMA',-0.11,'dpmaxplotLMA',0.11,'caxrange',[-10 -2],'caxrange_r',[-10 -5],'nogrid','save');
+%plotLatt(m4UT,'all','ymaxplot_dm',0.005,'zoom',2.0,'ymaxplot',0.005,'xminplot',-0.012,'xmaxplot',0.012,'dpminplotLMA',-0.11,'dpmaxplotLMA',0.11,'caxrange',[-10 -2],'caxrange_r',[-10 -5],'nogrid');

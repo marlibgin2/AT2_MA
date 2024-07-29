@@ -93,6 +93,8 @@ function DAS=calcDA(varargin)
 % PFT 2024/05/25 : changed input of xdp and ydp input parameters, which
 %                  are now part of the DAoptions structure
 %
+% PFT 2024/07/28 : adapted to incude DAmode='smart_in'
+%
 %% Input argument parsing
 [RING,DAoptions] = getargs(varargin,[],[]);
 DAS.inputs.RING=RING;
@@ -270,7 +272,7 @@ try
        case {'xydp';'XYDP'}
             DA=nan;
             if (strcmpi(DAoptions.DAmode,'grid'))
-                DAoptions.DAmode = 'border';
+                DAoptions.DAmode = 'smart_in';
             end
             DAoptions.nang = 2;
             for i=1:npd
@@ -315,5 +317,5 @@ end
 
 
 if(verboselevel>0)
-    fprintf('DA calculation complete \n');
+    fprintf('%s calcDA: DA calculation complete \n', datetime);
 end

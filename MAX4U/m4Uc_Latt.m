@@ -1,4 +1,4 @@
-function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits)
+function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits,varargin)
 % Runs all "cLatt" function options in a series of steps 
 % creating/overwriting  a structure m4UT, saving this variable
 % in a "m4UT.mat" at the end of each step and saving all matlab 
@@ -83,6 +83,8 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 %                             vacuum chamber in the range covering 
 %                             VC3 to VC7,i.e. from U1/BPM-01 to U5/BPM-01,
 %                             default = 4.0E-3 m; 
+% Optional arguments:
+% corchro : if true, chromaticity is corrected
 
 %% History
 % PFT 2024/07/06 : first version
@@ -95,7 +97,12 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 %                  vertical emittance (rather than coupling ratio) 
 %                  as a default.
 % PFT 2024/07/26 : added calls to generate_errlatt
+% PFT 2024/07/27 : updated MAoptions defaults of deltalimit and delta step size
+% PFT 2024/07/28 : updated default of DAoptions.DAmode to 'smart_in'                  
+% PFT 2024/07/29 : acdded posibility of chromaticity correction
 
+%% Input argument parsing
+corchrof         = getoption(varargin,'corchro',false);
 %% General initialisation
 
 if(isempty(cLoptions.All_famsO))
@@ -113,7 +120,7 @@ cLoptions.tunfrac  = 1.0;    % fraction of quad change to be applied aty each st
 cLoptions.useORM0f = true;   % if true, sets the orbit correction to use the orbit respose
 %                             matrix for the unperturbed ring for all iterations
 %                             
-cLoptions.DAoptions.DAmode   = 'border'; % dynamics aperture calculation mode: "border", "grid", "smart_in" or "smart_out"
+cLoptions.DAoptions.DAmode   = 'smart_in'; % dynamics aperture calculation mode: "border", "grid", "smart_in" or "smart_out"
 cLoptions.DAoptions.nturns   = 1024; % number of turns
 cLoptions.DAoptions.betax0   = NaN; % horizontal beta for normalization - if NaN, no normalization is don
 cLoptions.DAoptions.betay0   = NaN; % vertical beta for normalization - if NaN no normalization is done
@@ -183,7 +190,7 @@ cLoptions.MAoptions.stepfam            = 1;
 cLoptions.MAoptions.deltalimit         = 0.3;
 cLoptions.MAoptions.initcoord          = [0 0];
 cLoptions.MAoptions.delta              = 0.01;
-cLoptions.MAoptions.deltastepsize      = 0.001;
+cLoptions.MAoptions.deltastepsize      = 0.1;
 cLoptions.MAoptions.splits             = 10;
 cLoptions.MAoptions.split_step_divisor = 2;
 cLoptions.MAoptions.nturns             = 1024; 
@@ -204,7 +211,7 @@ cLoptions.TLoptions.emity             = 8.0E-12;
 [m4UT, ~] = cLatt([],'lattname',lattname, 'desc',desc,'cLoptions',cLoptions,...
                   'ACHRO',ACHRO,'ACHRO_ref',ACHRO_ref,...
                   'MagnetStrengthLimits',MagnetStrengthLimits,...
-                  'verbose',1);
+                  'verbose',1,'corchro', corchrof);
 
 %[m4UT, ~] = cLatt(m4UT,'ACHRO',ACHRO,m4U'ACHRO_ref',ACHRO_ref,'verbose',1);
 

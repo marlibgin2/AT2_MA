@@ -830,7 +830,7 @@ tunemap.inputs.plotargs.ratef=ratef;
 tunemap.outputs.desc=strcat(sprintf('%s',datetime),' : ', desc);
 tunemap.outputs.nped=nped;
 if (TMoptions.nturns~=nturns)
-    fprintf('%s Warning: n. turns changed from %5d %5d \n',...
+    fprintf('%s calcTuneMap: Warning: n. turns changed from %5d %5d \n',...
             datetime, TMoptions.nturns,nturns);
     TMoptions.nturns=nturns;
 end

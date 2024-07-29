@@ -93,6 +93,6 @@ load(strcat(erase(atroot,'atmat'),'/MAX4U/CandidateLattices/m4_standard/m4_stand
 ACHRO_ref = m4_standard.ACHROMAT;
 
 %% Run cLatt options
-m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits);
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits,'corchro',true); % chrochro to set chromaricyt to +1/+1
 
-%plotLatt(m4UT,'all','ymaxplot_dm',0.005,'zoom',2.0,'ymaxplot',0.005,'xminplot',-0.006,'xmaxplot',0.006,'dpminplotLMA',-0.10,'dpmaxplotLMA',0.10,'nogrid','xmaxplot_dm',0.006,'xminplot_dm',-0.006,'caxrange',[-10 0],'caxrange_r',[-10 -5],'save');
+%plotLatt(m4UT,'all','ymaxplot_dm',0.005,'zoom',2.0,'ymaxplot',0.005,'xminplot',-0.006,'xmaxplot',0.006,'dpminplotLMA',-0.10,'dpmaxplotLMA',0.10,'nogrid','xmaxplot_dm',0.006,'xminplot_dm',-0.006,'caxrange',[-10 0],'caxrange_r',[-10 -5]);

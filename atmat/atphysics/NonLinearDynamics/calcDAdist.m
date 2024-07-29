@@ -179,6 +179,7 @@ function DAdist = calcDAdist(varargin)
 %                 added possibility of input of ERlat structure
 %                 added possibility of fixing the response matrix for all
 %                 seeds.
+% PFT 2024/07/28: adapted to run mode "smart_in"
 %
 %              
 % 
@@ -189,7 +190,7 @@ if (isempty(ErrorModel))
                                          'mulsys',1.0, 'mulran',1.0,...
                                          'bpmran',1.0, 'strran',1.0);
 end
-ERlat =  getoption(varargin,'Erlat',struct());
+ERlat =  getoption(varargin,'ERlat',struct());
 
 if (isempty(DAoptions))
     DAoptions.dp=0.0;
@@ -316,7 +317,7 @@ PhysConst = PC.PC;      %Load physical constants
 tstart= tic;
 if (verboselevel>0)
     fprintf('*** \n');
-    fprintf('%s Starting DA distribution calculation, mode = %s \n', ...
+    fprintf('%s calcDAdist: starting DA distribution calculation, mode = %s \n', ...
             datetime, mode );
 end
 
@@ -396,7 +397,7 @@ for i=1:nseeds+1
   try
    switch mode
        case 'xy'
-            if (strcmpi(DAmode,'border')||strcmpi(DAmode,'smart'))
+            if (strcmpi(DAmode,'border')||strcmpi(DAmode,'smart_in'))
                 [DAs(i), DAVs(:,2*i-1:2*i)] = ...
                     calcDA_raw(RINGe{i},DAoptions,etax,...
                     rpara.beta0(1),rpara.beta0(2));

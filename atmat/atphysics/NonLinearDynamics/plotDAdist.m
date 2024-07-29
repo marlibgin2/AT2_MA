@@ -78,7 +78,7 @@ DAydpst  = DAdist.outputs.DAydpst;
 nhandles=0;
 switch mode
     case {'xy';'XY'}
-        if (strcmpi(DAmode,'border'))
+        if (strcmpi(DAmode,'border')||strcmpi(DAmode,'smart_in'))
             figure; xlabel('X [mm]'); ylabel('Y [mm]');grid;
             xlim([xminplot xmaxplot]*1000);ylim([0 ymaxplot]*1000);
             title(strcat(plottitle,sprintf(' dp = %3.1f %%', dp*100)));
@@ -94,7 +94,7 @@ switch mode
                 fprintf('seed n. %4d \n', i-1);
             end
         
-            if (strcmpi(DAmode,'border'))
+            if (strcmpi(DAmode,'border')||strcmpi(DAmode,'smart_in'))
                 if (i>1)  
                     plot(DAVs(:,2*i-1)*1000,DAVs(:,2*i)*1000,'-ob');
                 else

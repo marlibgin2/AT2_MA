@@ -55,7 +55,7 @@ m4U('b3','Full','rbk',3.49E-3);
 DAoptions = LatticeOptData.DAoptions;
 DAoptions.xmaxdas  =  0.010;
 DAoptions.xmindas  = -0.010;
-DAoptions.ymnaxdas =  0.007;
+DAoptions.ymaxdas =  0.007;
 
 
 load('/home/pedtav/Documents/Max4U/MOGA_Scans/MOGA_20240313T091640.mat');
@@ -94,4 +94,4 @@ ACHRO_ref = m4_standard.ACHROMAT;
 %% Run cLatt options
 m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits);
 
-%plotLatt(m4UT,'all','ymaxplot_dm',0.006,'zoom',2.0,'ymaxplot',0.006,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.17,'dpmaxplotLMA',0.17,'caxrange',[-10 0],'caxrange_r',[-10 -5],'nogrid','save');
+%plotLatt(m4UT,'all','ymaxplot_dm',0.006,'zoom',2.0,'ymaxplot',0.006,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.17,'dpmaxplotLMA',0.17,'caxrange',[-10 0],'caxrange_r',[-10 -5],'nogrid');
