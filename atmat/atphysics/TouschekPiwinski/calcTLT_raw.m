@@ -157,7 +157,12 @@ for dppcolnum=1:size(dppinput,2)
     contributionsTL(:,dppcolnum)=frontfact.*val;
     
     L=zeros(length(lindata),1);
-    for kk=1:length(lindata);L(kk)=lindata(kk).Length;end
+    for kk=1:length(lindata)-1
+        L(kk)=lindata(kk+1).SPos - lindata(kk).SPos; % MA 30/7/2024: sampling length redefined
+                                                     % to include "subsampling" cases
+    end
+    L(length(lindata)) = lindata(kk+1).Length;       % last element samples its length
+
     Tlcol(dppcolnum)=1/(1/sum(L)*sum(contributionsTL(:,dppcolnum).*L));
     
 end
