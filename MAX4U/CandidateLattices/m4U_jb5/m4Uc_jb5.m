@@ -78,21 +78,14 @@ cLoptions.RBfams = {'qf1';'qf1_e'};
 
 cLoptions.eqsca = ones(29,1);
 
-cLoptions.GOoptions.GOmode = 1;
-cLoptions.GOoptions.chamberHAperture   = 11.0E-3;
-cLoptions.GOoptions.chamberTomagnetGap =  0.5E-3;
-cLoptions.GOoptions.chamberThickness   =  1.0E-3;
-cLoptions.GOoptions.chamberShift       =  4.0E-3;
-
-cLoptions.ErrorModel = errormodel_DDRchallenging('gdran',1.0,...
-                            'mgalran',1.0,'mulsys',1.0,'mulran',1.0, ...
-                            'strran',1.0,'bpmran',1.0);
+%cLoptions.OCoptions.neigen=[140 120; 160 140; 190 170; ones(4,1)*[200 170]];
 
 load(strcat(erase(atroot,'atmat'),'/MAX4U/MagnetStrengthLimits.mat'));
 load(strcat(erase(atroot,'atmat'),'/MAX4U/CandidateLattices/m4_standard/m4_standard.mat'));
 ACHRO_ref = m4_standard.ACHROMAT;
 
 %% Run cLatt options
-m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits,'corchro',true); % chrochro to set chromaricyt to +1/+1
-
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,...
+    ACHROGRD_a1,MagnetStrengthLimits,'corchro',true); % chrochro to set chromaricyt to +1/+1
+% 
 %plotLatt(m4UT,'all','ymaxplot_dm',0.005,'zoom',2.0,'ymaxplot',0.005,'xminplot',-0.006,'xmaxplot',0.006,'dpminplotLMA',-0.10,'dpmaxplotLMA',0.10,'nogrid','xmaxplot_dm',0.006,'xminplot_dm',-0.006,'caxrange',[-10 0],'caxrange_r',[-10 -5]);

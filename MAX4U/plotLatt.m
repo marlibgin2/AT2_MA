@@ -568,7 +568,6 @@ if (allf||TMsf||TM_difydpf)
 end
 
 %% Local Momentum Aperture without errors 
-
 if (allf||LMAf)
     if(not(isempty(fieldnames(LS.LattPerf.LMA))))
         plotLMA(LS.LattPerf.LMA,'dpminplot',dpminplotLMA,...

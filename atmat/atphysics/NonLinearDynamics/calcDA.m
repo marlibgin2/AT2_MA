@@ -94,6 +94,7 @@ function DAS=calcDA(varargin)
 %                  are now part of the DAoptions structure
 %
 % PFT 2024/07/28 : adapted to incude DAmode='smart_in'
+% PFT 2024/07/30 : added handling of nan as input value for DAoptions.nturns
 %
 %% Input argument parsing
 [RING,DAoptions] = getargs(varargin,[],[]);
@@ -104,7 +105,7 @@ if (isempty(DAoptions))
     DAoptions.dp=0.0;
     DAoptions.z0=nan;
     DAoptions.DAmode='grid';
-    DAoptions.nturns=1024;
+    DAoptions.nturns=nan;
     DAoptions.betax0=nan;
     DAoptions.betay0=nan;
     DAoptions.xmaxdas=0.015;
@@ -264,6 +265,18 @@ try
        end
        DAoptions.z0=z0;
    end
+   %
+   % if input number of turns is nan, and lattice is 6d set it to
+   %  1.2*synchrotron period
+   if (isnan(nturns))
+       if (check_6d(RING))
+            DAoptions.nturns = round(1.2/rpara.synctune);
+       else
+            DAoptions.nturns = 1024;
+       end
+       DAoptions.nturns=nturns;
+   end
+
    switch mode
        case {'xy';'XY'}
             

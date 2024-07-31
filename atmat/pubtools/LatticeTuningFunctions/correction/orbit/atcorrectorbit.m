@@ -56,6 +56,7 @@ function [rcor,inCOD,hs,vs]=atcorrectorbit(...
 % kval=1e-5;
 % delta=1e-3;
 
+
 indrfc=find(atgetcells(rerr,'Frequency'));
 f0=rerr{indrfc(1)}.Frequency;
 
@@ -94,6 +95,7 @@ if nargin<7 || isempty(correctflags)
     correctflags=[true true];
 end
 
+
 if nargin<6 || isempty(neigSteerer)
 %     neigSteerer=ones(10,1)*[length(indHCor)-20 length(indVCor)-20];
 svhmax = min([numel(indHCor), numel(indBPM)]);
@@ -111,6 +113,7 @@ if correctflags(2)
 end
 
 end
+
 
 if nargin<8 || isempty(scalefactor)
     if printouttext, disp(' --- scale set to .75'); end
@@ -140,7 +143,6 @@ end
 % end
 
 
-
 % Check whether lattice is 6D or 4D
 use6d = check_6d(rerr);
 
@@ -152,7 +154,6 @@ end
 if strcmpi(rerr{indVCor(1)}.PassMethod,'CorrectorPass'), yfname = 'KickAngle'; yfi = 1; yfj = 2; ...
 else, yfname = 'PolynomA'; yfi = 1; yfj = 1; ...
 end
-
 
 
 % Attempt to get initial orbit
@@ -198,7 +199,9 @@ if any(isnan(o(:)))
 
     % Attempt to correct the easier case
     % NB! This is a recursive call!
-    RING_RED = atcorrectorbit(RING_RED,indBPM,indHCor,indVCor,[],[],[],[],ModelRM);
+    %RING_RED =atcorrectorbit(RING_RED,indBPM,indHCor,indVCor,[],[],[],[],ModelRM); % PFT
+    RING_RED = atcorrectorbit(RING_RED,indBPM,indHCor,indVCor,[],neigSteerer,correctflags,scalefactor,ModelRM,reforbit,steererlimit,printouttext); %PFT
+    
 
     % Extract the obtained corrections and scale them up, then use them as
     % the initial guess for the original lattice.
@@ -549,4 +552,13 @@ end
 function N = getRecursiveDepth
 stack = dbstack;
 N = sum(strcmp({stack.name},stack(2).name));
+end
+
+function recursive = isrecursivecall
+stack=dbstack;
+if numel(stack) < 3
+    recursive = false;
+else
+    recursive = strcmp(stack(2).name,stack(3).name);
+end
 end

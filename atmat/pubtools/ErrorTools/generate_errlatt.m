@@ -20,6 +20,18 @@ function ERlat= generate_errlatt(varargin)
 %   useORM0   : if true, sets the orbit correction to use the orbit respose
 %               matrix for the unperturbed ring for all iterations, 
 %               default=true
+% OCoptions   : orbit correction options structure with fields
+%    OCoptions.inCOD          : inital guess for the orbit
+%    OCoptions.neigen         : 2xNiter eigenvectors for correction H and V at
+%                               each iteration (default: [Nh/2 Nv/2])
+%    OCoptions.cflags         : correct [dpp mean0](default: [true true])
+%    OCoptions.scale          : scale factor to correction (default: 0.75)
+%    OCoptions.reforbit       : 2xNbpm reference orbit to correct to (default 0*2xNb)
+%    OCoptions.steererlimit   : x1 limit of steerers abs(steerer)<steererlimit
+%                           (default: [], no limits)
+%    OCoptions.maxrmsx        : maximum rms horizontal orbit for a lattice to survive         
+%    OCoptions.maxrmsy        : maximum rms vertical orbit for a lattice to survive         
+%
 %   fulloutput: if true, exports also the rparae,Itunese and Ftunese
 %               fields, if false, rpare contains only results for the
 %               unperturbed lattice
@@ -40,6 +52,7 @@ function ERlat= generate_errlatt(varargin)
 %   ERlat.inputs.corrorb
 %   ERlat.inputs.corrtun
 %   ERlat.inputs.useORM0f
+%   ERlat.inputs.OCoptions
 %   ERlat.inputs.fulloutputf
 
 % ERlat.outputs structure with the following fields (first column 
@@ -59,14 +72,17 @@ function ERlat= generate_errlatt(varargin)
 %  ERlat= generate_errlatt(RING,ErrorModel, 'tunfams',{'Q1';'Q2'}, 'verbose', 1);
 
 %% History
-% 2024/07/24: SJ, : first version
-% 2024/07/25: PFT : restructured inputs, including Errormodel
+% SJ  2024/07/24  : first version
+% PFT 2024/07/25  : restructured inputs, including Errormodel
 %                   restructure outputs to ease integration into the
 %                   cLatt package
 %                   added option to calculate reposnse matrix for the 
 %                   unperturbed lattice only
+% PFT 2024/07/30  : added options to the orbit correction function
+%                   added handling of case without orbitor tune
+%                   corrections, only error application
 %                   
-%
+% PFT 2024/07/31  : added limits of rms orbit to define a seed survives
 %% Input argument parsing
 [RING,ErrorModel] = getargs(varargin,[],[]);
 if (isempty(ErrorModel))
@@ -79,6 +95,18 @@ corrtunf         = getoption(varargin,'corrtun',true);
 verboselevel     = getoption(varargin,'verbose',0);
 fulloutputf      = getoption(varargin,'fulloutput',false);
 useORM0f         = getoption(varargin,'useORM0',true);
+OCoptions        = getoption(varargin,'OCoptions',struct);
+
+if (isempty(fields(OCoptions)))
+    OCoptions.inCOD          = [];
+    OCoptions.neigen         = [];
+    OCoptions.cflags         = [];
+    OCoptions.scale          = 0.75;
+    OCoptions.reforbit       = [];
+    OCoptions.steererlimit   = [];
+    OCoptions.maxrmsx        = 0.1E-3;
+    OCoptions.maxrmsy        = 0.2E-3;
+end
 
 nseeds           = getoption(varargin,'nseeds',10);
 tunfams          = getoption(varargin,'tunfams',{'Q1_b3','Q2_b3'});
@@ -102,13 +130,14 @@ ERlat.inputs.TolTune     = TolTune;
 ERlat.inputs.frac        = frac;
 ERlat.inputs.corrorbf    = corrorbf;
 ERlat.inputs.corrtunf    = corrtunf;
+ERlat.inputs.OCoptions   = OCoptions;
 ERlat.inputs.useORM0f    = useORM0f;
 ERlat.inputs.fulloutputf = fulloutputf;
 
 
 %% Apply Errors and corrections
 if (verboselevel>0)
-   fprintf('%s generate_errlat: Calculating unperturbed lattice parameters \n', datetime);
+   fprintf('%s generate_errlat: calculating unperturbed lattice parameters \n', datetime);
 end
 tstart=tic;
 try
@@ -116,7 +145,7 @@ try
    Itunes  = rpara.Itunes;
    stab(1) = 1;
 catch ME
-     fprintf('%s Error in generate_errlatt. atsummary of lattice wihtout errors \n', datetime);
+     fprintf('%s generate_errlat: Error in atsummary of lattice without errors \n', datetime);
      fprintf('Error message was:%s \n',ME.message);
      ERlat.outputs.RINGe   = RINGe;
      ERlat.outputs.rparae  = rparae;
@@ -147,25 +176,49 @@ else
     ORM = [];
 end
 
-parfor i=1:nseeds+1
+parfor i=1:nseeds+1 
     if (verboselevel)
-        fprintf('%s seed n. %4d \n', datetime, i-1);
+        fprintf('%s generate_errlat: seed n. %4d \n', datetime, i-1);
     end
     if (i>1)
         RINGe{i}=applyErrorModel(RING,ErrorModel);
         if (corrorbf) 
             try
                 if (verboselevel>0)
-                    fprintf('%s Correcting orbit seed n. %3d \n', datetime, i-1);
+                    fprintf('%s generate_errlat: correcting orbit seed n. %3d \n', datetime, i-1);
                 end
                 [RINGe{i}, orb0, orb] = calcOrb(RINGe{i},'correct',...
-                    'ORM', ORM, 'verbose',verboselevel-1);
+                    'ORM', ORM, 'OCoptions',OCoptions,'verbose',verboselevel-1);
                 for j=1:6
                     orb0_stds(j,i)=std(orb0(j,:),'omitnan');
                     orb_stds(j,i)=std(orb(j,:),'omitnan');
                 end
+                rmsx=std(orb(1,:),'omitnan');
+                rmsy=std(orb(3,:),'omitnan');
+                stab(i) = (rmsx<OCoptions.maxrmsx)&&...
+                          (rmsy<OCoptions.maxrmsy) ;      
             catch ME
                 fprintf('%s generate_errlatt: Error in orbit correction for seed n. %3d \n', datetime, i-1);
+                fprintf('Error message is %s \n', ME.message);
+                stab(i)=0;
+            end
+        else
+            try
+                if (verboselevel>0)
+                    fprintf('%s generate_errlat: calculating orbit seed n. %3d \n', datetime, i-1);
+                end
+                [RINGe{i}, orb0, ~] = calcOrb(RINGe{i},...
+                'ORM', ORM, 'OCoptions',OCoptions,'verbose',verboselevel-1);
+                for j=1:6
+                    orb0_stds(j,i) = std(orb0(j,:),'omitnan');
+                    orb_stds(j,i)  = nan;
+                end
+                rmsx=std(orb(1,:),'omitnan');
+                rmsy=std(orb(3,:),'omitnan');
+                stab(i) = (rmsx<OCoptions.maxrmsx)&&...
+                          (rmsy<OCoptions.maxrmsy);
+            catch ME
+                fprintf('%s generate_errlatt: Error in orbit calculation for seed n. %3d \n', datetime, i-1);
                 fprintf('Error message is %s \n', ME.message);
                 stab(i)=0;
             end
@@ -176,7 +229,7 @@ parfor i=1:nseeds+1
                 Itunese{i}=rparae{i}.Itunes;
                 if (not(isnan(Itunese{i}(1)))&&not(isnan(Itunese{i}(2))))
                     if (verboselevel>0)
-                        fprintf('%s Fitting tunes from [ %5.3f %5.3f ] to [ %5.3f %5.3f ] seed n. %3d \n',...
+                        fprintf('%s generate_errlat: fitting tunes from [ %5.3f %5.3f ] to [ %5.3f %5.3f ] seed n. %3d \n',...
                         datetime, Itunese{i}(1),Itunese{i}(2),Itunes(1),Itunes(2), i-1);
                     end
                     [RINGe{i}, its, penalty_tune, Ftunese{i}] = ...
@@ -185,10 +238,10 @@ parfor i=1:nseeds+1
                       'UseIntegerPart',true,'frac',frac,...
                       'verbose',verboselevel-1);
                     if (verboselevel>0)
-                        fprintf('%s Tune fit complete with penalty = %6.2e after %3d iterations seed n. %3d \n', datetime, penalty_tune, its, i-1);
+                        fprintf('%s generate_errlat: tune fit complete with penalty = %6.2e after %3d iterations seed n. %3d \n', datetime, penalty_tune, its, i-1);
                     end
                 else
-                    fprintf('%s Unstable Lattice Tunes = [ %5.3f %5.3f ]  \n',...
+                    fprintf('%s generate_errlat: unstable lattice tunes = [ %5.3f %5.3f ]  \n',...
                         datetime, Itunese{i}(1), Itunese{i}(2));
                     stab(i)=0;
                 end
@@ -198,10 +251,16 @@ parfor i=1:nseeds+1
                 stab(i)=0;
             end
         else
-            Itunese{i}=[NaN NaN];
-            Ftunese{i}=[NaN NaN];
+            try
+                rparae{i}=atsummary(RINGe{i});
+                Itunese{i}=rparae{i}.Itunes;
+                Ftunese{i}=Itunese{i};
+            catch ME
+                fprintf('%s generate_errlatt: Error in tune calculation for seed n. %3d \n', datetime, i-1);
+                fprintf('Error message is %s \n', ME.message);
+                stab(i)=0;
+            end
         end
-
     else
         RINGe{i}=RING;
         rparae{i}=rpara;
@@ -209,6 +268,7 @@ parfor i=1:nseeds+1
         Ftunese{i}=Itunes;
     end
 end
+
 survivalrate = sum(stab(2:nseeds+1))/nseeds*100;
 
 %% Collects output structure data

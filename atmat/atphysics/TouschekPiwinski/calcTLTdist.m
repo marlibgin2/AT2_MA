@@ -129,6 +129,8 @@ function TLdist = calcTLTdist(varargin)
 %                 added possibility of input of ERlat structure
 %                 added possibility of fixing the response matrix for all
 %                 seeds.
+% PFT 2024/07/31 : improved hanlidng of not stable seeds
+%
 %% Input argument parsing
 [RING,ErrorModel,TLoptions,MAoptions]= getargs(varargin,[],[],[],[]);
 
@@ -175,13 +177,13 @@ TLoptions.emity  = emity;
 if (isempty(MAoptions))
    MAoptions.lmafams='all';
    MAoptions.stepfam=1;
-   MAoptions.deltalimit=0.1;
-   MAoptions.initcoord=[0.0 0.0 0.0 0.0 0.0 0.0]';
+   MAoptions.deltalimit=0.3;
+   MAoptions.initcoord=[0 0 0 0 0 nan]';
    MAoptions.delta=0.01;
-   MAoptions.deltastepsize=0.001;
+   MAoptions.deltastepsize=0.1;
    MAoptions.splits=10;
    MAoptions.split_step_divisor=2;
-   MAoptions.nturns=500;
+   MAoptions.nturns=nan;
    MAoptions.S0max=528/20;
    MAoptions.S0min=0.0;
 end
@@ -284,6 +286,10 @@ else
     end
 end
 
+if (~isempty(fields(ERlat)))
+    stab=ERlat.outputs.stab;
+end
+
 if (verboselevel>0)
      fprintf('%s CalcTLTdist: Starting Touschek lifetime caculation \n', datetime);
 end
@@ -294,21 +300,25 @@ map_lT=LMAdist.outputs.map_l;
 map_hT=LMAdist.outputs.map_h;
 
 %% Calculates Touschek lifetimes
+[~,lindata] = atlinopt4(RING,Ipos);
+for j=1:length(lindata)
+    lindata(j).Length = RING{Ipos(j)}.Length;
+end
+
 parfor i=1:nseeds+1
     if (verboselevel>0)
         fprintf('%s CalcTLTdist: Seed n %3d \n', datetime, i-1);
     end
-    map_l = map_lT(i,:);
-    map_h = map_hT(i,:);
-    lmap=cat(2,map_h',map_l');
-    [~,lindata] = atlinopt4(RING,Ipos);
-    for j=1:length(lindata)
-        lindata(j).Length = RING{Ipos(j)}.Length;
-    end
-
-    TLs(i) = calcTLT_raw(lindata,lmap,'Ib',Ib,'circumference',circumference,'energy',energy,'emitx',emitx,'emity',emity,...
+    if (stab(i)) 
+        map_l = map_lT(i,:);
+        map_h = map_hT(i,:);
+        lmap=cat(2,map_h',map_l');
+        TLs(i) = calcTLT_raw(lindata,lmap,'Ib',Ib,'circumference',circumference,'energy',energy,'emitx',emitx,'emity',emity,...
           'sig',sigp,'sigs',sigs,'abstol',abstol,'reltol', reltol, 'integrationmethod', ...
           integrationmethod,'verbose',verboselevel-2);
+    else
+        TLs(i)=nan;
+    end
 end
 TLav  = mean(TLs(2:nseeds+1),'omitnan');
 TLstd = std(TLs(2:nseeds+1),'omitnan');

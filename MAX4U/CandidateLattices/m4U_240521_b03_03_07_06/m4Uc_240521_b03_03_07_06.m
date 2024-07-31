@@ -56,7 +56,6 @@ desc = 'From Marco';
 load('/home/pedtav/Documents/Codes/AT/AT2.0/MAX4U/CandidateLattices/m4U_240521_b03_03_07_06_/m4U_240521_b03_03_07_06.mat','ACHR_tc'); % Loads achromat from Marco's Lattice structre
 ACHRO = ACHR_tc;
                                             
-
 % ACHRO = mod_IntSteps(ACHRO,10,10,3,1); % If necessary, fix missing NumIntSteps
 
 % Initialize physical apertures
@@ -80,15 +79,6 @@ cLoptions.eqfam = {'dipm';'dip';'dip';...
                    'Qf_Qfm';'Sdend';'Sfm';'Sfi_Sfo';'Sfi_Sfo';'Sfi_Sfo'};
 cLoptions.eqsca = [1 1 (3.0+0.88)/3.0 1  1 1 1 1 1 1 1 1 1 1 1 1];
 
-cLoptions.ErrorModel = errormodel_DDRchallenging('gdran',1.0,...
-                            'mgalran',1.0,'mulsys',1.0,'mulran',1.0, ...
-                            'strran',1.0,'bpmran',1.0);
-
-cLoptions.GOoptions.GOmode = 1; 
-cLoptions.GOoptions.chamberHAperture   = 11.0E-3;
-cLoptions.GOoptions.chamberTomagnetGap =  0.5E-3;
-cLoptions.GOoptions.chamberThickness   =  1.0E-3;
-cLoptions.GOoptions.chamberShift       =  4.0E-3;
 
 load(strcat(erase(atroot,'atmat'),'/MAX4U/MagnetStrengthLimits.mat'));
 load(strcat(erase(atroot,'atmat'),'/MAX4U/CandidateLattices/m4_standard/m4_standard.mat'));
@@ -96,7 +86,7 @@ load(strcat(erase(atroot,'atmat'),'/MAX4U/CandidateLattices/m4_standard/m4_stand
 ACHRO_ref = m4_standard.ACHROMAT;
 
 %% Run cLatt options
-m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits);
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits,'corchro',true);
 
 % Below an example of how the 'plotLatt' function can be used to prodcue
 % plots from the m4UT structure and save the results on a file.

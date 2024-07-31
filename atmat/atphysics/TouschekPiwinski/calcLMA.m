@@ -68,6 +68,8 @@ function LMA = calcLMA(varargin)
 % PFT 2024/03/08. 
 % PFT 2024/06/16: changed output into a structure
 % PFT 2024/07/12: corrected naming of PeriodDev field in output Structure
+% PFT 2024/07/30: changed initcoord default for handling of nan as initial
+%                 phase
 %% Input argument parsing
 [RING,MAoptions] = getargs(varargin,[],[]);
 if (isempty(MAoptions))
@@ -75,13 +77,13 @@ if (isempty(MAoptions))
     MAoptions.lmafams='all';
     MAoptions.stepfam=1;
     MAoptions.stepfam=1;
-    MAoptions.deltalimit=0.1;
-    MAoptions.initcoord=[0.0 0.0 0.0 0.0 0.0 0.0]';
+    MAoptions.deltalimit=0.3;
+    MAoptions.initcoord=[0 0 0 0 0 nan]';
     MAoptions.delta=0.01;
-    MAoptions.deltastepsize=0.001;
+    MAoptions.deltastepsize=0.1;
     MAoptions.splits=10;
     MAoptions.split_step_divisor=2;
-    MAoptions.nturns=500;
+    MAoptions.nturns=nan;
     MAoptions.S0max=528/20;
     MAoptions.S0min=0.0;
 end
@@ -146,8 +148,11 @@ if (isnan(nturns))
         fprintf('%s calcLMA: nturns=nan, calculating atsummary \n', datetime);
     end
     ats=atsummary(RING);
-    nturns = 1.2/ats.synctune;
+    nturns = round(1.2/ats.synctune);
     MAoptions.nturns=nturns;
+    if (verboselevel>0)
+        fprintf('%s calcLMA: nturns = %3d \n', datetime, nturns);
+    end
 end
 
 if (verboselevel>0)

@@ -180,7 +180,7 @@ function DAdist = calcDAdist(varargin)
 %                 added possibility of fixing the response matrix for all
 %                 seeds.
 % PFT 2024/07/28: adapted to run mode "smart_in"
-%
+% PFT 2024/07/30: added handling of nan as input value for DAoptions.nturns
 %              
 % 
 %% Input argument parsing
@@ -352,6 +352,7 @@ orb_stds     = ERlat.outputs.orb_stds;
 stab         = ERlat.outputs.stab;
 survivalrate = ERlat.outputs.survivalrate;
 
+%% Checks z0 and nturns for nan
 if (not(isempty(ERlat.outputs.rparae{1})))
    rpara = ERlat.outputs.rparae{1};
    etax  = rpara.etax;
@@ -363,6 +364,18 @@ if (not(isempty(ERlat.outputs.rparae{1})))
        end
        DAoptions.z0=z0;
    end
+   %
+   % if input number of turns is nan, and lattice is 6d set it to
+   %  1.2*synchrotron period
+   if (isnan(nturns))
+       if (check_6d(RING))
+            DAoptions.nturns = round(1.2/rpara.synctune);
+       else
+            DAoptions.nturns = 1024;
+       end
+       DAoptions.nturns=nturns;
+   end
+
 else
      fprintf('%s Error in calcDAdist: unperturned ring is unstable \n', datetime);
      DAav=nan;

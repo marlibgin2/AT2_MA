@@ -115,6 +115,8 @@ function LMAdist = calcLMAdist(varargin)
 %                 added possibility of input of ERlat structure
 %                 added possibility of fixing the response matrix for all
 %                 seeds.
+% PFT 2024/07/30: changed initcoord default for handling of nan as initial
+%                 phase
 %% Input argument parsing
 [RING,ErrorModel,MAoptions] = getargs(varargin,[],[],[]);
 if (isempty(ErrorModel))
@@ -129,13 +131,13 @@ if (isempty(MAoptions))
     MAoptions.lmafams='all';
     MAoptions.stepfam=1;
     MAoptions.stepfam=1;
-    MAoptions.deltalimit=0.1;
-    MAoptions.initcoord=[0.0 0.0 0.0 0.0 0.0 0.0]';
+    MAoptions.deltalimit=0.3;
+    MAoptions.initcoord=[0 0 0 0 0.0 nan]';
     MAoptions.delta=0.01;
     MAoptions.deltastepsize=0.001;
     MAoptions.splits=10;
     MAoptions.split_step_divisor=2;
-    MAoptions.nturns=500;
+    MAoptions.nturns=nan;
     MAoptions.S0max=528/20;
     MAoptions.S0min=0.0;
 end
@@ -218,7 +220,6 @@ RINGe     = cell(nseeds+1,1);
 rparae    = cell(nseeds+1,1);
 Itunese   = cell(nseeds+1,1);
 Ftunese   = cell(nseeds+1,1);
-stablat   = ones(nseeds+1,1);
 
 if (verboselevel>0)
     fprintf('%s CalcLMAdist: calculating atsummary \n', datetime);
@@ -233,7 +234,7 @@ catch ME
 end
    
 if (isnan(nturns))
-    nturns = 1.2/rpara.synctune;
+    nturns = round(1.2/rpara.synctune);
 end
 
 %% Generates or reads lattices with errors

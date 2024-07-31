@@ -93,16 +93,13 @@ cLoptions.GOoptions.chamberTomagnetGap =  0.5E-3;
 cLoptions.GOoptions.chamberThickness   =  1.0E-3;
 cLoptions.GOoptions.chamberShift       =  4.0E-3;
 
-cLoptions.ErrorModel = errormodel_DDRchallenging('gdran',1.0,...
-                            'mgalran',1.0,'mulsys',1.0,'mulran',1.0, ...
-                            'strran',1.0,'bpmran',1.0);
 
 load(strcat(erase(atroot,'atmat'),'/MAX4U/MagnetStrengthLimits.mat'));
 load(strcat(erase(atroot,'atmat'),'/MAX4U/CandidateLattices/m4_standard/m4_standard.mat'));
 ACHRO_ref = m4_standard.ACHROMAT;
 
 %% Run cLatt options
-m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits);
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits,'corchro',true);
 
 
 %plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.15,'dpmaxplotLMA',0.15,'nogrid','caxrange',[-10 0], 'caxrange_r',[-10 0]);

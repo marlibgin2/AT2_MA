@@ -83,9 +83,7 @@ cLoptions.sext_fams     = LatticeOptData.sext_fams;
 cLoptions.RBfams = LatticeOptData.RBfams;
 cLoptions.eqfam = LatticeOptData.eqfam;
 cLoptions.eqsca = LatticeOptData.eqsca;
-cLoptions.ErrorModel = errormodel_DDRchallenging('gdran',1.0,...
-                            'mgalran',1.0,'mulsys',1.0,'mulran',1.0, ...
-                            'strran',1.0,'bpmran',1.0);
+
 
 load(strcat(erase(atroot,'atmat'),'/MAX4U/MagnetStrengthLimits.mat'));
 load(strcat(erase(atroot,'atmat'),'/MAX4U/CandidateLattices/m4_standard/m4_standard.mat'));

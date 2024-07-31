@@ -74,6 +74,7 @@ if (plotorbrmsf)
    ylabel('x/y[mm]');
    xlim([1 nseeds]);
    hold on;
+   grid;
    plot(1:nseeds,LMAdist.outputs.orb0_stds(3,2:end)*1000,'-o');
    legend({'X','Y'});
    title(strcat(plottitle,'rms orbit before correction'));
@@ -86,6 +87,7 @@ if (plotorbrmsf)
    ylabel('x/y[mm]');
    xlim([1 nseeds]);
    hold on;
+   grid;
    plot(1:nseeds,LMAdist.outputs.orb_stds(3,2:end)*1000,'-o');
    legend({'X','Y'});
    title(strcat(plottitle,'rms orbit after correction'));

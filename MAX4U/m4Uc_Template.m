@@ -65,7 +65,7 @@ for i=1:length(ACHRO)
 end
 
 clear('cLoptions');
-cLoptions.All_famsO={}; %   optional, If empty m4_cLatt finds out the magnet 
+cLoptions.All_famsO={}; %   optional, If empty, m4_cLatt finds out the magnet 
 %                           family names. Use this in case a specific order
 %                           of family names is desired.
 
@@ -84,41 +84,13 @@ cLoptions.eqfam = {'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';'dip';...
                    'Sfi_Sfo';'Sfm';'Sfi_Sfo'};
 cLoptions.eqsca = ones(1,44);
 
-cLoptions.GOoptions.GOmode = 1; % selects how the chamber and magnet aperture 
-    %                        geometries are calculated
-    %    Mode 1: Vacuum chamber follows the design orbit,
-    %            Reverse bends are built as symmetric quadrupoles and
-    %            have their apertures increased by the amount
-    %            necesary to accomodate the chamber aperture.
-    %                
-    %    Mode 2: Vacuum chamber follows the design orbit,
-    %            Reverse bends are built as asymmetric quadrupoles 
-    %            so that their aperture does not need to be changed.
-    %
-    %    Mode 3: Vacuum chamber is moved by a fixed amount in the
-    %            horizontal plane and magnet apertures are not changed. 
-    %            This causes a reduction of physical aperture
-    %            and makes the design orbit go off-centre in various 
-    %            magnets, For the reverse bends this is desired as in this
-    %            case we assume they are symmetric quadrupoles (as in case
-    %            1). For sextupoles/octupoles this will generate feed-down
-    %            to be evaluated
-    %
-cLoptions.GOoptions.chamberHAperture   = 11.0E-3;
-cLoptions.GOoptions.chamberTomagnetGap =  0.5E-3;
-cLoptions.GOoptions.chamberThickness   =  1.0E-3;
-cLoptions.GOoptions.chamberShift       =  4.0E-3;
-
-cLoptions.ErrorModel = errormodel_DDRchallenging('gdran',1.0,...
-                            'mgalran',1.0,'mulsys',1.0,'mulran',1.0, ...
-                            'strran',1.0,'bpmran',1.0);
-
 load(strcat(erase(atroot,'atmat'),'/MAX4U/MagnetStrengthLimits.mat'));
 load(strcat(erase(atroot,'atmat'),'/MAX4U/CandidateLattices/m4_standard/m4_standard.mat'));
 ACHRO_ref = m4_standard.ACHROMAT;
+V0 = 1.8E6;
 
 %% Run cLatt options
-m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits);
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits,'V0',V0);
 
 % Below an example of how the 'plotLatt' function can be used to produce
 % plots from the m4UT structure and save the results on a file.
