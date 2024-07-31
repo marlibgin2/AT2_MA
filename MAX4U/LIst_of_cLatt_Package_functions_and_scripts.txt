@@ -1,0 +1,23 @@
+The cLAtt package
+
+scripts:
+	m4Uc_Template.m
+
+functions
+	cLatt.m
+	m4Uc_Latt.m
+	plotGO.m
+	plotLatt.m
+	printLog.m
+
+	chalevel.m
+
+	calcDA.m
+	calcDAdist.m
+	calcLMA.m
+	calcLMAdist.m
+	calcTLTdist.m
+	calcOrb
+	generate_errlatt.m
+
+
