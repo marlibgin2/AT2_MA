@@ -4,7 +4,8 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 % that can be called by the higher level wrapper function "calcDA"  
 % or by optimization functions in MOGA/SOGA.
 %
-%% Mandatory input arguments
+%% Inputs
+% Mandatory arguments
 % RING: AT2 lattice array
 % DAoptions: Structure containing the following fields:
 %               DAmode   = 'grid', 'border' or 'smart'
@@ -35,7 +36,7 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 % betay : vertical beta at the tracking point [m]. USed for scaling. If
 %         nan, no scaling is done
 %
-%% Output parameters
+%% Outputs
 % DA: Dynamic aperture [mm**2]
 % DAV : vector of dynamic aperture border coordinates (if 'border' mode) 
 %       or vector of booleans indicating particle loss (if 'grid' mode)
@@ -50,6 +51,8 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 % PFT 2024/06/03: added 'smart' DA calculation mode
 % PFT 2024/06/13: removed "smart" mode and added "smart_in" and "smart_out"
 %                 modes
+% PFT 2024/06/28: improved documentation
+%
 %% Collects data from DAoptions structure
 betax0     = DAoptions.betax0;  % hor beta for normalization - if NaN no normalizatinis done
 betay0     = DAoptions.betay0;  % ver beta for normalization - if NaN no normalization is done

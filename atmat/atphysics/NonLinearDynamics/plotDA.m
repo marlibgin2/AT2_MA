@@ -1,5 +1,5 @@
-function plotDA(varargin)
-% plots the Dynamic aperture
+function phandles=plotDA(varargin)
+% plots the dynamic aperture
 %   
 %% Inputs
 % Mandatory argument
@@ -15,7 +15,11 @@ function plotDA(varargin)
 % dpminplot : minimum energy deviation for xdp and ydp plots
 % dpmaxplot : maximum energy deviation for xdp and ydp plots
 %
+% plottitle : 
 % verbose : defines level of verbose output, default=0, i.e. no output
+%
+%% Outputs
+% phandles = cell array with handles to created plots
 %
 %% Usage examples
 % plotDA(DAS);
@@ -28,6 +32,8 @@ function plotDA(varargin)
 % PFT 2024/05/25 updated handling of plot limit parameters
 % PFT 2024/05/26 updated handling of verbose output
 % PFT 2024/06/04 added handling of 'smart' DA calculation mode
+% PFT 2024/07/06 changed hold statement to avoid clutter
+% PFT 2024/07/15 added plot handles output, added optional plot title
 %
 %% Input argument parsing
 %
@@ -37,7 +43,8 @@ xminplot  = getoption(varargin,'xminplot',-DAS.outputs.DAoptions.XmaxDA);
 xmaxplot  = getoption(varargin,'xmaxplot', DAS.outputs.DAoptions.XmaxDA);
 ymaxplot  = getoption(varargin,'ymaxplot',DAS.outputs.DAoptions.YmaxDA);
 dpminplot = getoption(varargin,'dpminplot',DAS.outputs.DAoptions.dpmin);
-dpmaxplot = getoption(varargin,'dpminplot',DAS.outputs.DAoptions.dpmax);
+dpmaxplot = getoption(varargin,'dpmaxplot',DAS.outputs.DAoptions.dpmax);
+plottitle = getoption(varargin,'plottitle','');
 
 DAmode = DAS.outputs.DAoptions.DAmode;
 dp     = DAS.outputs.DAoptions.dp;
@@ -50,6 +57,7 @@ if (not(isfield(DAS.inputs,'mode')))
     DAS.inputs.mode='xy';
 end
 
+nhandles=0;
 switch DAS.inputs.mode
     case {'xy';'XY'}    
         switch DAmode
@@ -57,9 +65,10 @@ switch DAS.inputs.mode
                 figure;plot(DAV(:,1)*1000,DAV(:,2)*1000,'-ob');
                 xlabel('X [mm]'); ylabel('Y [mm]');grid;
                 xlim([xminplot xmaxplot]*1000);ylim([0 ymaxplot]*1000);
-                title(sprintf('dp = %3.1f %%', dp*100));
+                title(strcat(plottitle,sprintf(' dp = %3.1f %%', dp*100)));
                 grid on;
-
+                nhandles=nhandles+1;
+                phandles{nhandles}=gcf;
             case 'grid'
                 DAM = zeros(npday+1,2*npdax+1);
                 k= 1;
@@ -78,12 +87,14 @@ switch DAS.inputs.mode
                 xlabel('X[mm]');
                 ylabel('Y[mm]');    
                 xlim([xminplot xmaxplot]*1000);ylim([0 ymaxplot]*1000);grid;  
-                title(sprintf('dp = %3.1f %%', dp*100));
+                title(strcat(plottitle,sprintf(' dp = %3.1f %%', dp*100)));
                 grid on;
-
+                nhandles=nhandles+1;
+                phandles{nhandles}=gcf;
             otherwise
                 fprintf('%s Error in PlotDA: unknow DAmode ', datetime, DAmode);
         end
+        
 
     case {'xydp';'XYDP'}
         dps=DAS.outputs.dps;
@@ -92,15 +103,21 @@ switch DAS.inputs.mode
         DAYp=DAS.outputs.DAYp;
         DAXm=DAS.outputs.DAXm;
 
-        figure;plot(dps*100,DAXp*1000,'-ob');hold;plot(dps*100,DAXm*1000,'-or');
+        figure;plot(dps*100,DAXp*1000,'-ob');hold on;plot(dps*100,DAXm*1000,'-or');
         xlabel('dp[%]');ylabel('X[mm]');
         xlim([dpminplot dpmaxplot]*100);ylim([xminplot xmaxplot]*1000);
         grid on;
+        title(strcat(plottitle));
+        nhandles=nhandles+1;
+        phandles{nhandles}=gcf;
 
         figure;plot(dps*100,DAYp*1000,'-ob');
         xlabel('dp[%]');ylabel('Y[mm]');
         xlim([dpminplot dpmaxplot]*100);ylim([0 ymaxplot]*1000);
         grid on;
+        title(strcat(plottitle));
+        nhandles=nhandles+1;
+        phandles{nhandles}=gcf;
 end
 
 

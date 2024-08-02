@@ -77,7 +77,7 @@ function DAS=calcDA(varargin)
 %   DAS.outputs.DAXm       : (1 X npd) array of negative X DA [m]
 %   DAS.outputs.dps        : (1 X npd) array of energy deviations (mode 'xydp')
 %
-%   DAS.outputs.telapsed    : elpased calculation time (sec)
+%   DAS.outputs.telapsed    : elapsed calculation time (sec)
 %
 %% Usage examples
 % DAS = calcDA(RING,DAoptions,'plot');

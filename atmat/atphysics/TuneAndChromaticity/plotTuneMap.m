@@ -1,4 +1,4 @@
-function plotTuneMap(tunemap,varargin)
+function phandles=plotTuneMap(tunemap,varargin)
 % Plots tune maps 
 %% Inputs  
 % Mandatory arguments
@@ -48,19 +48,29 @@ function plotTuneMap(tunemap,varargin)
 % ymaxplot: maximum vertical coordinate in tune plots, default from tunemap structure;
 % dpminplot: minimum momentum deviation in tune plots, deafult = dpmin
 % dpmaxplot: maximum momentum deviation in tune plots, default = dpmax
+% xminplot_dm: minimum horizontal coordinate in diffusion maps, default from tunemap structure;
+% xmaxplot_dm: maximum horizontal coordinate in diffusion maps, default from tunemap structure;
+% yminplot_dm: minimum vertical coordinate in diffusion maps, default from tunemap structure;
+% ymaxplot_dm: maximum vertical coordinate in diffusion maps, default from tunemap structure;
+% dpminplot_dm: minimum momentum deviation in diffusion maps, deafult = dpmin
+% dpmaxplot_dm: maximum momentum deviation in diffusion maps, default = dpmax
 % x0  : (1xN) array of horizontal values for line plots vs y or dp
 % y0  : (1xN) array of horizontal values for line plots vs x or dp
 % dp0 : (1XN) array of energy deviation values  for line plots vs x or y
 %
-% caxrange= [cmin cmax]: color axis range, default 'auto'
+% caxrange= [cmin cmax]: color axis range, default from input structure
 % dqx     : horizontal half width of square in tune space for FMA plots,
 %           default = 0.001
 % dqy     : vertical half width of square in tune space for FMA plots,
 %           default = 0.001 
-% 
+%
+% plottitle   : string to be added to the plot title, default = '' 
 %
 % Optional flags
-% rate    : selects diffusion rate instead of diffusion
+% rate        : selects diffusion rate instead of diffusion
+%
+%% Outputs
+% phandles = cell array with handles to created plots
 %
 %% Usage examples
 % plotTuneMap(tunemap,'plottype','x','plotmode','rel');
@@ -74,50 +84,81 @@ function plotTuneMap(tunemap,varargin)
 % PFT 2024/05/05: added tune diffusion plot in (x,y) plane
 % PFT 2024/05/08: added tune diffusion plots in (x,dp) and (y,dp) planes
 % PFT 2024/05/10: added grid plots for tune variations
-% 
+% PFT 2024/07/05: updated to handle TMoptions structure from calcTuneMap
+% PFT 2024/07/06: changed hold statement to avoid clutter
+% PFT 2024/07/12: separated arguments for plot ragtes of tune maps and
+%                 diffusion maps
+% PFT 2024/07/13: added string to plot title
+% PFT 2024/07/15: added output handles, reformatted titles
+% PFT 2024/07/16: incoporrated new plot_net function that can handle
+%                 the integer part of the tune
 
 %% Input argument parsing
+if(isempty(fields(tunemap)))
+   fprintf('%s Error in plotTuneMap. Empty tune map structure. \n', ...
+                   datetime);
+   phandles={};
+    return
+end
+
 plotmode   = getoption(varargin,'plotmode',tunemap.inputs.plotargs.plotmode);
 plottype   = getoption(varargin,'plottype',tunemap.inputs.plotargs.plottype);
 resorder   = getoption(varargin,'resorder',tunemap.inputs.plotargs.resorder);
 qxrange    = getoption(varargin,'qxrange',tunemap.inputs.plotargs.qxrange);
 qyrange    = getoption(varargin,'qyrange',tunemap.inputs.plotargs.qyrange);
 caxrange   = getoption(varargin,'caxrange',tunemap.inputs.plotargs.caxrange);
+plottitle  = getoption(varargin,'plottitle','');
 dqx        = getoption(varargin,'dqx',tunemap.inputs.plotargs.dqx);
 dqy        = getoption(varargin,'dqy',tunemap.inputs.plotargs.dqy);
 x0         = getoption(varargin,'x0',tunemap.inputs.plotargs.x0);
 y0         = getoption(varargin,'y0',tunemap.inputs.plotargs.y0);
 dp0        = getoption(varargin,'dp0',tunemap.inputs.plotargs.dp0);
 ratef      = any(strcmpi(varargin,'rate'));
-smf        = any(strcmpi(varargin,'smooth'));
 
-xmin   = tunemap.inputs.xmin;
-xmax   = tunemap.inputs.xmax;
-ymin   = tunemap.inputs.ymin;
-ymax   = tunemap.inputs.ymax;
-amplx  = tunemap.outputs.amplx;
-amply  = tunemap.outputs.amply;
-axgridxy = tunemap.outputs.axgridxy;
-aygridxy = tunemap.outputs.aygridxy;
-axgridxdp = tunemap.outputs.axgridxdp;
-aygridydp = tunemap.outputs.aygridydp;
-dpgridxdp = tunemap.outputs.dpgridxdp;
-dpgridydp = tunemap.outputs.dpgridydp;
-dpmin  = tunemap.inputs.dpmin;
-dpmax  = tunemap.inputs.dpmax;
-dps    = tunemap.outputs.dps;
-npx    = tunemap.inputs.npx;
-npy    = tunemap.inputs.npy;
-npd    = tunemap.inputs.npd;
+xmin       = tunemap.outputs.TMoptions.xmin;
+xmax       = tunemap.outputs.TMoptions.xmax;
+ymin       = tunemap.outputs.TMoptions.ymin;
+ymax       = tunemap.outputs.TMoptions.ymax;
+dpmin      = tunemap.outputs.TMoptions.dpmin;
+dpmax      = tunemap.outputs.TMoptions.dpmax;
+xmin_dm    = tunemap.outputs.TMoptions.xmin_dm;
+xmax_dm    = tunemap.outputs.TMoptions.xmax_dm;
+ymin_dm    = tunemap.outputs.TMoptions.ymin_dm;
+ymax_dm    = tunemap.outputs.TMoptions.ymax_dm;
+dpmin_dm   = tunemap.outputs.TMoptions.dpmin_dm;
+dpmax_dm   = tunemap.outputs.TMoptions.dpmax_dm;
 
-xminplot = getoption(varargin,'xminplot',xmin);
-xmaxplot = getoption(varargin,'xmaxplot',xmax);
-yminplot = getoption(varargin,'yminplot',ymin);
-ymaxplot = getoption(varargin,'ymaxplot',ymax);
-dpminplot = getoption(varargin,'dpminplot',dpmin);
-dpmaxplot = getoption(varargin,'dpmaxplot',dpmax);
+npx        = tunemap.outputs.TMoptions.npx;
+npy        = tunemap.outputs.TMoptions.npy;
+npd        = tunemap.outputs.TMoptions.npd;
+amplx      = tunemap.outputs.amplx;
+amply      = tunemap.outputs.amply;
+axgridxy   = tunemap.outputs.axgridxy;
+aygridxy   = tunemap.outputs.aygridxy;
+axgridxdp  = tunemap.outputs.axgridxdp;
+aygridydp  = tunemap.outputs.aygridydp;
+dpgridxdp  = tunemap.outputs.dpgridxdp;
+dpgridydp  = tunemap.outputs.dpgridydp;
+dps        = tunemap.outputs.dps;
+
+xminplot   = getoption(varargin,'xminplot',xmin);
+xmaxplot   = getoption(varargin,'xmaxplot',xmax);
+yminplot   = getoption(varargin,'yminplot',ymin);
+ymaxplot   = getoption(varargin,'ymaxplot',ymax);
+dpminplot  = getoption(varargin,'dpminplot',dpmin);
+dpmaxplot  = getoption(varargin,'dpmaxplot',dpmax);
+
+xminplot_dm   = getoption(varargin,'xminplot_dm',xmin_dm);
+xmaxplot_dm   = getoption(varargin,'xmaxplot_dm',xmax_dm);
+yminplot_dm   = getoption(varargin,'yminplot_dm',ymin_dm);
+ymaxplot_dm   = getoption(varargin,'ymaxplot_dm',ymax_dm);
+dpminplot_dm  = getoption(varargin,'dpminplot_dm',dpmin_dm);
+dpmaxplot_dm  = getoption(varargin,'dpmaxplot_dm',dpmax_dm);
+
 
 %% Plots Tune Map
+nhandles=0;
+phandles={};
 switch plotmode
     case 'abs'
        Qxxplot   = tunemap.outputs.Qxx;
@@ -174,10 +215,13 @@ switch plottype
                 legend({'dQx';'dQy'});
             end
             grid on;
+            title(plottitle);
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qxx or Qyx data not available in tunemap structure for plottype %s\n', datetime, plottype);
         end
-        
+
     case {'y';'Y'}
         if not(isempty(amply)||isempty(Qxyplot)||isempty(Qyyplot))
             figure; xlim([yminplot,ymaxplot]*1000); 
@@ -197,6 +241,9 @@ switch plottype
                 legend({'dQx';'dQy'});
             end
             grid on;
+            title(plottitle);
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qxy or Qyy data not available in tunemap structure for plottype %s\n', datetime, plottype);
         end
@@ -220,6 +267,9 @@ switch plottype
                 legend({'dQx';'dQy'});
             end
             grid on;
+            title(plottitle);
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
               fprintf('%s Error in plotTuneMap: Qxx or Qyx data not available in tunemap structure for plottype %s\n', datetime, plottype);
         end
@@ -242,41 +292,47 @@ switch plottype
                 legend({'dQx';'dQy'});
             end
             grid on;
+            title(plottitle);
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
               fprintf('%s Error in plotTuneMap: Qxy or Qyy data not available in tunemap structure for plottype %s\n', datetime, plottype);
         end
 
     case {'td';'TD'}
-        
-        Qxxfrac=tunemap.outputs.Qxxfrac;
-        Qyxfrac=tunemap.outputs.Qyxfrac;
-        Qxyfrac=tunemap.outputs.Qxyfrac;
-        Qyyfrac=tunemap.outputs.Qyyfrac;
+        Qxx=tunemap.outputs.Qxx;
+        Qyx=tunemap.outputs.Qyx;
+        Qxy=tunemap.outputs.Qxy;
+        Qyy=tunemap.outputs.Qyy;
 
-        if not(isempty(Qxxfrac)||isempty(Qyxfrac)||isempty(Qyxfrac)||isempty(Qyyfrac))
-            figure;plot(Qxxfrac,Qyxfrac,'ok');hold;
-            plot(Qxyfrac,Qyyfrac,'or');
+        if not(isempty(Qxx)||isempty(Qyx)||isempty(Qyx)||isempty(Qyy))
+            figure;plot(Qxx,Qyx,'ok');hold on;
+            plot(Qxy,Qyy,'or');
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
                           
-            xlabel('qx');ylabel('qy');
-            title(strcat('Res order = ',num2str(resorder)));
+            xlabel('Qx');ylabel('Qy');
+            title(strcat(plottitle,{ 'Res order = '},num2str(resorder)));
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
-            fprintf('%s Error in plotTuneMap: Qxx, Aqxy, Qyx or Qyx not available for plottype %s \n', datetime, plottype);
+            fprintf('%s Error in plotTuneMap: Qxx, Qxy, Qyx or Qyy not available for plottype %s \n', datetime, plottype);
         end
 
     case {'gridtd';'GRIDTD'}
-        Qxgridxyfrac=tunemap.outputs.Qxgridxyfrac;
-        Qygridxyfrac=tunemap.outputs.Qygridxyfrac;
+        Qxgridxy=tunemap.outputs.Qxgridxy;
+        Qygridxy=tunemap.outputs.Qygridxy;
 
-        if (not(isempty(Qxgridxyfrac)||isempty(Qygridxyfrac)))
-            figure;plot(Qxgridxyfrac,Qygridxyfrac,'ok');hold;
+        if (not(isempty(Qxgridxy)||isempty(Qygridxy)))
+            figure;plot(Qxgridxy,Qygridxy,'ok');hold on;
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
                           
-            xlabel('qx');ylabel('qy');
-            title(strcat('Res order = ',num2str(resorder)));
+            xlabel('Qx');ylabel('Qy');
+            title(strcat(plottitle,{' Res order = '},num2str(resorder)));
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qxgrid or Qygrid not available for plottype %s \n', datetime, plottype);
         end
@@ -290,8 +346,10 @@ switch plottype
             end
             xlim([xminplot xmaxplot]*1000);
             xlabel('X[mm]');ylabel('qx');
-            title('Qx vs x at fixed y');
+            title(strcat(plottitle,{' Qx vs x at fixed y'}));
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
             if (ischar(y0))
                 plotslice(amplx*1000,amply*1000,Qygridxyplot,'x',y0);
             else
@@ -299,8 +357,10 @@ switch plottype
             end
             xlim([xminplot xmaxplot]*1000);
             xlabel('X[mm]');ylabel('qy');
-            title('Qy vs x at fixed y');
+            title(strcat(plottitle,{' Qy vs x at fixed y'}));
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qxgridxy or Qygridxy not available for plottype %s \n', datetime, plottype);
         end
@@ -314,8 +374,10 @@ switch plottype
             end
             xlim([yminplot ymaxplot]*1000);
             xlabel('Y[mm]');ylabel('qx');
-            title('Qx vs y at fixed x');
+            title(strcat(plottitle,{' Qx vs y at fixed x'}));
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
             if (ischar(x0))
                 plotslice(amplx*1000,amply*1000,Qygridxyplot,'y',x0);
             else
@@ -323,10 +385,12 @@ switch plottype
             end
             xlim([yminplot ymaxplot]*1000);
             xlabel('Y[mm]');ylabel('qy');
-            title('Qy vs y at fixed x');
+            title(strcat(plottile,{' Qy vs y at fixed x'}));
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
-            fprintf('%s Error in plotTuneMap: Qxgridxyfrac or Qygridxyfrac not available for plottype %s \n', datetime, plottype);
+            fprintf('%s Error in plotTuneMap: Qxgridxy or Qygridxy not available for plottype %s \n', datetime, plottype);
         end
 
      case {'gridxdp';'GRIDXDP'}
@@ -340,6 +404,8 @@ switch plottype
             xlabel('X[mm]');ylabel('qx');
             title('Qx vs x at fixed dp');
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
             if (ischar(dp0))
                 plotslice(dps*100,amplx*1000,Qygridxdpplot,'y',dp0);
             else
@@ -347,8 +413,10 @@ switch plottype
             end
             xlim([xminplot xmaxplot]*1000);
             xlabel('X[mm]');ylabel('qy');
-            title('Qy vs x at fixed dp');
+            title(strcat(plottitle,{' Qy vs x at fixed dp'}));
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qxgridxdp or Qygridxdp not available for plottype %s \n', datetime, plottype);
         end
@@ -362,8 +430,10 @@ switch plottype
             end
             xlim([dpminplot dpmaxplot]*100);
             xlabel('dp[%]');ylabel('qx');
-            title('Qx vs dp at fixed x');
+            title(strcat(plottile,{' Qx vs dp at fixed x}'}));
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
             if (ischar(x0))
                 plotslice(dps*100,amplx*1000,Qygridxdpplot,'x',x0);
             else
@@ -371,8 +441,10 @@ switch plottype
             end
             xlim([dpminplot dpmaxplot]*100);
             xlabel('dp[%]');ylabel('qy');
-            title('Qy vs dp at fixed x');
+            title(strcat(plottile,{' Qy vs dp at fixed x'}));
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qxgridxdp or Qygridxdp not available for plottype %s \n', datetime, plottype);
         end
@@ -387,8 +459,10 @@ switch plottype
 
             xlim([yminplot ymaxplot]*1000);
             xlabel('Y[mm]');ylabel('qx');
-            title('Qx vs y at fixed dp');
+            title(strcat(plottitle,{' Qx vs y at fixed dp'}));
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
             if (ischar(dp0))
                 plotslice(dps*100,amply*1000,Qygridydpplot,'y',dp0);
             else
@@ -396,8 +470,10 @@ switch plottype
             end
             xlim([yminplot ymaxplot]*1000);
             xlabel('Y[mm]');ylabel('qy');
-            title('Qy vs y at fixed dp');
+            title(strcat(plottitle,{' Qy vs y at fixed dp'}));
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qxgridydp or Qygridydp not available for plottype %s \n', datetime, plottype);
         end
@@ -411,8 +487,10 @@ switch plottype
             end
             xlim([dpminplot dpmaxplot]*100);
             xlabel('dp[%]');ylabel('qx');
-            title('Qx vs dp at fixed y');
+            title(strcat(plottile,{' Qx vs dp at fixed y'}));
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
             if (ischar(y0))
                 plotslice(dps*100,amply*1000,Qygridydpplot,'x',y0);
             else
@@ -420,8 +498,10 @@ switch plottype
             end
             xlim([dpminplot dpmaxplot]*100);
             xlabel('dp[%]');ylabel('qy');
-            title('Qy vs dp at fixed y');
+            title(strcat(plottile,{' Qy vs dp at fixed y'}));
             grid on;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qxgridydp or Qygridydp not available for plottype %s \n', datetime, plottype);
         end
@@ -441,18 +521,20 @@ switch plottype
                Qdifxymat);
             set(h,'alphadata',~isnan(Qdifxymat));
             ax=gca; ax.YDir='normal';
-            xlim([xminplot xmaxplot]*1000);ylim([yminplot ymaxplot]*1000);
+            xlim([xminplot_dm xmaxplot_dm]*1000);ylim([yminplot_dm ymaxplot_dm]*1000);
                  xlabel('X[mm]');ylabel('Y[mm]');
             grid on;
             colormap('jet');
             clim(caxrange);
             shading flat;
             if (ratef)
-                title('Tune Diffusion Rate');
+                title(strcat(plottitle,{' Tune Diffusion Rate'}));
             else
-                title('Tune Diffusion');
+                title(strcat(plottitle,{' Tune Diffusion'}));
             end
             colorbar;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qdifxy not available for plottype %s \n', datetime, plottype);
         end
@@ -473,17 +555,19 @@ switch plottype
                Qdifxdpmat);
             set(h,'alphadata',~isnan(Qdifxdpmat));
             ax=gca; ax.YDir='normal';
-            xlim([dpminplot dpmaxplot]*100);ylim([xminplot xmaxplot]*1000);
+            xlim([dpminplot_dm dpmaxplot_dm]*100);ylim([xminplot_dm xmaxplot_dm]*1000);
                  xlabel('dp[%]');ylabel('X[mm]');
             grid on;
             colormap('jet');
             clim(caxrange);
             if (ratef)
-                title('Tune Diffusion Rate');
+                title(strcat(plottitle,{' Tune Diffusion Rate'}));
             else
-                title('Tune Diffusion');
+                title(strcat(plottitle,{' Tune Diffusion'}));
             end
             colorbar;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qdifxdp not available for plottype %s \n', datetime, plottype);
         end
@@ -504,17 +588,19 @@ switch plottype
                       Qdifydpmat);
             set(h,'alphadata',~isnan(Qdifydpmat));
             ax=gca; ax.YDir='normal';
-            xlim([dpminplot dpmaxplot]*100);ylim([yminplot ymaxplot]*1000);
+            xlim([dpminplot_dm dpmaxplot_dm]*100);ylim([yminplot_dm ymaxplot_dm]*1000);
                  xlabel('dp[%]');ylabel('Y[mm]');
             grid on;
             colormap('jet');
             clim(caxrange);
             if (ratef)
-                title('Tune Diffusion Rate');
+                title(strcat(plottitle,{' Tune Diffusion Rate'}));
             else
-                title('Tune Diffusion');
+                title(strcat(plottile,{' Tune Diffusion'}));
             end
             colorbar;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qdifydp not available for plottype %s \n', datetime, plottype);
         end
@@ -528,16 +614,16 @@ switch plottype
         end
 
         if(not(isempty(Qdifxy)))
-            Qxgridxyfrac=tunemap.outputs.Qxgridxyfrac;
-            Qygridxyfrac=tunemap.outputs.Qygridxyfrac;
+            Qxgridxy=tunemap.outputs.Qxgridxy;
+            Qygridxy=tunemap.outputs.Qygridxy;
    
-            Qxfmxy(:,1:npx*npy) = [Qxgridxyfrac'-dqx; Qxgridxyfrac'-dqx; ...
-                                   Qxgridxyfrac'+dqx; Qxgridxyfrac'+dqx];
-            Qyfmxy(:,1:npx*npy) = [Qygridxyfrac'-dqy; Qygridxyfrac'+dqy; ...
-                                   Qygridxyfrac'+dqy; Qygridxyfrac'-dqy];
+            Qxfmxy(:,1:npx*npy) = [Qxgridxy'-dqx; Qxgridxy'-dqx; ...
+                                   Qxgridxy'+dqx; Qxgridxy'+dqx];
+            Qyfmxy(:,1:npx*npy) = [Qygridxy'-dqy; Qygridxy'+dqy; ...
+                                   Qygridxy'+dqy; Qygridxy'-dqy];
             figure;
-            fill(Qxfmxy,Qyfmxy,Qdifxy);hold;
-            xlabel('qx');ylabel('qy');
+            fill(Qxfmxy,Qyfmxy,Qdifxy);hold on;
+            xlabel('Qx');ylabel('Qy');
             plot_net(resorder,qxrange(1),qxrange(2),...
                      qyrange(1),qyrange(2));
             grid on;
@@ -545,11 +631,13 @@ switch plottype
             shading flat;
             clim(caxrange);
             if (ratef)
-                title(strcat('Tune Diffusion Rate: (X,Y) - ','Res order = ',num2str(resorder)));
+                title(strcat(plottitle,{' Tune Diffusion Rate:(X,Y),Res order='},num2str(resorder)));
             else
-                title(strcat('Tune Diffusion: (X,Y) - ','Res order = ',num2str(resorder)));
+                title(strcat(plottitle, {' Tune Diffusion:(X,Y), Res order ='},num2str(resorder)));
             end
             colorbar;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qdifxy not available for plottype %s \n', datetime, plottype);
         end
@@ -562,16 +650,16 @@ switch plottype
         end
 
         if (not(isempty(Qdifxdp)))    
-            Qxgridxdpfrac=tunemap.outputs.Qxgridxdpfrac;
-            Qygridxdpfrac=tunemap.outputs.Qygridxdpfrac;
+            Qxgridxdp=tunemap.outputs.Qxgridxdp;
+            Qygridxdp=tunemap.outputs.Qygridxdp;
    
-            Qxfmxdp(:,1:npd*npx) = [Qxgridxdpfrac'-dqx; Qxgridxdpfrac'-dqx; ...
-                                    Qxgridxdpfrac'+dqx; Qxgridxdpfrac'+dqx];
-            Qyfmxdp(:,1:npd*npx) = [Qygridxdpfrac'-dqy; Qygridxdpfrac'+dqy; ...
-                                    Qygridxdpfrac'+dqy; Qygridxdpfrac'-dqy];
+            Qxfmxdp(:,1:npd*npx) = [Qxgridxdp'-dqx; Qxgridxdp'-dqx; ...
+                                    Qxgridxdp'+dqx; Qxgridxdp'+dqx];
+            Qyfmxdp(:,1:npd*npx) = [Qygridxdp'-dqy; Qygridxdp'+dqy; ...
+                                    Qygridxdp'+dqy; Qygridxdp'-dqy];
             figure;
-            fill(Qxfmxdp,Qyfmxdp,Qdifxdp);hold;
-            xlabel('qx');ylabel('qy');
+            fill(Qxfmxdp,Qyfmxdp,Qdifxdp);hold on;
+            xlabel('Qx');ylabel('Qy');
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
             grid on;
@@ -579,11 +667,13 @@ switch plottype
             shading flat;
             clim(caxrange);
             if (ratef)
-                title(strcat('Tune Diffusion Rate: (X,DP) - ','Res order = ',num2str(resorder)));
+                title(strcat(plottitle,{' Tune Diffusion Rate:(X,DP),Res order='},num2str(resorder)));
             else
-                title(strcat('Tune Diffusion: (X,DP) - ','Res order = ',num2str(resorder)));
+                title(strcat(plottitle,{' Tune Diffusion:(X,DP), Res order='},num2str(resorder)));
             end
             colorbar;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qdifxdp not available for plottype %s \n', datetime, plottype);
         end
@@ -596,16 +686,16 @@ switch plottype
         end
 
         if(not(isempty(Qdifydp)))
-            Qxgridydpfrac=tunemap.outputs.Qxgridydpfrac;
-            Qygridydpfrac=tunemap.outputs.Qygridydpfrac;
+            Qxgridydp=tunemap.outputs.Qxgridydp;
+            Qygridydp=tunemap.outputs.Qygridydp;
    
-            Qxfmydp(:,1:npd*npy) = [Qxgridydpfrac'-dqx; Qxgridydpfrac'-dqx; ...
-                                    Qxgridydpfrac'+dqx; Qxgridydpfrac'+dqx];
-            Qyfmydp(:,1:npd*npy) = [Qygridydpfrac'-dqy; Qygridydpfrac'+dqy; ...
-                                    Qygridydpfrac'+dqy; Qygridydpfrac'-dqy];
+            Qxfmydp(:,1:npd*npy) = [Qxgridydp'-dqx; Qxgridydp'-dqx; ...
+                                    Qxgridydp'+dqx; Qxgridydp'+dqx];
+            Qyfmydp(:,1:npd*npy) = [Qygridydp'-dqy; Qygridydp'+dqy; ...
+                                    Qygridydp'+dqy; Qygridydp'-dqy];
             figure;
-            fill(Qxfmydp,Qyfmydp,Qdifydp);hold;
-            xlabel('qx');ylabel('qy');
+            fill(Qxfmydp,Qyfmydp,Qdifydp);hold on;
+            xlabel('Qx');ylabel('Qy');
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
             grid on;
@@ -613,11 +703,13 @@ switch plottype
             shading flat;
             clim(caxrange);
             if (ratef)
-                title(strcat('Tune Diffusion Rate: (Y,DP) - ','Res order = ',num2str(resorder)));
+                title(strcat(plottitle,{' Tune Diffusion Rate:(Y,DP),Res order='},num2str(resorder)));
             else
-                title(strcat('Tune Diffusion: (Y,DP) - ','Res order = ',num2str(resorder)));
+                title(strcat(plottitle,{' Tune Diffusion:(Y,DP),Res order='},num2str(resorder)));
             end
             colorbar;
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qdifydp not available for plottype %s \n', datetime, plottype);
         end
@@ -641,23 +733,28 @@ switch plottype
                 legend({'dQx';'dQy'});
             end
             grid on;
+            title(plottitle);
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qxdp or Qydp data not available in tunemap structure for plottype %s\n', datetime, plottype);
         end
         
     case {'chrotd';'CHROTD'}
-        Qxdpfrac=tunemap.outputs.Qxdpfrac;
-        Qydpfrac=tunemap.outputs.Qydpfrac;
+        Qxdp=tunemap.outputs.Qxdp;
+        Qydp=tunemap.outputs.Qydp;
         [~,dp0pos] = min(abs(dps));
 
-        if not(isempty(Qxdpfrac)||isempty(Qydpfrac))
-            figure;plot(Qxdpfrac(1:dp0pos),Qydpfrac(1:dp0pos),'ob');hold;
-            plot(Qxdpfrac(dp0pos:length(dps)),Qydpfrac(dp0pos:length(dps)),'or');
+        if not(isempty(Qxdp)||isempty(Qydp))
+            figure;plot(Qxdp(1:dp0pos),Qydp(1:dp0pos),'ob');hold on;
+            plot(Qxdp(dp0pos:length(dps)),Qydp(dp0pos:length(dps)),'or');
             plot_net(resorder,qxrange(1),qxrange(2),...
                           qyrange(1),qyrange(2));
                           
-            xlabel('qx');ylabel('qy');
-            title(strcat('Res order = ',num2str(resorder)));
+            xlabel('Qx');ylabel('Qy');
+            title(strcat(plottitle,{' Res order='},num2str(resorder)));
+            nhandles=nhandles+1;
+            phandles{nhandles}=gcf;
         else
             fprintf('%s Error in plotTuneMap: Qxx, Aqxy, Qyx or Qyx not available for plottype %s \n', datetime, plottype);
         end
@@ -665,7 +762,7 @@ switch plottype
         fprintf('%s Error in plotTuneMap: unknown plottype: %s \n',datetime,plottype);       
         return
 end
-
+%% Auxiliary functions
 function plotslice(ax,ay,Q,plane,z0)
 %
 % plots vertical or horizontal slices of a two-dimensional tune 
@@ -674,7 +771,7 @@ function plotslice(ax,ay,Q,plane,z0)
 % ax : (1Xn) matrix of horizontal coordinates
 % ay : (1Xm) matrix of vertical coordinates
 % Q  : (n*mX1) matrix of values to be plotted, grouped by rows,
-%
+
 n=numel(ax);
 m=numel(ay);
 [amplx_m, amply_m]=meshgrid(ax,ay);
@@ -698,7 +795,7 @@ for i=1:numel(z0)
             legstr{i}=num2str(ay(idx));
             if (i==1)
                 figure;plot(amplx_m(idx,:),Q_m(idx,:),'o-');
-                hold;
+                hold on;
             else
                 plot(amplx_m(idx,:),Q_m(idx,:),'o-');
             end
@@ -707,7 +804,7 @@ for i=1:numel(z0)
             [~,idx] = min(abs(ax-z0(i)));
             legstr{i}=num2str(ax(idx));
             if (i==1)
-                figure;plot(amply_m(:,idx),Q_m(:,idx),'o-');hold
+                figure;plot(amply_m(:,idx),Q_m(:,idx),'o-');hold on;
             else
                 plot(amply_m(:,idx),Q_m(:,idx),'o-');
             end
@@ -717,4 +814,3 @@ legend(legstr);
 hold off;
 
 
-    

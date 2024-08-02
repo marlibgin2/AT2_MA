@@ -61,7 +61,7 @@ f0=rerr{indrfc(1)}.Frequency;
 
 % default arguments
 if nargin<12 || isempty(printouttext)
-    printouttext=true;
+    printouttext=true;  % temporary fix
 end
 if nargin<11 || isempty(steererlimit)
     steererlimit=[];
@@ -198,7 +198,7 @@ if any(isnan(o(:)))
 
     % Attempt to correct the easier case
     % NB! This is a recursive call!
-    RING_RED = atcorrectorbit(RING_RED,indBPM,indHCor,indVCor,[],[],[],[],ModelRM);
+    RING_RED = atcorrectorbit(RING_RED,indBPM,indHCor,indVCor,[],[],[],[],ModelRM,reforbit,steererlimit,printouttext);
 
     % Extract the obtained corrections and scale them up, then use them as
     % the initial guess for the original lattice.

@@ -1,4 +1,4 @@
-function plotDAdist(varargin)
+function phandles=plotDAdist(varargin)
 % plots distribution of DAs 
 %% Inputs
 % Mandatory argument
@@ -13,18 +13,23 @@ function plotDAdist(varargin)
 %
 % dpminplot : minimum energy deviation for xdp and ydp plots
 % dpmaxplot : maximum energy deviation for xdp and ydp plots
-%
+% 
 % If not given, the four values above are taken from
 %       DAdist.outputs.DAoptions
-% verbose : defines level of verbose output, default=0, i.e. no output
+%
+% plottitle : adds title to plot
+% verbose   : defines level of verbose output, default=0, i.e. no output
 %
 % Optional flags
 % plotorbrms: plots the rms of the uncorrected and corrected orbits for all
 %             seeds
+%% Outputs
+%  phandles : cell array with handles to generated plots
+%
 %% Usage examples
 % plotDAdist(DAdist);
 % plotDAdist(DAdist_std,'xminplot', -0.012, 'xmaxplot', 0.005, 'ymaxplot', 0.004);
-% plotDAdist(DAdist_std,'plotorbrms');
+% plotDAdist(DAdist_std,'plotorbrms', 'plottitle','test');
 % plotDAdist(DAdist_std,'plotorbrms','verbose',1);
 %
 % see also calcDAdist
@@ -36,7 +41,10 @@ function plotDAdist(varargin)
 % PFT 2024/05/27 : added title to xy mode plot
 % PFT 2024/05/26 : updated handling of verbose output, added DA without
 %                  errors to xydp mode plots.
-%
+% PFT 2024/07/06 : changed hold statement to avoid clutter
+% PFT 2024/07/09 : added optional plot title
+% PFT 2024/07/15 : fixed axis scales, added plot handles output
+
 %% Input argument parsing
 %
 DAdist      = getargs(varargin,[]);
@@ -46,7 +54,9 @@ xminplot  = getoption(varargin,'xminplot',-DAdist.outputs.DAoptions.XmaxDA);
 xmaxplot  = getoption(varargin,'xmaxplot', DAdist.outputs.DAoptions.XmaxDA);
 ymaxplot  = getoption(varargin,'ymaxplot',DAdist.outputs.DAoptions.YmaxDA);
 dpminplot = getoption(varargin,'dpminplot',DAdist.outputs.DAoptions.dpmin);
-dpmaxplot = getoption(varargin,'dpminplot',DAdist.outputs.DAoptions.dpmax);
+dpmaxplot = getoption(varargin,'dpmaxplot',DAdist.outputs.DAoptions.dpmax);
+plottitle = getoption(varargin,'plottitle','');
+
 nseeds = DAdist.inputs.nseeds;
 DAmode = DAdist.outputs.DAoptions.DAmode;
 dp     = DAdist.outputs.DAoptions.dp;
@@ -64,12 +74,14 @@ DAydpav  = DAdist.outputs.DAydpav;
 DAydpst  = DAdist.outputs.DAydpst;
 
 %% Plots DA distribution
+nhandles=0;
 switch mode
     case {'xy';'XY'}
         if (strcmpi(DAmode,'border'))
             figure; xlabel('X [mm]'); ylabel('Y [mm]');grid;
-            xlim([xminplot xmaxplot]*1000);ylim([0 ymaxplot]*1000);hold;
-            title(sprintf('dp = %3.1f %%', dp*100));
+            xlim([xminplot xmaxplot]*1000);ylim([0 ymaxplot]*1000);
+            title(strcat(plottitle,sprintf(' dp = %3.1f %%', dp*100)));
+            hold on;
         else
             fprintf('%s DA dist plot requires border DA calc mode. DA mode is %s . Aborting...\n',...
              datetime, DAmode);
@@ -89,21 +101,29 @@ switch mode
                 end
             end
         end
+        nhandles=nhandles+1;
+        phandles{nhandles}=gcf;
 
     case {'xydp';'XYDP'}
         figure; xlabel('dp [%]'); ylabel('X [mm]');grid;
         xlim([dpminplot dpmaxplot]*100);
-        ylim([xminplot xmaxplot]*1000);hold;
+        ylim([xminplot xmaxplot]*1000);hold on;
         errorbar(dps*100,DAxdppav*1000,DAxdppst*1000,'-ob');
         errorbar(dps*100,DAxdpmav*1000,DAxdpmst*1000,'-or');
         plot(dps*100, DAxdpsp(:,1)*1000, '-ok');
         plot(dps*100, DAxdpsm(:,1)*1000, '-ok');
+        title(strcat(plottitle));
 
+        nhandles=nhandles+1;
+        phandles{nhandles}=gcf;
         figure; xlabel('dp [%]'); ylabel('Y [mm]');grid;
         xlim([dpminplot dpmaxplot]*100);
-        ylim([0 ymaxplot]*1000);hold;
+        ylim([0 ymaxplot]*1000);hold on;
         errorbar(dps*100,DAydpav*1000,DAydpst*1000,'-ob');
         plot(dps*100, DAydps(:,1)*1000, '-ok');
+        title(strcat(plottitle));
+        nhandles=nhandles+1;
+        phandles{nhandles}=gcf;
 end
 
 if (plotorbrmsf)
@@ -111,19 +131,22 @@ if (plotorbrmsf)
    plot(DAdist.outputs.orb0_stds(1,2:end)*1000,'-o');
    xlabel('seed #');
    ylabel('x/y[mm]');
-   hold;
+   hold on;
    plot(DAdist.outputs.orb0_stds(3,2:end)*1000,'-o');
    legend({'X','Y'});
-   title('rms orbit before correction');
-
+   title(strcat(plottitle,{' :rms orbit before correction'}));
+   nhandles=nhandles+1;
+   phandles{nhandles}=gcf;
    figure; 
    plot(DAdist.outputs.orb_stds(1,2:end)*1000,'-o');
    xlabel('seed #');
    ylabel('x/y[mm]');
-   hold;
+   hold on;
    plot(DAdist.outputs.orb_stds(3,2:end)*1000,'-o');
    legend({'X','Y'});
-   title('rms orbit after correction');
+   title(strcat(plottitle,{' :rms orbit after correction'}));
+   nhandles=nhandles+1;
+   phandles{nhandles}=gcf;
 end
 
 
