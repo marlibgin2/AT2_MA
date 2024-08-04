@@ -71,7 +71,7 @@ cLoptions.eqfam = {'dip';'';'';'';'';'';'dip';...
                    'Qfend_Qdend';'Qf_Qfm';'Qf_Qfm';...
                    'Qfend_Qdend'; 'Oxx_Oxy'; 'Oxx_Oxy'; 'Oyy'; 'Sd';...
                    'Sdend'; 'Sfi_Sfo'};
-cLoptions.RBfam = {};
+cLoptions.RBfam = {'qf1'};
 
 cLoptions.eqsca = ones(28,1);
 
@@ -82,6 +82,6 @@ ACHRO_ref = m4_standard.ACHROMAT;
 
 %% Run cLatt options
 
-m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits,'corchro',true,'basonly');
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits,'corchro',true);
 
 %plotLatt(m4UT,'all','ymaxplot_dm',0.007,'zoom',2.0,'ymaxplot',0.007,'xminplot',-0.012,'xmaxplot',0.012,'dpminplotLMA',-0.20,'dpmaxplotLMA',0.20,'nogrid','xmaxplot_dm',0.012,'xminplot_dm',-0.012,'caxrange',[-10 0],'caxrange_r',[-10 -5]);
