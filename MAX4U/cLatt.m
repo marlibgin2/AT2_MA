@@ -37,7 +37,7 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %               cLoptions may be a copy of the LatticeOptData structure 
 %               created by the "m4U.m" function or it maybe created 
 %               separately as done in the "m4Uc_Template" script and 
-%               "m4_cLatt" function. If structure is not available or is 
+%               "m4Uc_Latt" function. If structure is not available or is 
 %               empty, defaults are set.
 %
 % cLoptions.All_famsO  : cell array of string with the names of 
@@ -131,7 +131,7 @@ function [LattStruct, exitflag] = cLatt(varargin)
 % cLoptions.DAoptions   : structure with DA aperture calculation
 %                                options, with fields: 
 %
-% cLoptions.DAoptions.DAmode : dynamics aperture calculation mode (, "grid", "smart_in" or "mart_out") , default = "border"
+% cLoptions.DAoptions.DAmode : dynamics aperture calculation mode (, "grid", "smart_in" or "mart_out") , default = "smart_in"
 % cLoptions.DAoptions.nturns : number of turns, default = 1024;
 % cLoptions.DAoptions.betax0 : horizontal beta for normalization - if
 %                                   NaN, no normalization is done, default = NaN
@@ -240,7 +240,7 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %
 % cLoptions.OCoptions.inCOD          : inital guess for the orbit
 % cLoptions.OCoptions.neigen         : 2xNiter eigenvectors for correction H and V at
-%                               each iteration (default: [Nh/2 Nv/2])
+%                                       each iteration (default: [Nh/2 Nv/2])
 % cLoptions.OCoptions.cflags         : correct [dpp mean0](default: [true true])
 % cLoptions.OCoptions.scale          : scale factor to correction (default: 0.75)
 % cLoptions.OCoptions.reforbit       : 2xNbpm reference orbit to correct to (default 0*2xNb)
@@ -550,7 +550,7 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                  geometries
 % PFT 2024/07/21 : added log of structure creation,
 %                  changed LMA calculation without errors from single
-%                  achromat 4D to full ring 6D.
+%                  achromat 5D to full ring 6D.
 % PFT 2024/07/22 : added possibilty of fixing vertical emittance instead
 %                  of coupling.
 %                  added possibility of using existing LMA structure as

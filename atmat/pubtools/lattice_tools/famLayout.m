@@ -10,7 +10,7 @@ function famLayout=famLayout(ACHRO)
 %              contains strings with names of magnet families in
 %              the order they appear in the lattice. The 
 %              second contains the corresponding multipolar strengths 
-%              of those elentes - the PolynomB array field of the element.
+%              of those element - the PolynomB array field of the element.
 %              The third contains the bend angle of the element in degrees
 % 
 %% Usage examples
@@ -21,7 +21,8 @@ function famLayout=famLayout(ACHRO)
 % PFT 2024/07/17 : firs version
 % PFT 2024/07/24 : added girder markers, correctors and monitors 
 %                  if available
-
+% PFT 2024/08/03 : fixed bug update counter for correctors
+%
 famLayout={};
 j=0;
 for i=1:numel(ACHRO)
@@ -35,7 +36,7 @@ for i=1:numel(ACHRO)
                 bendangle=0.0;
             end
             if (j>0)
-                if(not(strcmp(element.FamName,famLayout{j})))
+                if(not(strcmp(element.FamName,famLayout{j,1})))
                     famLayout=[famLayout;{element.FamName},element.PolynomB,bendangle*180/pi];
                     j=j+1;
                 end
@@ -46,6 +47,7 @@ for i=1:numel(ACHRO)
         end
         if (strcmp(PM,'CorrectorPass'))
             famLayout=[famLayout;{element.FamName}, [0 0 0 0], 0];
+            j=j+1;
         end
 
     end

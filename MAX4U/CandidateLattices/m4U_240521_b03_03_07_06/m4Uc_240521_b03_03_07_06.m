@@ -53,7 +53,7 @@
 lattname = 'm4U-240521-b03-03-07-06';
 desc = 'From Marco';
 
-load('/home/pedtav/Documents/Codes/AT/AT2.0/MAX4U/CandidateLattices/m4U_240521_b03_03_07_06_/m4U_240521_b03_03_07_06.mat','ACHR_tc'); % Loads achromat from Marco's Lattice structre
+load('/home/pedtav/Documents/Codes/AT/AT2.0/MAX4U/CandidateLattices/m4U_240521_b03_03_07_06/m4U_240521_b03_03_07_06.mat','ACHR_tc'); % Loads achromat from Marco's Lattice structre
 ACHRO = ACHR_tc;
                                             
 % ACHRO = mod_IntSteps(ACHRO,10,10,3,1); % If necessary, fix missing NumIntSteps
@@ -90,4 +90,4 @@ m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits,
 
 % Below an example of how the 'plotLatt' function can be used to prodcue
 % plots from the m4UT structure and save the results on a file.
-% plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.25,'dpmaxplotLMA',0.25,'caxrange',[-10 0],'caxrange_r',[-10 -5],'nogrid');
+% plotLatt(m4UT,'all','ymaxplot_dm',0.004,'zoom',2.0,'ymaxplot',0.004,'xminplot',-0.010,'xmaxplot',0.01,'dpminplotLMA',-0.15,'dpmaxplotLMA',0.15,'caxrange',[-10 0],'caxrange_r',[-10 -5],'nogrid');

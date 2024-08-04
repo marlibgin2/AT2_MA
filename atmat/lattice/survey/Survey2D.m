@@ -35,7 +35,7 @@ for en = 1:NumElements
         Lt = LATTICE{en}.Length;
         Lp = 0;
     else
-        Lt = LATTICE{en}.Length*sin(ba)/ba;
+        Lt =  LATTICE{en}.Length*sin(ba)/ba;
         Lp = -LATTICE{en}.Length*(1-cos(ba))/ba;
     end
     baa(en)=ba;

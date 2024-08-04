@@ -68,10 +68,6 @@ rp=ExMOGA(MOGAResults,12,'verbose','fitdisp','fitchrom','fittune',...
 
 ACHRO = rp.outputs.ACHROGRD; % The cell array with the AT2 lattice to be evaluated
 
-% Initialize physical apertures
-%for i=1:length(ACHRO)
-%    ACHRO{i}.EApertures=[0.011 0.011];
-%end
 
 clear('cLoptions');
 cLoptions.All_famsO=LatticeOptData.All_famsO; %   optional, If empty m4_cLatt finds out the magnet 
