@@ -67,8 +67,10 @@ cLoptions.RBfams        = LatticeOptData.RBfams;
 cLoptions.eqsca         = LatticeOptData.eqsca;
 
 load(strcat(erase(atroot,'atmat'),'/MAX4U/MagnetStrengthLimits.mat'));
+load(strcat(erase(atroot,'atmat'),'/MAX4U/CandidateLattices/m4_standard/m4_standard.mat'));
+ACHRO_ref = m4_standard.ACHROMAT;
 
 %% Run cLatt options
-m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits,'corchro',true);
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits,'corchro',true);
 
 %plotLatt(m4UT,'all','ymaxplot_dm',0.005,'zoom',2.0,'ymaxplot',0.005,'xminplot',-0.005,'xmaxplot',0.005,'xminplot_dm',-0.005,'xmaxplot_dm',0.005,'dpminplotLMA',-0.15,'dpmaxplotLMA',0.15,'caxrange',[-10 -2],'caxrange_r',[-10 -5],'nogrid');

@@ -1,6 +1,6 @@
 function famLayout=famLayout(ACHRO)
 %
-% Returns a list of maget family names in eth sequence they appera in the
+% Returns a list of magnet family names in the sequence they appear in the
 % input lattice cell array
 %% Inputs
 % ACHRO : AT2 lattice cell array
