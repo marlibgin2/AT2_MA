@@ -300,9 +300,9 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %
 % LattStruct.LattData.V0        : total Rf voltage (echo of input)
 % LattStruct.LattData.corchrof  : corret chromaticity flag (echo of input)
-% LattStruc.LattData.XAllO      :strengths of all families (includes octupoles)
+% LattStruct.LattData.XAllO      :strengths of all families (includes octupoles)
 % LattStruct.LattData.ACHROMAT_ref: AT2 lattice cell array for one reference achromat (an echo of the input)
-% LattStruc.LattData.RINGGRD    : Full ring latice 6d enabled with same magnet strengths as
+% LattStruct.LattData.RINGGRD    : Full ring latice 6d enabled with same magnet strengths as
 %            ACHROMAT. Octupoles are the same as in ACHRO (if they exist
 %            there). Otherwise they are zero.
 %
