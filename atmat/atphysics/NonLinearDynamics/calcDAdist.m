@@ -181,7 +181,8 @@ function DAdist = calcDAdist(varargin)
 %                 seeds.
 % PFT 2024/07/28: adapted to run mode "smart_in"
 % PFT 2024/07/30: added handling of nan as input value for DAoptions.nturns
-%              
+% PFT 2024/08/05: fixed bug - incorrect initilization of output vectors
+%                 if the number of seeds was larger than the default (10)
 % 
 %% Input argument parsing
 [RING,ErrorModel,DAoptions] = getargs(varargin,[],[],[]);
@@ -321,13 +322,6 @@ if (verboselevel>0)
             datetime, mode );
 end
 
-DAVs= zeros(nang+1,2*(nseeds+1));
-DAs = zeros(1,nseeds+1);
-DAxdpsp = zeros(npd, nseeds+1);
-DAxdpsm = zeros(npd, nseeds+1);
-DAydps  = zeros(npd, nseeds+1);
-DAVdps  = zeros(3, 2);
-
 if (isempty(fields(ERlat)))
     ERlat = generate_errlatt(RING,ErrorModel,'tunfams',tunfams, ...
     'nseeds',nseeds,'nittune', nittune, 'TolTune', TolTune,...
@@ -351,6 +345,13 @@ orb0_stds    = ERlat.outputs.orb0_stds;
 orb_stds     = ERlat.outputs.orb_stds;
 stab         = ERlat.outputs.stab;
 survivalrate = ERlat.outputs.survivalrate;
+
+DAVs= zeros(nang+1,2*(nseeds+1));
+DAs = zeros(1,nseeds+1);
+DAxdpsp = zeros(npd, nseeds+1);
+DAxdpsm = zeros(npd, nseeds+1);
+DAydps  = zeros(npd, nseeds+1);
+DAVdps  = zeros(3, 2);
 
 %% Checks z0 and nturns for nan
 if (not(isempty(ERlat.outputs.rparae{1})))

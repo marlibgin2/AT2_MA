@@ -153,6 +153,8 @@ function TMdist = calcTMdist(varargin)
 %                 added possibility of input of ERlat structure
 %                 added possibility of fixing the response matrix for all
 %                 seeds.
+% PFT 2024/08/05: fixed bug - incorrect initilization of output vectors
+%                 if the number of seeds was larger than the default (10)
 %
 %% Input argument parsing
 [RING,ErrorModel,TMoptions] = getargs(varargin,[],[],[]);
@@ -256,19 +258,6 @@ if (verboselevel>0)
             datetime, TMoptions.mode );
 end
 
-TMs=cell(nseeds+1,1);
-for i=1:nseeds+1
-    TMs{i}=struct();
-end
-stab = ones(nseeds+1,1);
-orb0_stds = zeros(6,nseeds+1);
-orb_stds  = zeros(6,nseeds+1);
-RINGe   = cell(nseeds+1,1);
-rparae  = cell(nseeds+1,1);
-Itunese = cell(nseeds+1,1);
-Ftunese = cell(nseeds+1,1);
-
-
 if (verboselevel>0)
    fprintf('%s Calculating unperturbed lattice parameters \n', datetime);
 end
@@ -331,6 +320,18 @@ else
      TMdist.outputs.telapsed=telapsed;
      return
 end
+
+TMs=cell(nseeds+1,1);
+for i=1:nseeds+1
+    TMs{i}=struct();
+end
+stab = ones(nseeds+1,1);
+orb0_stds = zeros(6,nseeds+1);
+orb_stds  = zeros(6,nseeds+1);
+RINGe   = cell(nseeds+1,1);
+rparae  = cell(nseeds+1,1);
+Itunese = cell(nseeds+1,1);
+Ftunese = cell(nseeds+1,1);
 
 if (verboselevel>0)
     fprintf('*** \n');
