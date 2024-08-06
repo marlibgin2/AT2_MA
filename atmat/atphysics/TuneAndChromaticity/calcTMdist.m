@@ -155,6 +155,7 @@ function TMdist = calcTMdist(varargin)
 %                 seeds.
 % PFT 2024/08/05: fixed bug - incorrect initilization of output vectors
 %                 if the number of seeds was larger than the default (10)
+% PFT 2024/08/06: fixed bug, incorrect initialization
 %
 %% Input argument parsing
 [RING,ErrorModel,TMoptions] = getargs(varargin,[],[],[]);
@@ -325,10 +326,7 @@ TMs=cell(nseeds+1,1);
 for i=1:nseeds+1
     TMs{i}=struct();
 end
-stab = ones(nseeds+1,1);
-orb0_stds = zeros(6,nseeds+1);
-orb_stds  = zeros(6,nseeds+1);
-RINGe   = cell(nseeds+1,1);
+
 rparae  = cell(nseeds+1,1);
 Itunese = cell(nseeds+1,1);
 Ftunese = cell(nseeds+1,1);
