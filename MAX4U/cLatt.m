@@ -954,10 +954,10 @@ if (corchrof&&not(isempty(cLoptions.chrom_fams)))
         fprintf('Error message was:%s \n',ME.message);
     end
 end
-%% Lattice family layout
+%% Lattice layout
 if (basicf||allf)
     if (verboselevel>0)
-        fprintf('%s cLatt: determining lattice family layout \n', datetime);
+        fprintf('%s cLatt: determining lattice layout \n', datetime);
     end
     fLO = famLayout(ACHRO);
     LattStruct.LattData.famLayout=fLO;
