@@ -119,7 +119,9 @@ function LMAdist = calcLMAdist(varargin)
 %                 phase
 % PFT 2024/08/05: bug fix - incorrect initialization of output vectors
 %                 if the number of seeds was larger than the default (10)
-% PFT 2024/08/06: bug fix - incorrect estraction o rms orbits from ERlat.
+% PFT 2024/08/06: bug fix - incorrect extraction of rms orbits from ERlat.
+% PFT 2024/08/07: update of MAoptions.nturns when input nturns is nan.
+%
 %% Input argument parsing
 [RING,ErrorModel,MAoptions] = getargs(varargin,[],[],[]);
 if (isempty(ErrorModel))
@@ -225,6 +227,10 @@ end
    
 if (isnan(nturns))
     nturns = round(1.2/rpara.synctune);
+    MAoptions.nturns=nturns;
+    if (verboselevel>0)
+        fprintf('%s calcLMAdist: nturns = %3d \n', datetime, nturns);
+    end
 end
 
 %% Generates or reads lattices with errors

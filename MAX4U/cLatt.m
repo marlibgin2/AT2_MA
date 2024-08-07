@@ -569,12 +569,12 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                  the input achromat.
 % PFT 2024/07/30 : added survival rate of perturbed lattices to the
 %                  atsummary field
-% PFT 2024/07/30 : updated default vaus for cLoptions.MAoptions.nturns
+% PFT 2024/07/30 : updated default values for cLoptions.MAoptions.nturns
 %                  and cLoptions.MAoptions.initcoord
 %                  added synchronous particle z coordinate to summary
 %                  field
 %                  added options to orbit correction
-%
+% PFT 2024/08/07 : changed default value of DAoptions.nturns to nan
 
 %% preamble
 PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
@@ -827,7 +827,7 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.GOoptions.chamberShift       =  0.5E-3;
     %
     cLoptions.DAoptions.DAmode   = 'smart_in';
-    cLoptions.DAoptions.nturns   = 1024;
+    cLoptions.DAoptions.nturns   = nan;
     cLoptions.DAoptions.betax0   = NaN; 
     cLoptions.DAoptions.betay0   = NaN;
     cLoptions.DAoptions.xmindas  = -0.015;

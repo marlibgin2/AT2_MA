@@ -71,7 +71,7 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 %                  added max rms orbt deviation checks of seed survival
 %                  improved handling of default values in cLoptions
 %                  structure
-
+% PFT 2024/08/07 : changed default value of DAoptions.nturns to nan
 %% Input argument parsing
 corchrof         = getoption(varargin,'corchro',false);
 V0               = getoption(varargin,'V0',1.8E6);
@@ -127,7 +127,7 @@ if (isfield(cLoptions,'DAoptions'))
         cLoptions.DAoptions.DAmode   = 'smart_in'; % dynamics aperture calculation mode: "border", "grid", "smart_in" or "smart_out"
     end
     if (~isfield(cLoptions.DAoptions.nturns))
-        cLoptions.DAoptions.nturns   = 1024; % number of turns
+        cLoptions.DAoptions.nturns   = nan; % number of turns
     end
     if (~isfield(cLoptions.DAoptions.betax0))
         cLoptions.DAoptions.betax0   = NaN; % horizontal beta for normalization - if NaN, no normalization is don
@@ -194,7 +194,7 @@ if (isfield(cLoptions,'DAoptions'))
     end
 else
     cLoptions.DAoptions.DAmode   = 'smart_in';
-    cLoptions.DAoptions.nturns   = 1024; 
+    cLoptions.DAoptions.nturns   = nan; 
     cLoptions.DAoptions.betax0   = NaN; 
     cLoptions.DAoptions.betay0   = NaN; 
     cLoptions.DAoptions.xmindas  = -0.015;

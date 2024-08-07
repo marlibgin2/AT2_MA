@@ -183,7 +183,8 @@ function DAdist = calcDAdist(varargin)
 % PFT 2024/07/30: added handling of nan as input value for DAoptions.nturns
 % PFT 2024/08/05: fixed bug - incorrect initilization of output vectors
 %                 if the number of seeds was larger than the default (10)
-% 
+% PFT 2024/08/07: fixed bug handling of nturns=nan
+
 %% Input argument parsing
 [RING,ErrorModel,DAoptions] = getargs(varargin,[],[],[]);
 if (isempty(ErrorModel))
@@ -370,9 +371,9 @@ if (not(isempty(ERlat.outputs.rparae{1})))
    %  1.2*synchrotron period
    if (isnan(nturns))
        if (check_6d(RING))
-            DAoptions.nturns = round(1.2/rpara.synctune);
+            nturns = round(1.2/rpara.synctune);
        else
-            DAoptions.nturns = 1024;
+            nturns = 1024;
        end
        DAoptions.nturns=nturns;
    end
