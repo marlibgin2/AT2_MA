@@ -93,6 +93,9 @@ function DAS=calcDA(varargin)
 % PFT 2024/05/25 : changed input of xdp and ydp input parameters, which
 %                  are now part of the DAoptions structure
 %
+% PFT 2024/07/28 : adapted to incude DAmode='smart_in'
+% PFT 2024/07/30 : added handling of nan as input value for DAoptions.nturns
+%
 %% Input argument parsing
 [RING,DAoptions] = getargs(varargin,[],[]);
 DAS.inputs.RING=RING;
@@ -102,7 +105,7 @@ if (isempty(DAoptions))
     DAoptions.dp=0.0;
     DAoptions.z0=nan;
     DAoptions.DAmode='grid';
-    DAoptions.nturns=1024;
+    DAoptions.nturns=nan;
     DAoptions.betax0=nan;
     DAoptions.betay0=nan;
     DAoptions.xmaxdas=0.015;
@@ -262,6 +265,18 @@ try
        end
        DAoptions.z0=z0;
    end
+   %
+   % if input number of turns is nan, and lattice is 6d set it to
+   %  1.2*synchrotron period
+   if (isnan(nturns))
+       if (check_6d(RING))
+            DAoptions.nturns = round(1.2/rpara.synctune);
+       else
+            DAoptions.nturns = 1024;
+       end
+       DAoptions.nturns=nturns;
+   end
+
    switch mode
        case {'xy';'XY'}
             
@@ -270,7 +285,7 @@ try
        case {'xydp';'XYDP'}
             DA=nan;
             if (strcmpi(DAoptions.DAmode,'grid'))
-                DAoptions.DAmode = 'border';
+                DAoptions.DAmode = 'smart_in';
             end
             DAoptions.nang = 2;
             for i=1:npd
@@ -315,5 +330,5 @@ end
 
 
 if(verboselevel>0)
-    fprintf('DA calculation complete \n');
+    fprintf('%s calcDA: DA calculation complete \n', datetime);
 end

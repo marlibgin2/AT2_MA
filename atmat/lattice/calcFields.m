@@ -14,7 +14,7 @@ function FG = calcFields(varargin)
 %
 % Optional arguments
 %   desc    : string describing the lattice, defaule = date
-%   split   : factor by which to split the lattice, default = 1
+%   split   : factor by which to split the lattice elements, default = 1
 %   verbose :defines level of verbose output, default=0, i.e. no output 
 %
 %% Outputs
@@ -23,10 +23,11 @@ function FG = calcFields(varargin)
 %   FG.fams  : Name of all families given as inputs
 %   FG.Spos  : Longitudinal position of the centre of all elements [m]
 %
-%   FG.Field : Dipole field B in [T] for all elements 
-%   FG.GradQ : Quadrupole gradient dB/dx [T/m] for all elements 
-%   FG.GradS : Sextupole gradient (1/2)*d²B/dx² [T/m²] for all elements
-%   FG.GradO : Octupole gradient  (1/6)*d³B/dx³ [T/m³] for all elements
+%   FG.Field : Dipole field B in [T] for all magnetic elements 
+%   FG.GradQ : Quadrupole gradient dB/dx [T/m] for magnetic all elements 
+%   FG.GradS : Sextupole gradient (1/2)*d²B/dx² [T/m²] for all magnetic elements
+%   FG.GradO : Octupole gradient  (1/6)*d³B/dx³ [T/m³] for all magnetic elements
+%   FG.FAll  : Dipole field B in [T] for all elements 
 %
 %% Usage examples
 % All_fams = {'Q1';'Q2';'R1'; 'D2';'D3';'D1';'Q3';...
@@ -45,6 +46,8 @@ function FG = calcFields(varargin)
 %                 handled the case of non-existing PolynomB elements
 %                 added lattice description field
 %                 added possibility to split the lattice
+% PFT 2024/07/24: added outut of magnetic fields over all elements
+%
 
 %% Input argument parsing
 [RING,All_fams] = getargs(varargin,[],{});
@@ -66,12 +69,15 @@ FG.GradQ = [];
 FG.GradS = [];
 FG.GradO = [];
 
+
 if (split>1)
     if (verboselevel>0)
             fprintf('%s calcFields: splittting input lattice into %3d slices \n', datetime, split);
     end
     RING=splitlat(RING,split);
 end
+FG.FAll = zeros(numel(RING),1);
+
 % Iterate through the lattice elements
 for i = 1:length(RING)
     element = RING{i};
@@ -106,6 +112,10 @@ for i = 1:length(RING)
             FG.GradS = [FG.GradS; SP_gradient];
             FG.GradO = [FG.GradO; OP_gradient];
         end
+    end
+    
+    if (isfield(element,'BendingAngle'))
+        FG.FAll(i)=(element.BendingAngle*B_rho)/element.Length;
     end
 end
 

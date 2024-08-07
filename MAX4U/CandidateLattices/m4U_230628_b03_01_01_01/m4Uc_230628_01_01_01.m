@@ -66,19 +66,9 @@ cLoptions.RBfams        = LatticeOptData.RBfams;
 
 cLoptions.eqsca         = LatticeOptData.eqsca;
 
-cLoptions.GOoptions.GOmode = 1;
-cLoptions.GOoptions.chamberHAperture   = 11.0E-3;
-cLoptions.GOoptions.chamberTomagnetGap =  0.5E-3;
-cLoptions.GOoptions.chamberThickness   =  1.0E-3;
-cLoptions.GOoptions.chamberShift       =  4.0E-3;
-
-cLoptions.ErrorModel    = errormodel_DDRchallenging('gdran',1.0,...
-                            'mgalran',1.0,'mulsys',1.0,'mulran',1.0, ...
-                            'strran',1.0,'bpmran',1.0);
-
+load(strcat(erase(atroot,'atmat'),'/MAX4U/MagnetStrengthLimits.mat'));
 
 %% Run cLatt options
-m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,...
-    MagnetStrengthLimits);
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits,'corchro',true);
 
-%plotLatt(m4UT,'all','ymaxplot_dm',0.005,'zoom',2.0,'ymaxplot',0.005,'xminplot',-0.005,'xmaxplot',0.005,'xminplot_dm',-0.005,'xmaxplot_dm',0.005,'dpminplotLMA',-0.15,'dpmaxplotLMA',0.15,'caxrange',[-10 -2],'caxrange_r',[-10 -5],'nogrid','save');
+%plotLatt(m4UT,'all','ymaxplot_dm',0.005,'zoom',2.0,'ymaxplot',0.005,'xminplot',-0.005,'xmaxplot',0.005,'xminplot_dm',-0.005,'xmaxplot_dm',0.005,'dpminplotLMA',-0.15,'dpmaxplotLMA',0.15,'caxrange',[-10 -2],'caxrange_r',[-10 -5],'nogrid');

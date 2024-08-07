@@ -44,6 +44,7 @@ function phandles=plotDAdist(varargin)
 % PFT 2024/07/06 : changed hold statement to avoid clutter
 % PFT 2024/07/09 : added optional plot title
 % PFT 2024/07/15 : fixed axis scales, added plot handles output
+% PFT 2024/07/24 : changed units for orbit plots after correction
 
 %% Input argument parsing
 %
@@ -77,7 +78,7 @@ DAydpst  = DAdist.outputs.DAydpst;
 nhandles=0;
 switch mode
     case {'xy';'XY'}
-        if (strcmpi(DAmode,'border'))
+        if (strcmpi(DAmode,'border')||strcmpi(DAmode,'smart_in'))
             figure; xlabel('X [mm]'); ylabel('Y [mm]');grid;
             xlim([xminplot xmaxplot]*1000);ylim([0 ymaxplot]*1000);
             title(strcat(plottitle,sprintf(' dp = %3.1f %%', dp*100)));
@@ -93,7 +94,7 @@ switch mode
                 fprintf('seed n. %4d \n', i-1);
             end
         
-            if (strcmpi(DAmode,'border'))
+            if (strcmpi(DAmode,'border')||strcmpi(DAmode,'smart_in'))
                 if (i>1)  
                     plot(DAVs(:,2*i-1)*1000,DAVs(:,2*i)*1000,'-ob');
                 else
@@ -138,11 +139,11 @@ if (plotorbrmsf)
    nhandles=nhandles+1;
    phandles{nhandles}=gcf;
    figure; 
-   plot(DAdist.outputs.orb_stds(1,2:end)*1000,'-o');
+   plot(DAdist.outputs.orb_stds(1,2:end)*1E6,'-o');
    xlabel('seed #');
-   ylabel('x/y[mm]');
+   ylabel('x/y[µm]');
    hold on;
-   plot(DAdist.outputs.orb_stds(3,2:end)*1000,'-o');
+   plot(DAdist.outputs.orb_stds(3,2:end)*1E6,'-o');
    legend({'X','Y'});
    title(strcat(plottitle,{' :rms orbit after correction'}));
    nhandles=nhandles+1;

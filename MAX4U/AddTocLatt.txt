@@ -1,0 +1,15 @@
+Adding features to the cLatt package 
+
+1. Create new function following cLattfunctionTemplate
+
+2. If necessary, add a new optional flag to cLattf for the new calculation. 
+	addition in the "Input Argument"
+	documentation in the "optinal fags" section
+
+3. Add new section to the cLatt.m code (place logically)
+	sectin marker + check for execution conditions
+
+4. Add new section intothe m4U_cLatt.m code that calls the new feature.
+
+
+	

@@ -56,7 +56,7 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 %% Collects data from DAoptions structure
 betax0     = DAoptions.betax0;  % hor beta for normalization - if NaN no normalizatinis done
 betay0     = DAoptions.betay0;  % ver beta for normalization - if NaN no normalization is done
-DAmode     = DAoptions.DAmode;  % DAmode  = 'border', 'grid' or 'smart';
+DAmode     = DAoptions.DAmode;  % DAmode  = 'border', 'grid', 'smart_in' or 'smart_out;
 xmaxdas    = DAoptions.xmaxdas;
 xmindas    = DAoptions.xmindas;
 ymaxdas    = DAoptions.ymaxdas;
@@ -64,7 +64,7 @@ ymaxdas    = DAoptions.ymaxdas;
 % Parameters for "border" DA calculation mode
 r0         = DAoptions.r0;      % initial guess [m];
 nangs      = DAoptions.nang;    % number of angular steps
-dang       = pi/(nangs-1);                     % angular step size [rad}
+dang       = pi/(nangs-1);      % angular step size [rad}
 nturns     = DAoptions.nturns;  % number of turns
 dp         = DAoptions.dp;      % initial dp/p (6d tracking) or fixed dp/p (4d tracking)
 if (check_6d(RING))
@@ -86,7 +86,7 @@ dxdy       = DAoptions.dxdy;    % grid cell area [m**2]
 X0da       = DAoptions.X0da;    % horizontal coordinates of grid points [m]
 Y0da       = DAoptions.Y0da;    % vertical coordinates of grid points [m]
 
-%% Calculates Dynamics Aperture
+%% Calculates Dynamic Aperture
 
 try
   switch DAmode
