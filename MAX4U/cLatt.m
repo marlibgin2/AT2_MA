@@ -21,7 +21,7 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %           typically the MAX IV 3 GeV RING lattice. If the input is given
 %           or is avaialble in LattSt structure,
 %           the deviation of the closed orbit on ACHO wrt to ACHRO_ref is
-%           calculated and added to te output structure
+%           calculated and added to the output structure
 %
 % RING     : AT2 lattice cell array for the full ring. If not given and
 %            cLoptions is available, the structure is created by the
@@ -31,7 +31,13 @@ function [LattStruct, exitflag] = cLatt(varargin)
 % desc     : lattice description, default = '';
 % split    : factor by which to split elements when calculating the design
 %            orbit, default = 1
-% V0       : total cavity voltage [V], defaut = 1.8E6
+%
+% V0       : total cavity voltage [V], default = 1.8E6; If "auto", then V0
+%                                      is calculated to achieve
+%                                      a given bukcet height with "VvsBH.m"
+% bh       : Bucket height, default = "auto". if = "auto", the  
+%               bucket height is calculated from V0 using "bheight.m"
+% harm    : Harmonic number, default = 176)
 %
 % cLoptions : structure with various optional settings, default = struct;
 %               cLoptions may be a copy of the LatticeOptData structure 
@@ -298,9 +304,12 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %
 % *******************************************************************
 %
-% LattStruct.LattData.V0        : total Rf voltage (echo of input)
+% LattStruct.LattData.V0        : total Rf voltage (echo of input or calculated from bucket height)
+% LattStruct.LattData.bh        : rf bucket height (echo of input or% calculated from V0)
+% 
+% LattStruct.LattData.harm      : harmonic number (echo of input)
 % LattStruct.LattData.corchrof  : corret chromaticity flag (echo of input)
-% LattStruct.LattData.XAllO      :strengths of all families (includes octupoles)
+% LattStruct.LattData.XAllO     :strengths of all families (includes octupoles)
 % LattStruct.LattData.ACHROMAT_ref: AT2 lattice cell array for one reference achromat (an echo of the input)
 % LattStruct.LattData.RINGGRD    : Full ring latice 6d enabled with same magnet strengths as
 %            ACHROMAT. Octupoles are the same as in ACHRO (if they exist
@@ -575,6 +584,10 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                  field
 %                  added options to orbit correction
 % PFT 2024/08/07 : changed default value of DAoptions.nturns to nan
+% SJ  2024/08/07 : introduced posibility of inputing either voltage or bucket height
+%                   to determine RF voltage  and pass this
+%                   voltage to RF cavity when generating the RING cell
+%                   array
 
 %% preamble
 PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
@@ -591,6 +604,9 @@ cLoptions            = getoption(varargin,'cLoptions',struct);
 MagnetStrengthLimits = getoption(varargin,'MagnetStrengthLimits',struct);
 split                = getoption(varargin,'split',1);
 V0                   = getoption(varargin,'V0',1.8E6);
+bh                   = getoption(varargin,'bh','auto');
+harm                 = getoption(varargin,'harm',176);
+
 corchrof             = getoption(varargin,'corchro',false);
 
 verboselevel         = getoption(varargin,'verbose',0);
@@ -1356,6 +1372,36 @@ if ((basicf||allf||(contf&&isempty(fields(LattStruct.LattData.CLv))))...
         XAllO=CLv.outputs.X0;
         LattStruct.LattData.XAllO=XAllO;
     end
+end
+%% Calculates rf voltage from rf bucket height OR rf bucket heght from rf voltage
+if (basicf||allf||(contf&&isempty(fields(LattStruct.LattData.V0))))
+    U0=atgetU0(ACHRO);
+    E0=atenergy(ACHRO);
+    alphac=mcf(ACHRO);
+    if ischar(V0)
+        if strcmpi(V0, 'auto')
+            if not(ischar(bh))
+                V0 = VvsBH(bh,U0,alphac,E0,harm);
+                if (verboselevel>0)
+                    fprintf('%s cLatt: calculating rf voltage from desired rf bucket height \n', datetime);
+                end
+            else
+                fprintf('%s cLatt error: unknown V0 and bh option: using V0= 1.8 MV  \n', datetime');
+                V0=1.8e6;
+                bh=bheight(V0,U0,alphac,E0,harm);
+            end 
+        else
+            fprintf('%s cLatt error: unknown V0 option  \n', datetime'); 
+            return
+        end
+    else
+        if (verboselevel>0)
+            fprintf('%s cLatt: calculating rf bucket height from desired rf voltage \n', datetime);
+        end
+        bh=bheight(V0,U0,alphac,E0,harm);
+    end
+    LattStruct.LattData.V0=V0;
+    LattStruct.LattData.bh=bh;
 end
 
 %% Creates full ring structure if not yet available

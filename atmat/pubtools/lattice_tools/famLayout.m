@@ -32,8 +32,9 @@ function famLayout=famLayout(ACHRO,varargin)
 %                  PolynomB output into separate columns.
 %                  changed output from cell array to table
 %                  changed order of columns
-%                  handling of PolynomB vector with less
+%                  improved handling of PolynomB vector with less
 %                  than 4 elements
+%                  added Spos to the output table
 %
 %% Input argument parsing
 uniquef      = any(strcmpi(varargin,'unique'));
@@ -42,6 +43,7 @@ famLayout={};
 j=0;
 for i=1:numel(ACHRO)
     element=ACHRO{i};
+    Spos=findspos(ACHRO,i);
     if (isfield(element,'PassMethod'))
         PM=element.PassMethod;
         if (strcmp(PM,'BndMPoleSymplectic4Pass')||strcmp(PM,'StrMPoleSymplectic4Pass'))
@@ -57,32 +59,32 @@ for i=1:numel(ACHRO)
             end
             if (j>0)
                 if(not(strcmp(element.FamName,famLayout{j,1}))||not(uniquef))
-                    famLayout=[famLayout;{element.FamName},element.Length,...
+                    famLayout=[famLayout;Spos,{element.FamName},element.Length,...
                         bendangle*180/pi,...
                         PolynomB(2),PolynomB(3),PolynomB(4)];
                     j=j+1;
                 end
             else
-                famLayout=[famLayout;{element.FamName},element.Length,...
+                famLayout=[famLayout;Spos,{element.FamName},element.Length,...
                     bendangle*180/pi,...
                     PolynomB(2),PolynomB(3),PolynomB(4)];
                 j=j+1;
             end
         end
         if (strcmp(PM,'CorrectorPass'))
-            famLayout=[famLayout;{element.FamName},0.0,element.Length, 0, 0, 0];
+            famLayout=[famLayout;Spos,{element.FamName},0.0,element.Length, 0, 0, 0];
             j=j+1;
         end
 
     end
     if (strcmpi(element.FamName,'GS')||strcmpi(element.FamName,'GE')||...
         strcmpi(element.FamName,'mon')||strcmpi(element.FamName,'bpm')    )
-        famLayout=[famLayout;{element.FamName},0.0, element.Length, 0, 0, 0];
+        famLayout=[famLayout;Spos,{element.FamName},0.0, element.Length, 0, 0, 0];
         j=j+1;
     end
 end
 
-famLayout=cell2table(famLayout,'VariableNames', ["Element" "Length[m]" "Bending Angle[deg]" "Q[m**-2]" "S[m**-3]" "O[m**-4]"]);
+famLayout=cell2table(famLayout,'VariableNames', ["S[m]" "Element" "Length[m]" "Bending Angle[deg]" "Q[m**-2]" "S[m**-3]" "O[m**-4]"]);
 
 
  

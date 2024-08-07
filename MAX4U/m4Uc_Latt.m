@@ -21,6 +21,13 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 % ACHRO     : AT2 lattice cell array for one achromat. 
 % lattname  : string containigg the lattice name
 % desc      : descriptive string 
+% V0        : total cavity voltage [V], default = 1.8E6; If "auto", then V0
+%                                      is calculated to achieve
+%                                      a given bukcet height with "VvsBH.m"
+% bh        : bucket height, default = "auto". if = "auto", the  
+%               bucket height is calculated from V0 using "bheight.m"
+% harm      : harmonic number, default = 176)
+%
 % MagnetStrengthLimits : structure containing hardware limits for magnets 
 % ACHRO_ref : reference achromat for calculation of design orbit
 %             deviations. if = {} deviations are not calculated
@@ -72,9 +79,16 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 %                  improved handling of default values in cLoptions
 %                  structure
 % PFT 2024/08/07 : changed default value of DAoptions.nturns to nan
+% SJ  2024/08/07 : introduced posibility of inputing either voltage or bucket height
+%                  to determine RF voltage  and pass this
+%                  voltage to RF cavity when generating the RING cell
+%                  array
+
 %% Input argument parsing
 corchrof         = getoption(varargin,'corchro',false);
 V0               = getoption(varargin,'V0',1.8E6);
+bh               = getoption(varargin,'bh','auto');
+harm             = getoption(varargin,'harm',176);
 basonlyf         = any(strcmpi(varargin,'basonly'));
 
 %% General initialisation
@@ -478,7 +492,8 @@ end
 [m4UT, exitflag] = cLatt([],'lattname',lattname,'desc',desc,'cLoptions',cLoptions,...
                   'ACHRO',ACHRO,'ACHRO_ref',ACHRO_ref,...
                   'MagnetStrengthLimits',MagnetStrengthLimits,...
-                  'verbose',1,'corchro', corchrof,'V0',V0,'basic');
+                  'verbose',1,'corchro', corchrof,'V0',V0,...
+                  'bh',bh,'harm',harm,'basic');
 
 %[m4UT, ~] = cLatt(m4UT,'ACHRO',ACHRO,m4U'ACHRO_ref',ACHRO_ref,'verbose',1);
 

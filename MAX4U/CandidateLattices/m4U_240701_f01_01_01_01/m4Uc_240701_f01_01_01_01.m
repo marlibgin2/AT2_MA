@@ -49,9 +49,9 @@
 % 2024/07/13 : restructured to call m4Uc_Latt as a function
 %% Lattice specific data
 lattname = 'm4U-240701-f01-01-01-01';
-desc = 'From Johan 20240701';
+desc = 'Downloaded from Johans Teams folder on 20240807';
 
-ACHRO = max_4u_f_0_20240701(); % The cell array with the AT2 lattice to be evaluated
+ACHRO = max_4u_f_0_20240807(); % The cell array with the AT2 lattice to be evaluated
 
 % Initialize physical apertures
  for i=1:length(ACHRO)
@@ -62,26 +62,28 @@ clear('cLoptions');
 cLoptions.All_famsO={}; %   optional, If empty m4_cLatt finds out the magnet 
 %                           family names. Use this in case a specific order
 %                           of family names is desired.
-cLoptions.ringtune_fams = {'qf2';'qd'};   % magnet families for tune matching
-cLoptions.chrom_fams    = {'sd1';'sf_h'}; % magnet families for chromaticity matching
-cLoptions.sext_fams     = {'sd1';'sf_h'}; % list of all sextupole families 
-cLoptions.eqfam = {'dip';'';'';'';'';'';'dip';...
-                   'dip';'dip';'dip';'dip';'dip';'dip';'dip';...
+cLoptions.ringtune_fams = {'qf1';'qf2'};   % magnet families for tune matching
+cLoptions.chrom_fams    = {'s2';'s3'}; % magnet families for chromaticity matching
+cLoptions.sext_fams     = {'s1';'s2';'s3';'s4'}; % list of all sextupole families 
+cLoptions.eqfam = {'dipm';'dipm';'dipm';'dipm';'dipm';'dipm';'dipm';...
+                   'dipm';'dipm';'dipm';'dipm';'dipm';'dip';'dip';...
                    'dip';'dip';'dip';'dip';...
-                   'Qfend_Qdend';'Qf_Qfm';'Qf_Qfm';...
-                   'Qfend_Qdend'; 'Oxx_Oxy'; 'Oxx_Oxy'; 'Oyy'; 'Sd';...
-                   'Sdend'; 'Sfi_Sfo'};
-cLoptions.RBfam = {'qf1'};
+                   'Qf_Qfm';'Oxx_Oxy'; 'Oxx_Oxy'; 'Oyy';...
+                   'Qfend_Qdend';'Qfend_Qdend';'Qf_Qfm';...
+                   'Sdend'; 'Sfi_Sfo'; 'Sfi_Sfo';'Sfi_Sfo'};
+cLoptions.RBfam = {'r1'};
 
-cLoptions.eqsca = ones(28,1);
+cLoptions.eqsca = ones(29,1);
 
 
 load(strcat(erase(atroot,'atmat'),'/MAX4U/MagnetStrengthLimits.mat'));
 load(strcat(erase(atroot,'atmat'),'/MAX4U/CandidateLattices/m4_standard/m4_standard.mat'));
 ACHRO_ref = m4_standard.ACHROMAT;
+V0='auto';
+bh=0.05;
 
 %% Run cLatt options
 
-m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits,'corchro',true);
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits,'V0',V0,'bh',bh,'corchro',true,'basonly');
 
 %plotLatt(m4UT,'all','ymaxplot_dm',0.007,'zoom',2.0,'ymaxplot',0.007,'xminplot',-0.012,'xmaxplot',0.012,'dpminplotLMA',-0.20,'dpmaxplotLMA',0.20,'nogrid','xmaxplot_dm',0.012,'xminplot_dm',-0.012,'caxrange',[-10 0],'caxrange_r',[-10 -5]);
