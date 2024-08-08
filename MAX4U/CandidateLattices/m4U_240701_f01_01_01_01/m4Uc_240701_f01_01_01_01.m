@@ -44,12 +44,12 @@
 
 %% History
 % 2024/07/07 : first verstion
-% 2024/07/10 : break up of the calculations into two setps - with and
+% 2024/07/10 : break up of the calculations into two steps - with and
 %              without errors
 % 2024/07/13 : restructured to call m4Uc_Latt as a function
 %% Lattice specific data
-lattname = 'm4U-240701-f01-01-01-01';
-desc = 'Downloaded from Johans Teams folder on 20240807';
+lattname = 'm4U-240807-f01-03-01-01';
+desc = 'Downloaded from JB tema folder on 20240807';
 
 ACHRO = max_4u_f_0_20240807(); % The cell array with the AT2 lattice to be evaluated
 
@@ -62,7 +62,7 @@ clear('cLoptions');
 cLoptions.All_famsO={}; %   optional, If empty m4_cLatt finds out the magnet 
 %                           family names. Use this in case a specific order
 %                           of family names is desired.
-cLoptions.ringtune_fams = {'qf1';'qf2'};   % magnet families for tune matching
+cLoptions.ringtune_fams = {'q1';'q2'};   % magnet families for tune matching
 cLoptions.chrom_fams    = {'s2';'s3'}; % magnet families for chromaticity matching
 cLoptions.sext_fams     = {'s1';'s2';'s3';'s4'}; % list of all sextupole families 
 cLoptions.eqfam = {'dipm';'dipm';'dipm';'dipm';'dipm';'dipm';'dipm';...
@@ -79,8 +79,8 @@ cLoptions.eqsca = ones(29,1);
 load(strcat(erase(atroot,'atmat'),'/MAX4U/MagnetStrengthLimits.mat'));
 load(strcat(erase(atroot,'atmat'),'/MAX4U/CandidateLattices/m4_standard/m4_standard.mat'));
 ACHRO_ref = m4_standard.ACHROMAT;
-V0='auto';
-bh=0.05;
+V0=1.8E6;
+bh='auto';
 
 %% Run cLatt options
 
