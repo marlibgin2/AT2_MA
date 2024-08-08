@@ -13,7 +13,7 @@ function famLayout=famLayout(ACHRO,varargin)
 % fL (NX7): cell array with the following columns
 %     Element Name
 %     Length [m]
-%     Bening Angle [deg]
+%     Bending Angle [deg]
 %     InvRho[m**-1]
 %     Q[m**-2]
 %     S[m**-3]
