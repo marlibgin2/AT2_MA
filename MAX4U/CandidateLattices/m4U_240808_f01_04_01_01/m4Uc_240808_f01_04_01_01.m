@@ -1,4 +1,4 @@
-%% m4Uc_240808_f01_04_01_01_01
+%% m4Uc_240808_f01_04_01_01
 % This script is a template to set up workspace variables needed
 % to run the "m4U_cLatt" script, which in turn, runs all "cLatt" function 
 % options in a series of steps creating/overwriting a structure named
@@ -49,8 +49,8 @@
 % 2024/07/13 : restructured to call m4Uc_Latt as a function
 % 2024/07/19 : incorporated geometry analysis and removed diary logs
 %% Lattice specific data
-lattname = 'm4U-jb5_2';
-desc = 'Downloaded from Johans teams folder on 20240808';
+lattname = 'm4U-240808-f01-04-01-01';
+desc = 'based on max_4u_sp_jb_5.m downloaded from Johans teams folder on 20240808';
 
 ACHRO = max_4u_sp_jb_5_240808(); % The cell array with the AT2 lattice to be evaluated
 
@@ -88,6 +88,6 @@ ACHRO_ref = m4_standard.ACHROMAT;
 
 %% Run cLatt options
 m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,...
-    ACHRO_ref,MagnetStrengthLimits,'corchro',true,'basonly'); % chrochro to set chromaticity to +1/+1
+    ACHRO_ref,MagnetStrengthLimits,'corchro',true); % chrochro to set chromaticity to +1/+1
 % 
 %plotLatt(m4UT,'all','ymaxplot_dm',0.005,'zoom',2.0,'ymaxplot',0.005,'xminplot',-0.006,'xmaxplot',0.006,'dpminplotLMA',-0.15,'dpmaxplotLMA',0.15,'nogrid','xmaxplot_dm',0.006,'xminplot_dm',-0.006,'caxrange',[-10 0],'caxrange_r',[-10 -5]);
