@@ -1,5 +1,5 @@
 %
-% Downloaded from Johans tema folder on 2024/08/07
+% Downloaded from Johans teams folder on 2024/08/07
 % includes the girder markers and standard magnet family naming
 % usual tweaks  minor tweaks - function npfloat, periodicity, removed RF cavity (to be added
 % by the achromat2lattice function), comments

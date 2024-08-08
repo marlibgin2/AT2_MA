@@ -48,6 +48,7 @@
 %              without errors
 % 2024/07/13 : restructured to call m4Uc_Latt as a function
 % 2024/07/19 : incorporated geometry analysis and removed diary logs
+% 2024/08/08 : corrcted list of sextupole families
 %% Lattice specific data
 lattname = 'm4U-jb5';
 desc = 'From Johan 20240718';
@@ -67,7 +68,7 @@ cLoptions.All_famsO={}; %   optional, If empty m4_cLatt finds out the magnet
 %                           of family names is desired.
 cLoptions.ringtune_fams = {'qf2';'qd'};   % magnet families for tune matching
 cLoptions.chrom_fams    = {'sd1';'sf_h'}; % magnet families for chromaticity matching
-cLoptions.sext_fams     = {'sd1';'sf_h'}; % list of all sextupole families 
+cLoptions.sext_fams     = {'sd2';'sf2_h';'sd1';'sf_h'}; % list of all sextupole families 
 cLoptions.eqfam = {'dip';'';'';'';'';'';'dip';...
                    'dip';'dip';'dip';'dip';'dip';'dip';'dip';...
                    'dip';'dip';'dip';'dip';...
