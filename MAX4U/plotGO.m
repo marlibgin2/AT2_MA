@@ -7,12 +7,13 @@ function plotGO(LattStruct,varargin)
 %   
 %% Inputs
 % Mandatory argument
-% LattStru : structure generated with the cLatt function cntainign the 
-%            design orbit for a lattuice and a reference lattice
+% LattStruct : structure generated with the cLatt function containing the 
+%            design orbit for a lattice and a reference lattice
 %
-% Optional flafs
+% Optional flags
 % 'do'          : plots design orbit and reference orbit, if available
 % 'dodev'       : plots deviation between design orbit and reference orbit
+% 'showBPMs'    : indicates BPM positions in orbit deviation plot
 % 'magce'       : plots magnet centres
 % 'magcedev '   : plots deviation of magnet centres to reference
 % 'magap'       : plots magnet apertures
@@ -44,10 +45,13 @@ function plotGO(LattStruct,varargin)
 % PFT 2024/07/09 : added magnet plots of magnet centres
 % PFT 2024/07/18 : added plotting of magnet/chamber geometry
 % PFT 2024/07/22 : changed name from plotDO to plotGO 
+% PFT 2024/08/16 : added option to indicate BPM positions in the orbit
+%                  deviation plot
 %% Input argument parsing
 %
 plotdof         = any(strcmpi(varargin,'do'));
 plotdodevf      = any(strcmpi(varargin,'dodev'));
+showBPMsf       = any(strcmpi(varargin,'showBPMs'));
 
 plotmagcef      = any(strcmpi(varargin,'magce'));
 plotmagcedevf   = any(strcmpi(varargin,'magcedev'));
@@ -74,7 +78,8 @@ plotenvf        = any(strcmpi(varargin,'env'));
 
 %% preamble
 lattname      = LattStruct.Lattice_Name;
-geometry = LattStruct.LattData.geometry;
+geometry      = LattStruct.LattData.geometry;
+ACHRO         = LattStruct.ACHROMAT;
 x2d           = geometry.DesignOrbit.x2d;
 y2d           = geometry.DesignOrbit.y2d;
 s2d           = geometry.DesignOrbit.s2d;
@@ -116,8 +121,28 @@ y2d_chadown  = geometry.Chambers.Walls.y2d_down;
 chadevdown   = geometry.Chambers.Walls.dev_down;
 
 
+iBPM = findcells(ACHRO,'FamName','BPM');
+if (isempty(iBPM))
+    iBPM=findcells(ACHRO,'FamName','mon');
+end
 
-
+if (isempty(iBPM))
+    fprintf('%s Error in calcOrb; no BPMs in Lattice to plot orbit, aborting... \n', datetime);
+end
+sBPM = findspos(ACHRO,iBPM);
+nBPMs=numel(sBPM);
+if (nBPMs>0)
+    [~, ia, ~] = unique(s2d);
+    x2d_u = x2d(ia);
+    s2d_u = s2d(ia);
+    orbdev_u = orbdev(ia);
+    xBPM=zeros(nBPMs);
+    ydevBPM=zeros(nBPMs);
+    for i=1:nBPMs
+        xBPM(i)=interp1(s2d_u,x2d_u,sBPM(i));
+        ydevBPM(i)=interp1(x2d_u,orbdev_u*1000,xBPM(i));
+    end
+end
 
 %% Plots design orbit 
 if (plotdof||plotdosf||plotallf)
@@ -129,10 +154,17 @@ end
 
 %% Plots design orbit deviation from reference
 if(plotdodevf||plotdosf||plotallf)
-    figure;plot(x2d, orbdev*1000, '-o');
+    figure;plot(x2d, orbdev*1000, '-o');hold on;
+    if ((nBPMs>0)&&(showBPMsf))
+        plot(xBPM,ydevBPM, 'rs', MarkerSize=16);
+    end
+
     xlabel('X[m]');ylabel('dZ[mm]');
-    grid on;
+    grid on; 
     title(strcat(lattname,' Design Orbit Deviation'));
+    if ((nBPMs>0)&&(showBPMsf))
+        legend({'orbit deviation';'BPMs'});
+    end
 end
 
 
