@@ -46,11 +46,11 @@
 % 2024/07/10 : break up of the calculations into two setps - with and
 %              without errors
 % 2024/07/13 : restructured to call m4Uc_Latt as a function
-%
+% 2024/08/10 : replaced m4U with
 %% Lattice specific data
 lattname = 'm4 Standard Lattice';
 desc = 'm4-20230102_fromtracy20121107-430-bare.opa';
-m4U('a1','Full','rbk',0.0);
+m4U('a1');
 
 ACHRO = ACHROGRD_a1; % The cell array with the AT2 lattice to be evaluated
 

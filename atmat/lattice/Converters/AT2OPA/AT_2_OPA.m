@@ -5,7 +5,7 @@ function AT_2_OPA(AT_ring,linename)
 % Elements in the input structure are expected to have an "OPAType" field
 % 
 % file ['' linename '_lattice.opa'] is generated containing the lattice
-% element definitions and the LINE. no other comands introduced
+% element definitions and the LINE. no other commands introduced
 % 
 %
 % OPA may be found here: http://people.web.psi.ch/streun/opa/

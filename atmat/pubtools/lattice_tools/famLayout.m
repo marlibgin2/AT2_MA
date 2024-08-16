@@ -35,6 +35,7 @@ function famLayout=famLayout(ACHRO,varargin)
 %                  improved handling of PolynomB vector with less
 %                  than 4 elements
 %                  added Spos to the output table
+% PFT 2024/08/10 : bug fix, incorrect clumn order for correctors.
 %
 %% Input argument parsing
 uniquef      = any(strcmpi(varargin,'unique'));
@@ -58,7 +59,7 @@ for i=1:numel(ACHRO)
                 PolynomB(1,max+1:4)=0.0;
             end
             if (j>0)
-                if(not(strcmp(element.FamName,famLayout{j,1}))||not(uniquef))
+                if(not(strcmp(element.FamName,famLayout{j,2}))||not(uniquef))
                     famLayout=[famLayout;Spos,{element.FamName},element.Length,...
                         bendangle*180/pi,...
                         PolynomB(2),PolynomB(3),PolynomB(4)];
@@ -72,14 +73,14 @@ for i=1:numel(ACHRO)
             end
         end
         if (strcmp(PM,'CorrectorPass'))
-            famLayout=[famLayout;Spos,{element.FamName},0.0,element.Length, 0, 0, 0];
+            famLayout=[famLayout;Spos,{element.FamName},element.Length, 0, 0, 0, 0];
             j=j+1;
         end
 
     end
     if (strcmpi(element.FamName,'GS')||strcmpi(element.FamName,'GE')||...
         strcmpi(element.FamName,'mon')||strcmpi(element.FamName,'bpm')    )
-        famLayout=[famLayout;Spos,{element.FamName},0.0, element.Length, 0, 0, 0];
+        famLayout=[famLayout;Spos,{element.FamName}, element.Length, 0, 0, 0, 0];
         j=j+1;
     end
 end
