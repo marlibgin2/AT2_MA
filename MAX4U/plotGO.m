@@ -136,8 +136,8 @@ if (nBPMs>0)
     x2d_u = x2d(ia);
     s2d_u = s2d(ia);
     orbdev_u = orbdev(ia);
-    xBPM=zeros(nBPMs);
-    ydevBPM=zeros(nBPMs);
+    xBPM=zeros(nBPMs,1);
+    ydevBPM=zeros(nBPMs,1);
     for i=1:nBPMs
         xBPM(i)=interp1(s2d_u,x2d_u,sBPM(i));
         ydevBPM(i)=interp1(x2d_u,orbdev_u*1000,xBPM(i));
