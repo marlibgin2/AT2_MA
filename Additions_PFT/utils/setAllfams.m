@@ -13,10 +13,26 @@ function NewLAT = setAllfams(nLAT,LAT,LatticeOptData,DVs)
 % Note : the calling routine must check that the choice of nLAT and LAT are
 % compatible with each other.
 %   
-
+%% History
+% PFT 2023,first version
+% PFT 2024/08/19: included bend angles with fixed profile as set DV 
+%
 nallfams        = LatticeOptData.nallfams;
 stdfamlist      = LatticeOptData.All_stdfamlist;
 nstdfamlist     = LatticeOptData.All_nstdfamlist;
+if (isfield(LatticeOptData,'All_bafamlist'))
+    bafamlist  = LatticeOptData.All_bafamlist;
+else
+    bafamlist = [];
+end
+
+if (isfield(LatticeOptData,'All_Lfamlist'))
+    Lfamlist  = LatticeOptData.All_Lfamlist;
+else
+    Lfamlist = [];
+end
+
+
 famtype         = LatticeOptData.All_famtype;
 
 
@@ -129,4 +145,32 @@ for i=1:length(nstdfamlist)
        end
     end  
 end
+
+for i=1:length(bafamlist)
+    if(not(isnan(DVs(bafamlist(i)))))
+       Thetas = NaN(1,size(Ifams{bafamlist(i)},2));
+     
+       for l=1:size(Ifams{bafamlist(i)},1)
+            Thetas(l)= LAT{Ifams{bafamlist(i)}(l)}.BendingAngle;
+       end
+       [tmax,pos] = max(abs(Thetas));
+       factor = DVs(bafamlist(i))/tmax*sign(Thetas(pos));
+     
+       for l=1:size(Ifams{bafamlist(i)},1)
+          if(not(isnan(Thetas(l))))
+             NewLAT{Ifams{bafamlist(i)}(l)}.BendingAngle = Thetas(l)*factor;
+          end
+       end
+    end  
+end
+
+for i=1:length(Lfamlist)
+     for l=1:size(Ifams{Lfamlist(i)},1)
+         if(not(isnan(DVs(Lfamlist(i)))))
+             NewLAT{Ifams{Lfamlist(i)}(l)}.Length = DVs(Lfamlist(i));
+         end
+     end
+end
+
+
 end

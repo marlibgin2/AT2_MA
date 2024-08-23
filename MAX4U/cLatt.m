@@ -308,8 +308,10 @@ function [LattStruct, exitflag] = cLatt(varargin)
 % LattStruct.LattData.bh        : rf bucket height (echo of input or% calculated from V0)
 % 
 % LattStruct.LattData.harm      : harmonic number (echo of input)
-% LattStruct.LattData.corchrof  : corret chromaticity flag (echo of input)
-% LattStruct.LattData.XAllO     :strengths of all families (includes octupoles)
+% LattStruct.LattData.corchrof  : correct chromaticity flag (echo of input)
+% LattStruct.LattData.XAllO     : strengths of all families (includes octupoles)
+% LattStruct.LattData.XAll      : strengths of all families includong bend
+%                                 angles and lengths used in linear latitice fits
 % LattStruct.LattData.ACHROMAT_ref: AT2 lattice cell array for one reference achromat (an echo of the input)
 % LattStruct.LattData.RINGGRD    : Full ring latice 6d enabled with same magnet strengths as
 %            ACHROMAT. Octupoles are the same as in ACHRO (if they exist
@@ -682,6 +684,7 @@ if (isempty(LattSt))
     LattStruct.LattData.corchrof = corchrof;
     LattStruct.LattData.V0 = V0;
     LattStruct.LattData.XAllO=[];
+    LattStruct.LattData.XAll =[];
     %
     LattStruct.LattData.MagnetStrengthLimits=MagnetStrengthLimits;
     LattStruct.LattData.CLv=struct();
@@ -1373,6 +1376,7 @@ if ((basicf||allf||(contf&&isempty(fields(LattStruct.LattData.CLv))))...
         LattStruct.LattData.XAllO=XAllO;
     end
 end
+
 %% Calculates rf voltage from rf bucket height OR rf bucket heght from rf voltage
 if (basicf||allf||(contf&&isempty(fields(LattStruct.LattData.V0))))
     U0=atgetU0(ACHRO);

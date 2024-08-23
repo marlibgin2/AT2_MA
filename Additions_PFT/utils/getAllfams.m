@@ -5,7 +5,7 @@ function DVs = getAllfams(nLAT, LAT, LatticeOptData)
 %
 % nLAT is :
 %          1 if DVs are to be taken from LAT with same structure as HACHRO in LatticeOptData
-%          2 if DVs are to be taken from LAT with same structure as ACHRO in LatticeOptData
+%          2 if DVs are to tbe taken from LAT with same structure as ACHRO in LatticeOptData
 %          3 if DVs are to be taken from LAT with same structure as UC in LatticeOptData
 %          4 if DVs are to be taken from LAT with same structure as IMC1 in LatticeOptData
 %          5 if DVs are to be taken from LAT with same structure as RING in LatticeOptData
@@ -15,11 +15,28 @@ function DVs = getAllfams(nLAT, LAT, LatticeOptData)
 % Note : the calling routine must check that the choice of nLAT and LAT are
 % compatible with each other.
 
+%% History
+% PFT 2023,first version
+% PFT 2024/08/19: included bend angles with fixed profile as set DV 
+
 All_fams = LatticeOptData.All_fams;
 nallfams = LatticeOptData.nallfams;
 
 stdfamlist  = LatticeOptData.All_stdfamlist; 
 nstdfamlist = LatticeOptData.All_nstdfamlist; 
+if (isfield(LatticeOptData,'All_bafamlist'))
+    bafamlist  = LatticeOptData.All_bafamlist;
+else
+    bafamlist = [];
+end
+
+if (isfield(LatticeOptData,'All_Lfamlist'))
+    Lfamlist  = LatticeOptData.All_Lfamlist;
+else
+    Lfamlist = [];
+end
+
+
 famtype     = LatticeOptData.All_famtype;
 
 UC           = LatticeOptData.UC;
@@ -116,6 +133,26 @@ for i=1:length(nstdfamlist)
      [kmax,pos] = max(abs(Ks));
      DVs(nstdfamlist(i))=sign(Ks(pos))*kmax;
 end
+
+for i=1:length(bafamlist)
+     Thetas = NaN(1,size(Ifams{bafamlist(i)},2));
+     for l=1:size(Ifams{bafamlist(i)},1)
+            Thetas(l)= LAT{Ifams{bafamlist(i)}(l)}.BendingAngle;
+     end
+     
+     [tmax,pos] = max(abs(Thetas));
+     DVs(bafamlist(i))=sign(Thetas(pos))*tmax;
+end
+
+for i=1:length(Lfamlist)
+    if (not(isempty(Ifams{Lfamlist(i)})))
+        DVs(Lfamlist(i))=LAT{Ifams{Lfamlist(i)}(1)}.Length;
+    else
+        DVs(Lfamlist(i))= NaN;
+    end
+end
+
+
 
 end
 
