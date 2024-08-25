@@ -79,15 +79,16 @@ global THERING %#ok<GVMIS>
         [I1e,I2e,I3e,I4e,I5e] = ElossRadiation(ring,TD);
         smm.integrals=[I1d+I1w+I1e,I2d+I2w+I2e,I3d+I3w+I3e,I4d+I4w+I4e,I5d+I5w+I5e,I6];
         
+        alphac = nan(1,3);
         if is6d
-            alphac=mcf(atdisable_6d(ring),dp);
+            [alphac(1), alphac(2), alphac(3)] = mcf(atdisable_6d(ring),dp);
             eloss=atgetU0(ring,'method','tracking','periods',1);            % eV
         else
-            alphac=mcf(ring,dp);
+            [alphac(1), alphac(2), alphac(3)] = mcf(ring,dp);
             eloss=1.0e9*Cgamma/2/pi*smm.e0.^4*smm.integrals(2); % eV
         end
         
-        etac=1/gamma/gamma- alphac;
+        etac=1/gamma/gamma- alphac(1);
         smm.compactionFactor = alphac;
         smm.etac = etac;
         smm.tunes = ringdata.tune;
@@ -174,7 +175,9 @@ global THERING %#ok<GVMIS>
             fprintf('                     V: \t% 4.5f [ms] or %4.2f turns\n', smm.radiationDamping(2)*1e3, smm.radiationDamping(2)/smm.revTime);
             fprintf('                     E: \t% 4.5f [ms] or %4.2f turns\n', smm.radiationDamping(3)*1e3, smm.radiationDamping(3)/smm.revTime);
             fprintf('   Slip factor: \t\t%4.5e\n', smm.etac);
-            fprintf('   Momentum compaction factor: \t %4.5e (%4.5e)\n',  alphac2, smm.compactionFactor);
+            fprintf('   Momentum compaction factor: \t %4.5e (%4.5e d + %4.5e d^2 + %4.5e d^3)\n',  alphac2, smm.compactionFactor(:));
+%             fprintf('                               \t (%4.5e)\n',  alphac(2));
+%             fprintf('                               \t (%4.5e)\n',  alphac(3));
             fprintf(SeparatorString);
             fprintf('   Assuming cavities Voltage: \t% 4.5f [kV]\n', v_cav/1e3);
             fprintf('                   Frequency: \t% 4.5f [MHz]\n', freq/1e6);
