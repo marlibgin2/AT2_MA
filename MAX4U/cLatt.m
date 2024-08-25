@@ -292,6 +292,7 @@ function [LattStruct, exitflag] = cLatt(varargin)
 % 'TLTdist'   : calculates Touschek lifetime for ring with errors
 %
 % 'TMdist'    : Tune map(diffusion in xy plane) for ring with errors
+% 'RDT'       : RDT fluctuation along s
 %
 %% Outputs
 % LattStruct is a structure with fields
@@ -305,9 +306,13 @@ function [LattStruct, exitflag] = cLatt(varargin)
 % *******************************************************************
 %
 % LattStruct.LattData.V0        : total Rf voltage (echo of input or calculated from bucket height)
-% LattStruct.LattData.bh        : rf bucket height (echo of input or% calculated from V0)
-% 
+% LattStruct.LattData.bh        : rf bucket height (echo of input or % calculated from V0)
+% LattStruct.LattData.Voptimum  : voltage leading to maximum Touschek
+%                                 lifetime - not empty only if voltage and
+%                                 bh inputs are chosen as 'auto'
 % LattStruct.LattData.harm      : harmonic number (echo of input)
+% LattStruct.LattData.split     : split lattice factor for orbit calculations (echo of input)
+% 
 % LattStruct.LattData.corchrof  : correct chromaticity flag (echo of input)
 % LattStruct.LattData.XAllO     : strengths of all families (includes octupoles)
 % LattStruct.LattData.XAll      : strengths of all families includong bend
@@ -502,6 +507,10 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                                 with errors [hr]. 
 % LattStructe.Lattperf.TLdist  : tune diffusion map for lattice wirh errors
 %
+% LattStructe.Lattperf.RDT     : RDT fluctuations along longitudinal
+%                                position of the ring
+%
+%
 %% Usage examples
 % First creates the structure, allocating all fields and sets name and
 % description
@@ -590,7 +599,12 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                   to determine RF voltage  and pass this
 %                   voltage to RF cavity when generating the RING cell
 %                   array
-
+% SJ  2024/08/20 : introduced call to estimate optimum RF voltage (Voptimum) for
+%                  maximum Touschek lifetime and update V0= Voptimum 
+% SJ  2024/08/21 : introduced a call to calculate RDT using a function
+%                  computeRDTfluctuation.m
+% PFT 2024/08/25 : improved handling of default values for optional
+%                  arguments
 %% preamble
 PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
 PhysConst = PC.PC;      %Load physical constants
@@ -604,12 +618,11 @@ ACHRO_ref            = getoption(varargin,'ACHRO_ref',{});
 RING                 = getoption(varargin,'RING',{});
 cLoptions            = getoption(varargin,'cLoptions',struct);
 MagnetStrengthLimits = getoption(varargin,'MagnetStrengthLimits',struct);
-split                = getoption(varargin,'split',1);
-V0                   = getoption(varargin,'V0',1.8E6);
-bh                   = getoption(varargin,'bh','auto');
-harm                 = getoption(varargin,'harm',176);
-
-corchrof             = getoption(varargin,'corchro',false);
+split                = getoption(varargin,'split',[]);
+V0                   = getoption(varargin,'V0',[]);
+bh                   = getoption(varargin,'bh','');
+harm                 = getoption(varargin,'harm',[]);
+corchrof             = getoption(varargin,'corchro',[]);
 
 verboselevel         = getoption(varargin,'verbose',0);
 
@@ -637,6 +650,7 @@ TLTf        = any(strcmpi(varargin,'TLT'));
 TLTdistf    = any(strcmpi(varargin,'TLTdist'));
 TMsf        = any(strcmpi(varargin,'TMs'));
 TM_distf    = any(strcmpi(varargin,'TMdist'));
+RDTf        = any(strcmpi(varargin,'RDT'));
 
 %% Constructs output structure template
 fprintf(' ************* \n');
@@ -683,6 +697,9 @@ if (isempty(LattSt))
     LattStruct.LattData.ACHROMAT_ref = ACHRO_ref;
     LattStruct.LattData.corchrof = corchrof;
     LattStruct.LattData.V0 = V0;
+    LattStruct.LattData.bh = bh;
+    LattStruct.LattData.split = split;
+    LattStruct.LattData.harm  = corchrof;
     LattStruct.LattData.XAllO=[];
     LattStruct.LattData.XAll =[];
     %
@@ -697,7 +714,7 @@ if (isempty(LattSt))
     LattStruct.LattData.FG={};
     LattStruct.LattData.famLayout={};
 
-    %
+    %  
     LattStruct.LattPerf.atsummary = struct;
     LattStruct.LattPerf.ERlat     = struct;
     LattStruct.LattPerf.DA.xy_0   = struct;
@@ -706,6 +723,7 @@ if (isempty(LattSt))
     LattStruct.LattPerf.DA.xydp   = struct;
     LattStruct.LattPerf.DAdist.xy   = struct;
     LattStruct.LattPerf.DAdist.xydp = struct;
+    LattStruct.LattPerf.RDT         = struct;
 
     LattStruct.LattPerf.TM.xy      = struct;
     LattStruct.LattPerf.TM.gridxy  = struct;
@@ -768,16 +786,19 @@ ACHRO = LattStruct.ACHROMAT;
 if (not(isempty(RING)))
     LattStruct.LattData.RINGGRD = RING;
 end
+
 RING=LattStruct.LattData.RINGGRD;
 if (isempty(ACHRO))
     fprintf('%s cLatt Warning: no achromat structure available. Interrupting...\n', datetime);
     exitflag='abort';
     return
 end
+
 if (not(isempty(ACHRO_ref)))
     LattStruct.LattData.ACHROMAT_ref = ACHRO_ref;
 end
 ACHRO_ref     = LattStruct.LattData.ACHROMAT_ref;
+
 if (isempty(ACHRO_ref))
     if (verboselevel>0)
         fprintf('%s cLatt Warning: no reference achromat structure available. \n', datetime);
@@ -794,6 +815,52 @@ if (isempty(fieldnames(MagnetStrengthLimits)))
         fprintf('%s cLatt Warning: MagnetStrengthLimits structure not available. \n', datetime);
     end
 end
+
+if (not(isempty(split)))
+    LattStruct.LattData.split = split;
+end
+split = LattStruct.LattData.split;
+if (isempty(split))
+    split=1;
+    LattStruct.LattData.split=split;
+end
+
+if(not(isempty(V0)))
+    LattStruct.LattData.V0 = V0;
+end
+V0 = LattStruct.LattData.V0;
+if (isempty(V0))
+    V0='auto';
+end
+LattStruct.LattData.V0 = V0;
+
+if(not(isempty(bh)))
+    LattStruct.LattData.bh = bh;
+end
+bh = LattStruct.LattData.bh;
+if (isempty(bh))
+    bh='auto';
+end
+LattStruct.LattData.bh = bh;
+
+if(not(isempty(harm)))
+    LattStruct.LattData.harm = harm;
+end
+harm = LattStruct.LattData.harm;
+if (isempty(harm))
+    harm=176;
+end
+LattStruct.LattData.harm = harm;
+
+if(not(isempty(corchrof)))
+    LattStruct.LattData.corchrof = corchrof;
+end
+corchrof = LattStruct.LattData.corchrof;
+if (isempty(corchrof))
+    corchrof=false;
+end
+LattStruct.LattData.corchrof = corchrof;
+
 
 if (not(isempty(fieldnames(cLoptions))))
     LattStruct.cLoptions=cLoptions;
@@ -1376,38 +1443,6 @@ if ((basicf||allf||(contf&&isempty(fields(LattStruct.LattData.CLv))))...
         LattStruct.LattData.XAllO=XAllO;
     end
 end
-
-%% Calculates rf voltage from rf bucket height OR rf bucket heght from rf voltage
-if (basicf||allf||(contf&&isempty(fields(LattStruct.LattData.V0))))
-    U0=atgetU0(ACHRO);
-    E0=atenergy(ACHRO);
-    alphac=mcf(ACHRO);
-    if ischar(V0)
-        if strcmpi(V0, 'auto')
-            if not(ischar(bh))
-                V0 = VvsBH(bh,U0,alphac,E0,harm);
-                if (verboselevel>0)
-                    fprintf('%s cLatt: calculating rf voltage from desired rf bucket height \n', datetime);
-                end
-            else
-                fprintf('%s cLatt error: unknown V0 and bh option: using V0= 1.8 MV  \n', datetime');
-                V0=1.8e6;
-                bh=bheight(V0,U0,alphac,E0,harm);
-            end 
-        else
-            fprintf('%s cLatt error: unknown V0 option  \n', datetime'); 
-            return
-        end
-    else
-        if (verboselevel>0)
-            fprintf('%s cLatt: calculating rf bucket height from desired rf voltage \n', datetime);
-        end
-        bh=bheight(V0,U0,alphac,E0,harm);
-    end
-    LattStruct.LattData.V0=V0;
-    LattStruct.LattData.bh=bh;
-end
-
 %% Creates full ring structure if not yet available
 if (isempty(RING))
      if (verboselevel>0)
@@ -1415,6 +1450,58 @@ if (isempty(RING))
      end
      RING = atenable_6d(SetBPMWeights(achromat2ring(ACHRO)));
 end
+%% Calculate RDTs
+if (RDTf||allf||(contf&&isempty(fields(LattStruct.LattPerf.RDT))))
+    if (verboselevel>0)
+        fprintf('%s cLatt: calculating RDTs \n', datetime);
+    end
+[RDT,buildup_fluctuation,natural_fluctuation]=computeRDTfluctuation(RING);
+
+    LattStruct.LattPerf.RDT.RDT=RDT;
+    LattStruct.LattPerf.RDT.buildup_fluctuation=buildup_fluctuation;
+    LattStruct.LattPerf.RDT.natural_fluctuation=natural_fluctuation;
+end
+
+%% Calculates rf voltage from rf bucket height OR rf bucket heght from rf voltage
+if (basicf||allf||contf)
+    U0=atgetU0(ACHRO);
+    E0=atenergy(ACHRO);
+    alphac=mcf(ACHRO);
+    Voptimum = [];
+    if ischar(V0)
+        if strcmpi(V0, 'auto')
+            if ischar(bh) && strcmpi(bh, 'auto')
+                % Both V0 and bh are 'auto', so calculate Voptimum
+                fprintf('%s cLatt: calculating optimum rf voltage  \n', datetime);
+                Voptimum = optimV(RING);
+                V0 = Voptimum;  % Set V0 to the calculated Voptimum
+            elseif not(ischar(bh))
+                % V0 is 'auto', but bh is given
+                V0 = VvsBH(bh, U0, alphac, E0, harm);
+                if (verboselevel > 0)
+                    fprintf('%s cLatt: calculating rf voltage from desired rf bucket height \n', datetime);
+                end
+            else
+                fprintf('%s cLatt error: unknown V0 and bh option: using V0= 1.8 MV  \n', datetime');
+                V0 = 1.8e6;
+                bh = bheight(V0, U0, alphac, E0, harm);
+            end
+        else
+            fprintf('%s cLatt error: unknown V0 option  \n', datetime');
+            return
+        end
+    else
+        % V0 is given, calculate bh
+        if (verboselevel > 0)
+            fprintf('%s cLatt: calculating rf bucket height from desired rf voltage \n', datetime);
+        end
+        bh = bheight(V0, U0, alphac, E0, harm);
+    end
+    LattStruct.LattData.V0 = V0;
+    LattStruct.LattData.bh = bh;
+    LattStruct.LattData.Voptimum=Voptimum;
+end
+%% Sets the desired RF voltage to RING and RINGGRD structures for further calculation
 cavpts  = find(atgetcells(RING, 'FamName', 'CAVITY'));
 if (isempty(cavpts))
     cavpts  = find(atgetcells(RING, 'FamName', 'CAV'));

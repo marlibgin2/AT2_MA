@@ -514,6 +514,15 @@ if (strcmpi(exitflag,'cancelled'))
 end
 %
 %% Lattice without errors
+% RDTs
+[m4UT, exitflag] = cLatt(m4UT,'RDT','verbose',2);
+
+save('m4UT', 'm4UT');
+
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
+
 % Dynamic Aperture
 [m4UT, exitflag] = cLatt(m4UT,'DAxy','verbose',2);
 
