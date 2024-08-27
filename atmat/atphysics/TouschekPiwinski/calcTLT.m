@@ -84,10 +84,10 @@ function TL = calcTLT(varargin)
 %% History
 % PFT 2024/03 first version
 % PFT 2024/06/23 : restructured input/output and improved documentation
-% PFT 2024/07/21 : added possibilty of fixing vertical emittance instead
+% PFT 2024/07/21 : added possibility of fixing vertical emittance instead
 %                  of coupling.
 %                  added possibility of using existing LMA structure as input
-% PFT 2024/07/22 : added exmit x, emity, sigmax ad sigmap to outputs.
+% PFT 2024/07/22 : added emitx, emity, sigmax ad sigmap to outputs.
 %% Input argument parsing
 [RING,TLoptions,MAoptions]= getargs(varargin,[],[],[]);
 

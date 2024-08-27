@@ -117,6 +117,11 @@ function LMAdist = calcLMAdist(varargin)
 %                 seeds.
 % PFT 2024/07/30: changed initcoord default for handling of nan as initial
 %                 phase
+% PFT 2024/08/05: bug fix - incorrect initialization of output vectors
+%                 if the number of seeds was larger than the default (10)
+% PFT 2024/08/06: bug fix - incorrect extraction of rms orbits from ERlat.
+% PFT 2024/08/07: update of MAoptions.nturns when input nturns is nan.
+%
 %% Input argument parsing
 [RING,ErrorModel,MAoptions] = getargs(varargin,[],[],[]);
 if (isempty(ErrorModel))
@@ -207,19 +212,6 @@ if (verboselevel>0)
     fprintf('%s CalcLMAdist: Starting LMA distribution calculation at %3d points \n', datetime, length(Spos));
 end
 
-map_l     = zeros(nseeds+1,nSpos);
-map_h     = zeros(nseeds+1,nSpos);
-map_l_av  = zeros(1,nSpos);
-map_h_av  = zeros(1,nSpos);
-map_l_std = zeros(1,nSpos);
-map_h_std = zeros(1,nSpos);
-%
-orb0_stds = zeros(6,nseeds+1);
-orb_stds  = zeros(6,nseeds+1);
-RINGe     = cell(nseeds+1,1);
-rparae    = cell(nseeds+1,1);
-Itunese   = cell(nseeds+1,1);
-Ftunese   = cell(nseeds+1,1);
 
 if (verboselevel>0)
     fprintf('%s CalcLMAdist: calculating atsummary \n', datetime);
@@ -235,6 +227,10 @@ end
    
 if (isnan(nturns))
     nturns = round(1.2/rpara.synctune);
+    MAoptions.nturns=nturns;
+    if (verboselevel>0)
+        fprintf('%s calcLMAdist: nturns = %3d \n', datetime, nturns);
+    end
 end
 
 %% Generates or reads lattices with errors
@@ -287,6 +283,18 @@ else
      LMAdist.outputs.telapsed=telapsed;
      return
 end
+
+map_l     = zeros(nseeds+1,nSpos);
+map_h     = zeros(nseeds+1,nSpos);
+map_l_av  = zeros(1,nSpos);
+map_h_av  = zeros(1,nSpos);
+map_l_std = zeros(1,nSpos);
+map_h_std = zeros(1,nSpos);
+%
+
+rparae    = cell(nseeds+1,1);
+Itunese   = cell(nseeds+1,1);
+Ftunese   = cell(nseeds+1,1);
 
 %% Calculate LMAs
 if (verboselevel>0)

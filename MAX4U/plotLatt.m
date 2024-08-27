@@ -86,7 +86,9 @@ function plotLatt(LS,varargin)
 %                  has been defined
 % PFT 2024/07/22 : changed name from plotDO to plotGO 
 % PFT 2024/07/26 : added plots of corrected orbit based on ERlat structure
-%                  calculated by the "generate_errlatt" function
+%                  calculated by the "generate_errlatt" function.
+% PFT 2024/08/06 : eliminated redundat orbit rms plots
+%
 %% Input argument parsing
 
 basicf      = any(strcmpi(varargin,'basic'));
@@ -343,7 +345,7 @@ if (allf||DAsf||DAdistxyf)
         phandles=plotDAdist(LS.LattPerf.DAdist.xy,...
             'xmaxplot',xmaxplot,'ymaxplot',ymaxplot,...
             'xminplot',xminplot,...
-            'plottitle',LS.Lattice_Name,'plotorbrms');
+            'plottitle',LS.Lattice_Name);
         if (savef)
             nhandles=numel(phandles);
             for i=1:nhandles
@@ -598,7 +600,7 @@ if (allf||LMAdistf)
     if(not(isempty(fieldnames(LS.LattPerf.LMAdist))))
         phandles=plotLMAdist(LS.LattPerf.LMAdist,...
             'dpminplot',dpminplotLMA,'dpmaxplot',dpmaxplotLMA,...
-            'plottitle',LS.Lattice_Name,'plotorbrms');
+            'plottitle',LS.Lattice_Name);
         if (savef)
             nhandles=numel(phandles);
             for i=1:nhandles

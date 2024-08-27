@@ -87,10 +87,11 @@ cLoptions.eqsca = ones(1,44);
 load(strcat(erase(atroot,'atmat'),'/MAX4U/MagnetStrengthLimits.mat'));
 load(strcat(erase(atroot,'atmat'),'/MAX4U/CandidateLattices/m4_standard/m4_standard.mat'));
 ACHRO_ref = m4_standard.ACHROMAT;
-V0 = 1.8E6;
+V0 = 'auto';
+bh =0.05;
 
 %% Run cLatt options
-m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHROGRD_a1,MagnetStrengthLimits,'V0',V0);
+m4UT = m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits,'V0',V0,'bh',bh,'basic');
 
 % Below an example of how the 'plotLatt' function can be used to produce
 % plots from the m4UT structure and save the results on a file.

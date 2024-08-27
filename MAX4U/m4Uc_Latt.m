@@ -21,6 +21,13 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 % ACHRO     : AT2 lattice cell array for one achromat. 
 % lattname  : string containigg the lattice name
 % desc      : descriptive string 
+% V0        : total cavity voltage [V], default = 1.8E6; If "auto", then V0
+%                                      is calculated to achieve
+%                                      a given bukcet height with "VvsBH.m"
+% bh        : bucket height, default = "auto". if = "auto", the  
+%               bucket height is calculated from V0 using "bheight.m"
+% harm      : harmonic number, default = 176)
+%
 % MagnetStrengthLimits : structure containing hardware limits for magnets 
 % ACHRO_ref : reference achromat for calculation of design orbit
 %             deviations. if = {} deviations are not calculated
@@ -71,10 +78,18 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 %                  added max rms orbt deviation checks of seed survival
 %                  improved handling of default values in cLoptions
 %                  structure
+% PFT 2024/08/07 : changed default value of DAoptions.nturns to nan
+% SJ  2024/08/07 : introduced posibility of inputing either voltage or bucket height
+%                  to determine RF voltage  and pass this
+%                  voltage to RF cavity when generating the RING cell
+%                  array
+% PFT 2024/08/18 : bug fix , handling of default vaues for DAoptions 
 
 %% Input argument parsing
 corchrof         = getoption(varargin,'corchro',false);
 V0               = getoption(varargin,'V0',1.8E6);
+bh               = getoption(varargin,'bh','auto');
+harm             = getoption(varargin,'harm',176);
 basonlyf         = any(strcmpi(varargin,'basonly'));
 
 %% General initialisation
@@ -123,78 +138,78 @@ if (~isfield(cLoptions,'ErrorModel'))
 end
 %
 if (isfield(cLoptions,'DAoptions'))
-    if (~isfield(cLoptions.DAoptions.DAmode))
+    if (~isfield(cLoptions.DAoptions,'DAmode'))
         cLoptions.DAoptions.DAmode   = 'smart_in'; % dynamics aperture calculation mode: "border", "grid", "smart_in" or "smart_out"
     end
-    if (~isfield(cLoptions.DAoptions.nturns))
-        cLoptions.DAoptions.nturns   = 1024; % number of turns
+    if (~isfield(cLoptions.DAoptions,'nturns'))
+        cLoptions.DAoptions.nturns   = nan; % number of turns
     end
-    if (~isfield(cLoptions.DAoptions.betax0))
+    if (~isfield(cLoptions.DAoptions,'betax0'))
         cLoptions.DAoptions.betax0   = NaN; % horizontal beta for normalization - if NaN, no normalization is don
     end
-    if (~isfield(cLoptions.DAoptions.betay0))
+    if (~isfield(cLoptions.DAoptions,'betay0'))
         cLoptions.DAoptions.betay0   = NaN; % vertical beta for normalization - if NaN no normalization is done
     end
-    if (~isfield(cLoptions.DAoptions.xmindas))
+    if (~isfield(cLoptions.DAoptions,'xmindas'))
         cLoptions.DAoptions.xmindas  = -0.015;% limits of the range in which the DA border is searched in "border" type modes
     end
-    if (~isfield(cLoptions.DAoptions.xmaxdas))
+    if (~isfield(cLoptions.DAoptions,'xmaxdas'))
         cLoptions.DAoptions.xmaxdas  = 0.015;% limits of the range in which the DA border is searched in "border" type modes
     end
-    if (~isfield(cLoptions.DAoptions.ymaxdas))
+    if (~isfield(cLoptions.DAoptions,'ymaxdas'))
         cLoptions.DAoptions.ymaxdas  = 0.007;% limits of the range in which the DA border is searched in "border" type modes
     end
-    if (~isfield(cLoptions.DAoptions.dpmin))
+    if (~isfield(cLoptions.DAoptions,'dpmin'))
         cLoptions.DAoptions.dpmin    = -0.04;% minimum dp for xdp/ydp plane caculation
     end
-    if (~isfield(cLoptions.DAoptions.dpmax))
+    if (~isfield(cLoptions.DAoptions,'dpmax'))
         cLoptions.DAoptions.dpmax    = 0.04; % maximum dp for xdp/ydp plane caculation
     end
-    if (~isfield(cLoptions.DAoptions.npd))
+    if (~isfield(cLoptions.DAoptions,'npd'))
         cLoptions.DAoptions.npd      = 11;% number of points along momentum deviation axis
     end
-    if (~isfield(cLoptions.DAoptions.chroms0))
+    if (~isfield(cLoptions.DAoptions,'chroms0'))
         cLoptions.DAoptions.chroms0  = [1 1]/20;% Target chromaticity for one superperiod
     end
-    if (~isfield(cLoptions.DAoptions.Tolchrom))
+    if (~isfield(cLoptions.DAoptions,'Tolchrom'))
         cLoptions.DAoptions.TolChrom = [0.0001 0.0001];% Chromaticity tolerances
     end
-    if (~isfield(cLoptions.DAoptions.Nitchro))
+    if (~isfield(cLoptions.DAoptions,'Nitchro'))
         cLoptions.DAoptions.Nitchro  = 10; % Max n. iterations of chromaticty correction    
     end
-    if (~isfield(cLoptions.DAoptions.dp))
+    if (~isfield(cLoptions.DAoptions,'dp'))
         cLoptions.DAoptions.dp       = 0.0;% initial dp/p (6d tracking) or fixed dp/p (4d tracking)     
     end
-    if (~isfield(cLoptions.DAoptions.r0))
+    if (~isfield(cLoptions.DAoptions,'r0'))
         cLoptions.DAoptions.r0      = 0.020; % initial guess for border mode[m]  
     end
-    if (~isfield(cLoptions.DAoptions.nang))
+    if (~isfield(cLoptions.DAoptions,'nang'))
         cLoptions.DAoptions.nang    = 40;% number of angular steps for border mode      
     end
-    if (~isfield(cLoptions.DAoptions.z0))
+    if (~isfield(cLoptions.DAoptions,'z0'))
         cLoptions.DAoptions.z0      = nan; % initial longitudinal coordinate (6d tracking). nan uses synchronous phase    
     end
-    if (~isfield(cLoptions.DAoptions.res))
+    if (~isfield(cLoptions.DAoptions,'res'))
         cLoptions.DAoptions.res     = 0.0005;  % resolution [m] for border  mode
     end
-    if (~isfield(cLoptions.DAoptions.alpha))
+    if (~isfield(cLoptions.DAoptions,'alpha'))
         cLoptions.DAoptions.alpha   = 1.100;  % da enlargement factor for border search 
     end
-    if (~isfield(cLoptions.DAoptions.XmaxDA))
+    if (~isfield(cLoptions.DAoptions,'XmaxDA'))
         cLoptions.DAoptions.XmaxDA  = 0.015;% Horizontal range is -Xmax to Xmax [m] for "grid" mode
     end
-    if (~isfield(cLoptions.DAoptions.YmaxDA))
+    if (~isfield(cLoptions.DAoptions,'YmaxDA'))
         cLoptions.DAoptions.YmaxDA  = 0.007;% Vertical range is -Xmax to Xmax [m] for "grid" mode
     end
-    if (~isfield(cLoptions.DAoptions.npdax))
+    if (~isfield(cLoptions.DAoptions,'npdax'))
         cLoptions.DAoptions.npdax   = 64; % number of grid points in x direction is 2*npdax+1
     end
-    if (~isfield(cLoptions.DAoptions.npday))
+    if (~isfield(cLoptions.DAoptions,'npday'))
         cLoptions.DAoptions.npday   = 64; % number of grid points in y direction is  npday+1
     end
 else
     cLoptions.DAoptions.DAmode   = 'smart_in';
-    cLoptions.DAoptions.nturns   = 1024; 
+    cLoptions.DAoptions.nturns   = nan; 
     cLoptions.DAoptions.betax0   = NaN; 
     cLoptions.DAoptions.betay0   = NaN; 
     cLoptions.DAoptions.xmindas  = -0.015;
@@ -478,7 +493,8 @@ end
 [m4UT, exitflag] = cLatt([],'lattname',lattname,'desc',desc,'cLoptions',cLoptions,...
                   'ACHRO',ACHRO,'ACHRO_ref',ACHRO_ref,...
                   'MagnetStrengthLimits',MagnetStrengthLimits,...
-                  'verbose',1,'corchro', corchrof,'V0',V0,'basic');
+                  'verbose',1,'corchro', corchrof,'V0',V0,...
+                  'bh',bh,'harm',harm,'basic');
 
 %[m4UT, ~] = cLatt(m4UT,'ACHRO',ACHRO,m4U'ACHRO_ref',ACHRO_ref,'verbose',1);
 
@@ -498,6 +514,15 @@ if (strcmpi(exitflag,'cancelled'))
 end
 %
 %% Lattice without errors
+% RDTs
+[m4UT, exitflag] = cLatt(m4UT,'RDT','verbose',2);
+
+save('m4UT', 'm4UT');
+
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
+
 % Dynamic Aperture
 [m4UT, exitflag] = cLatt(m4UT,'DAxy','verbose',2);
 

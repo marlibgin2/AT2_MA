@@ -95,7 +95,7 @@ Fams  = getoption(varargin,'Fams', {'Q1_d1';'Q2_d1';'R1_d1';...
                            'O3_d1';'T1_d1';'T2_d1'} );
 
 verboselevel = getoption(varargin,'verbose',0);
-%% Extacts magnet strengths
+%% Extracts magnet strengths
 switch mode
     case {'X0';'x0'}
         if (isempty(X0))
