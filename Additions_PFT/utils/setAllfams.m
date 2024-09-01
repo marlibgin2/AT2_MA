@@ -12,11 +12,14 @@ function NewLAT = setAllfams(nLAT,LAT,LatticeOptData,DVs)
 %
 % Note : the calling routine must check that the choice of nLAT and LAT are
 % compatible with each other.
-%   
+   
 %% History
 % PFT 2023,first version
-% PFT 2024/08/19: included bend angles with fixed profile as set DV 
+% PFT 2024/08/19: included bend angles with fixed profile as DV 
+% PFT 2024/08/24: included distance as DV
+% PFT 2024/08/28: included handling of element slice bend angles as DV
 %
+%%
 nallfams        = LatticeOptData.nallfams;
 stdfamlist      = LatticeOptData.All_stdfamlist;
 nstdfamlist     = LatticeOptData.All_nstdfamlist;
@@ -32,6 +35,11 @@ else
     Lfamlist = [];
 end
 
+if (isfield(LatticeOptData,'All_slicefamlist'))
+    slicefamlist = LatticeOptData.All_slicefamlist;
+else
+    slicefamlist = [];
+end
 
 famtype         = LatticeOptData.All_famtype;
 
@@ -172,5 +180,12 @@ for i=1:length(Lfamlist)
      end
 end
 
+for i=1:length(slicefamlist)
+     for l=1:size(Ifams{slicefamlist(i)},1)
+         if(not(isnan(DVs(slicefamlist(i)))))
+             NewLAT{Ifams{slicefamlist(i)}(l)}.BendingAngle = DVs(slicefamlist(i));
+         end
+     end
+end
 
 end

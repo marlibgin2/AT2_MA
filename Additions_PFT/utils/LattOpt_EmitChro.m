@@ -1,10 +1,11 @@
 function f = LattOpt_EmitChro(x,LatticeOptData)
-% inputs
+%% Inputs
 %       x: row vector with decision variables for Lattice Optimization.
 %       LatticeOptData: structure with optimization configuration data, 
 %       including the list of decision and objective variable and lattice.
 %
-% output: row vector of fitness functions to be minimized
+% Outputs: row vector of fitness functions to be minimized
+%       [emittance sqrt(chrox^2 + chroy^2)]
 %
 %   
 

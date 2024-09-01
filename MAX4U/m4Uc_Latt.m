@@ -1,4 +1,5 @@
 function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLimits,varargin)
+%% General Description
 % Runs all "cLatt" function options in a series of steps 
 % creating/overwriting  a structure m4UT, saving this variable
 % in a "m4UT.mat" at the end of each step and saving all matlab 
@@ -57,7 +58,12 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 % Optional flags
 % 'basonly' : if present only lattice structire creation and basic
 %             calculations are done
-
+% 'noerrors': if present, only calculations for lattice without 
+%             errors are done
+% 'nooffmom': if present, only DA calculations on-momentum are done.
+% 'noDA'    : if present, DA calculations are not done.
+% 'noLMA'   : if present, LMA calculations are not done.
+% 'noTLT'   : if present, TLT calculations are not done.
 
 %% History
 % PFT 2024/07/06 : first version
@@ -84,13 +90,25 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 %                  voltage to RF cavity when generating the RING cell
 %                  array
 % PFT 2024/08/18 : bug fix , handling of default vaues for DAoptions 
+% PFT 2024/08/30 : added optional flags to suppress calculations 
+% PFT 2024/08/31 : added possibility o storing LatticeOptData structure in
+%                  the resulting m4UT structure. Useful for dealing with 
+%                  lattices generaed through optimzaiton runs configured
+%                  with parameters set in LatticeOptData
+%                  
 
 %% Input argument parsing
 corchrof         = getoption(varargin,'corchro',false);
 V0               = getoption(varargin,'V0',1.8E6);
 bh               = getoption(varargin,'bh','auto');
 harm             = getoption(varargin,'harm',176);
+LatticeOptData   = getoption(varargin,'LatticeOptData',struct);
 basonlyf         = any(strcmpi(varargin,'basonly'));
+noerrorsf        = any(strcmpi(varargin,'noerrors'));
+nooffmomf        = any(strcmpi(varargin,'nooffmom'));
+noDAf            = any(strcmpi(varargin,'noDA'));
+noLMAf           = any(strcmpi(varargin,'noLMA'));
+noTLTf           = any(strcmpi(varargin,'noTLT'));
 
 %% General initialisation
 
@@ -494,7 +512,8 @@ end
                   'ACHRO',ACHRO,'ACHRO_ref',ACHRO_ref,...
                   'MagnetStrengthLimits',MagnetStrengthLimits,...
                   'verbose',1,'corchro', corchrof,'V0',V0,...
-                  'bh',bh,'harm',harm,'basic');
+                  'bh',bh,'harm',harm,'basic','RDT',...
+                  'LatticeOptData',LatticeOptData);
 
 %[m4UT, ~] = cLatt(m4UT,'ACHRO',ACHRO,m4U'ACHRO_ref',ACHRO_ref,'verbose',1);
 
@@ -502,6 +521,11 @@ end
 
 %[m4UT, exitflag] = cLatt(m4UT,'basic','verbose',1);
 
+save('m4UT', 'm4UT');
+
+if (strcmpi(exitflag,'cancelled'))
+    return
+end
 
 save('m4UT', 'm4UT');
 
@@ -514,30 +538,26 @@ if (strcmpi(exitflag,'cancelled'))
 end
 %
 %% Lattice without errors
-% RDTs
-[m4UT, exitflag] = cLatt(m4UT,'RDT','verbose',2);
-
-save('m4UT', 'm4UT');
-
-if (strcmpi(exitflag,'cancelled'))
-    return
-end
 
 % Dynamic Aperture
-[m4UT, exitflag] = cLatt(m4UT,'DAxy','verbose',2);
+if (not(noDAf))
+    [m4UT, exitflag] = cLatt(m4UT,'DAxy','verbose',2);
 
-save('m4UT', 'm4UT');
+    save('m4UT', 'm4UT');
 
-if (strcmpi(exitflag,'cancelled'))
-    return
+    if (strcmpi(exitflag,'cancelled'))
+        return
+    end
 end
 
-[m4UT, exitflag] = cLatt(m4UT,'DAxydp','verbose',2);
+if (not(nooffmomf)&&not(noDAf))
+    [m4UT, exitflag] = cLatt(m4UT,'DAxydp','verbose',2);
 
-save('m4UT', 'm4UT');
+    save('m4UT', 'm4UT');
 
-if (strcmpi(exitflag,'cancelled'))
-    return
+    if (strcmpi(exitflag,'cancelled'))
+        return
+    end
 end
 % Tune Maps
 [m4UT, exitflag] = cLatt(m4UT,'TM_xy','TM_gridxy','TM_gridxdp','TM_gridydp','TM_chro','verbose',2);
@@ -556,18 +576,25 @@ if (strcmpi(exitflag,'cancelled'))
 end
 
 % Momentum Aperture
-[m4UT, exitflag] = cLatt(m4UT,'LMA','verbose',2);
+if (not(noLMAf))
+    [m4UT, exitflag] = cLatt(m4UT,'LMA','verbose',2);
 
-save('m4UT', 'm4UT');
-if (strcmpi(exitflag,'cancelled'))
-    return
+    save('m4UT', 'm4UT');
+    if (strcmpi(exitflag,'cancelled'))
+        return
+    end
+end
+%Touschek lifetime
+if (not(noTLTf))
+    [m4UT, exitflag] = cLatt(m4UT,'TLT','verbose',2);
+
+    save('m4UT', 'm4UT');
+    if (strcmpi(exitflag,'cancelled'))
+        return
+    end
 end
 
-%Touschek lifetime
-[m4UT, exitflag] = cLatt(m4UT,'TLT','verbose',2);
-
-save('m4UT', 'm4UT');
-if (strcmpi(exitflag,'cancelled'))
+if (noerrorsf)
     return
 end
 

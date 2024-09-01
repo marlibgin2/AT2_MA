@@ -10,7 +10,6 @@ function f = LattOpt_EmitRDT(x,LatticeOptData)
 % with the sextupole families in chrom_fams. 
 % 
 %
-
 % Parameters for RDT calculation
 %
 chroms0  = LatticeOptData.DAoptions.chroms0; % Target chromaticity for one superperiod

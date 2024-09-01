@@ -15,6 +15,13 @@ function DVs = getDVs(nLAT, LAT, LatticeOptData)
 % Note : the calling routine must check that the choice of nLAT and LAT are
 % compatible with each other.
 
+%% History
+% PFT 2023,first version
+% PFT 2024/08/27: included bend angles (with fixed profile) and distance as
+%                 DV
+% PFT 2024/08/28: included slice bend angles as DVs
+
+%% Preamble
 nvars       = LatticeOptData.nvars;
 %
 % check for backward compatibility
@@ -38,6 +45,24 @@ else
     famtype=ones(1,nvars);
 end
 
+if (isfield(LatticeOptData,'bafamlist'))
+    bafamlist  = LatticeOptData.bafamlist;
+else
+    bafamlist = [];
+end
+
+if (isfield(LatticeOptData,'Lfamlist'))
+    Lfamlist  = LatticeOptData.Lfamlist;
+else
+    Lfamlist = [];
+end
+
+if (isfield(LatticeOptData,'slicefamlist'))
+    slicefamlist = LatticeOptData.slicefamlist;
+else
+    slicefamlist = [];
+end
+
 UC          = LatticeOptData.UC;
 ACHRO       = LatticeOptData.ACHRO;
 HACHRO      = LatticeOptData.HACHRO;
@@ -57,9 +82,9 @@ end
 if (isfield(LatticeOptData,'ACHROGRD'))
     ACHROGRD = LatticeOptData.ACHROGRD;
 end
-
 DVs = NaN(1, nvars);
 
+%% Finds lattice locations
 switch nLAT
     case 1
         Ifams  = LatticeOptData.IfamsH;
@@ -121,6 +146,7 @@ switch nLAT
         fprintf('%s Warning: Error in getDVs, unknow lattice type nLAt = %2d \n',datetime, nLAT);
 end
     
+%% Reads in DVs
 for i=1:length(stdfamlist)
     if (not(isempty(Ifams{stdfamlist(i)})))
         DVs(stdfamlist(i))=LAT{Ifams{stdfamlist(i)}(1)}.PolynomB(1,famtype(stdfamlist(i))+1);
@@ -137,6 +163,32 @@ for i=1:length(nstdfamlist)
      
      [kmax,pos] = max(abs(Ks));
      DVs(nstdfamlist(i))=sign(Ks(pos))*kmax;
+end
+
+for i=1:length(bafamlist)
+     Thetas = NaN(1,size(Ifams{bafamlist(i)},2));
+     for l=1:size(Ifams{bafamlist(i)},1)
+            Thetas(l)= LAT{Ifams{bafamlist(i)}(l)}.BendingAngle;
+     end
+     
+     [tmax,pos] = max(abs(Thetas));
+     DVs(bafamlist(i))=sign(Thetas(pos))*tmax;
+end
+
+for i=1:length(Lfamlist)
+    if (not(isempty(Ifams{Lfamlist(i)})))
+        DVs(Lfamlist(i))=LAT{Ifams{Lfamlist(i)}(1)}.Length;
+    else
+        DVs(Lfamlist(i))= NaN;
+    end
+end
+
+for i=1:length(slicefamlist)
+    if (not(isempty(Ifams{slicefamlist(i)})))
+        DVs(slicefamlist(i))=LAT{Ifams{slicefamlist(i)}(1)}.BendingAngle;
+    else
+        DVs(slicefamlist(i))= NaN;
+    end
 end
 
 end

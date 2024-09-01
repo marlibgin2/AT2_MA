@@ -142,5 +142,11 @@ try
 catch ME
     fprintf('%s Error in calcDA_raw:  \n', datetime);
     fprintf('Error message was:%s \n',ME.message);
+    error_line = ME.stack(1).line;
+    file = ME.stack(1).file;
+    fnct = ME.stack(1).name;
+    fprintf('at line number %3d \n', error_line);
+    fprintf('file %s \n', file);
+    fprintf('function %s \n', fnct);
     DA=0.0;
 end

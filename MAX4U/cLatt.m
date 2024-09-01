@@ -495,19 +495,18 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %       see calcLMA.m, calcTLT.m, calcLMAdist.m and calcTLTdist.m 
 %       for details.
 %
-% LattStructe.Lattperf.LMA      : local momentum aperture without errors
+% LattStructure.LattPerf.LMA      : local momentum aperture without errors
 %
-% LattStructe.Lattperf.LMAdist  : local momentum aperture without errors
+% LattStructure.LattPerf.LMAdist  : local momentum aperture without errors
 %
-% LattStructe.Lattperf.TL       : Touschek lifetime for achromat without
+% LattStructure.LattPerf.TL       : Touschek lifetime for achromat without
 %                                 errors 
 %
-% LattStructe.Lattperf.TLdist  : (1x2) array : Average and standard
-%                                 deviation of Touscke lifeftime for ring
+% LattStructure.LattPerf.TLdist  : (1x2) array : Average and standard
+%                                 deviation of Touschek lifetime for ring
 %                                 with errors [hr]. 
-% LattStructe.Lattperf.TLdist  : tune diffusion map for lattice wirh errors
 %
-% LattStructe.Lattperf.RDT     : RDT fluctuations along longitudinal
+% LattStructe.LattPerf.RDT     : RDT fluctuations along longitudinal
 %                                position of the ring
 %
 %
@@ -605,7 +604,14 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                  computeRDTfluctuation.m
 % PFT 2024/08/25 : improved handling of default values for optional
 %                  arguments
-%% preamble
+% PFT 2024/08/30 : fixes length of PolynomB fields in all elements to avoid
+%                  crash of RDT calculation
+% PFT 2024/08/31 : added possibility o storing LatticeOptData structure in
+%                  the resulting m4UT structure. Useful for dealing with 
+%                  lattices generaed through optimzaiton runs configured
+%                  with parameters set in LatticeOptData
+%
+%% Preamble
 PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
 PhysConst = PC.PC;      %Load physical constants
 %% Input argument parsing
@@ -617,6 +623,7 @@ ACHRO                = getoption(varargin,'ACHRO',{});
 ACHRO_ref            = getoption(varargin,'ACHRO_ref',{});
 RING                 = getoption(varargin,'RING',{});
 cLoptions            = getoption(varargin,'cLoptions',struct);
+LatticeOptData       = getoption(varargin,'LatticeOptData',struct);
 MagnetStrengthLimits = getoption(varargin,'MagnetStrengthLimits',struct);
 split                = getoption(varargin,'split',[]);
 V0                   = getoption(varargin,'V0',[]);
@@ -692,7 +699,8 @@ if (isempty(LattSt))
         end
     end
     LattStruct.Log = {strcat(sprintf('%s', datetime),{': Structure Created, args = '}, {args})};
-    LattStruct.cLoptions    = cLoptions;
+    LattStruct.cLoptions      = cLoptions;
+    LattStruct.LatticeOptData = LatticeOptData;
     %
     LattStruct.LattData.ACHROMAT_ref = ACHRO_ref;
     LattStruct.LattData.corchrof = corchrof;
@@ -1023,6 +1031,15 @@ fb=waitbar(0,'Lattice Structure Creation/Update', 'Name','Progress', 'CreateCanc
 setappdata(fb,'canceling',0);
 frac=0.0;
 dfrac=100/11;
+%% Makes all PolynomB Fields of equal length
+for i=1:length(ACHRO)
+    if (isfield(ACHRO{i},'PolynomB'))
+        nm=length(ACHRO{i}.PolynomB);
+        if(nm<4)
+            ACHRO{i}.PolynomB(nm+1:4)=0;
+        end
+    end
+end
 %% Corrects chromaticity
 if (corchrof&&not(isempty(cLoptions.chrom_fams))) 
     TolChrom     = cLoptions.DAoptions.TolChrom; % Chromaticity tolerances
@@ -1532,7 +1549,6 @@ if (basicf||allf||(contf&&isempty(fields(LattStruct.LattData.FG))))
     FG = calcFields(ACHRO,cLoptions.All_famsO,'desc',lattname,'split',split);
     LattStruct.LattData.FG=FG;
 end
-
 %% Calculates atsummary for full ring (or an achromat if ring not available)
 if (basicf||allf||(contf&&isempty(fields(LattStruct.LattPerf.atsummary))))
     if (verboselevel>0)
@@ -2102,7 +2118,6 @@ delete(fb);
 exitflag = 'normal';
 fprintf('%s Lattice structure creation/update/evaluation completed. \n', datetime);
 fprintf(' ************* \n');
-
 %% Auxiliary functions
 
 function ringW=SetBPMWeights(ring)

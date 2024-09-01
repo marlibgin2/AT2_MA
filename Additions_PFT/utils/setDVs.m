@@ -14,7 +14,16 @@ function NewLAT = setDVs(nLAT,LAT,LatticeOptData,DVs)
 % compatible with each other.
 %   
 
+%% History
+% PFT 2023,first version
+% PFT 2024/08/27: included bend angles (with fixed profile) and distance as
+%                 DV
+% PFT 2024/08/28: added handling of constraint conditions coupling two DVs
+%                 included slice bend angles as DVs
+
+%% Preamble
 nvars        = LatticeOptData.nvars;
+scan_fams    = LatticeOptData.scan_fams;
 %
 % check for backward compatibility
 %
@@ -35,6 +44,56 @@ else
     famtype=ones(1,nvars);
 end
 
+if (isfield(LatticeOptData,'bafamlist'))
+    bafamlist  = LatticeOptData.bafamlist;
+else
+    bafamlist = [];
+end
+
+if (isfield(LatticeOptData,'Lfamlist'))
+    Lfamlist  = LatticeOptData.Lfamlist;
+else
+    Lfamlist = [];
+end
+
+if (isfield(LatticeOptData,'slicefamlist'))
+    slicefamlist    = LatticeOptData.slicefamlist;
+    Ifams_cpsliceUC = LatticeOptData.IfamscpsliceUC;
+    cpslice_fam     = LatticeOptData.cpslice_fam;
+    cpslice_angle   = LatticeOptData.cpslice_angle;
+else
+    slicefamlist    = [];
+    Ifams_cpsliceUC = {};
+    cpslice_fam     = [];
+    cpslice_angle   = [];
+end
+
+if(isfield(LatticeOptData,'coupled_fams'))
+    coupled_fams  = LatticeOptData.coupled_fams; 
+    cpfamtype     = LatticeOptData.cpfamtype;
+    cpfamcoeff    = LatticeOptData.cpfamcoeff ;
+else
+    coupled_fams  = {};
+    cpfamtype     = [];
+    cpfamcoeff    = [];
+end
+if (not(isempty(cpfamtype)))
+ switch cpfamtype
+    case 0
+        nl=find(famtype==0);
+        common_coupled = intersect(scan_fams{nl},coupled_fams);
+        coupled_fam    = setdiff(coupled_fams,common_coupled);
+        cpfam   = find(not(cellfun('isempty',strfind(coupled_fams,coupled_fam))));
+    otherwise
+        common_coupled = {};
+        coupled_fam    = {};
+        cpfam = [];
+ end
+else
+   common_coupled = {};
+   coupled_fam    = {}; 
+   cpfam = [];
+end
 
 UC           = LatticeOptData.UC;
 ACHRO        = LatticeOptData.ACHRO;
@@ -55,6 +114,7 @@ if (isfield(LatticeOptData,'ACHROGRD'))
     ACHROGRD = LatticeOptData.ACHROGRD;
 end
 
+%% Finds lattice locations
 switch nLAT
     case 1
         Ifams  = LatticeOptData.IfamsH;
@@ -116,6 +176,7 @@ switch nLAT
         fprintf('%s Warning: Error in setDVs, unknow lattice type nLAt = %2d \n',datetime, nLAT);
 end
 
+%% Implements changes
 NewLAT = LAT;
 for i=1:length(stdfamlist)
      for l=1:size(Ifams{stdfamlist(i)},1)
@@ -149,5 +210,67 @@ for i=1:length(nstdfamlist)
        end
     end  
 end
+
+for i=1:length(bafamlist)
+    if(not(isnan(DVs(bafamlist(i)))))
+       Thetas = NaN(1,size(Ifams{bafamlist(i)},2));
+     
+       for l=1:size(Ifams{bafamlist(i)},1)
+            Thetas(l)= LAT{Ifams{bafamlist(i)}(l)}.BendingAngle;
+       end
+       [tmax,pos] = max(abs(Thetas));
+       factor = DVs(bafamlist(i))/tmax*sign(Thetas(pos));
+     
+       for l=1:size(Ifams{bafamlist(i)},1)
+          if(not(isnan(Thetas(l))))
+             NewLAT{Ifams{bafamlist(i)}(l)}.BendingAngle = Thetas(l)*factor;
+          end
+       end
+    end  
+end
+
+for i=1:length(Lfamlist)
+     for l=1:size(Ifams{Lfamlist(i)},1)
+         if(not(isnan(DVs(Lfamlist(i)))))
+             NewLAT{Ifams{Lfamlist(i)}(l)}.Length = DVs(Lfamlist(i));
+         end
+     end
+end
+
+if (not(isempty(cpfamtype)))
+    Ifamscp = LatticeOptData.IfamscoupledUC{cpfam};
+    DVcoup  = (cpfamcoeff(3)-cpfamcoeff(1)*DVs(nl))/cpfamcoeff(2);
+    for l=1:size(Ifamscp,1)
+            Thetas(l)= LAT{Ifamscp(l)}.BendingAngle;
+    end
+    [tmax,pos] = max(abs(Thetas));
+    factor = DVcoup/tmax*sign(Thetas(pos));
+     
+    for l=1:size(Ifamscp,1)
+       if(not(isnan(Thetas(l))))
+          NewLAT{Ifamscp(l)}.BendingAngle = Thetas(l)*factor;
+       end
+    end
+end
+
+for i=1:length(slicefamlist)
+     for l=1:size(Ifams{slicefamlist(i)},1)
+         if(not(isnan(DVs(slicefamlist(i)))))
+             NewLAT{Ifams{slicefamlist(i)}(l)}.BendingAngle = DVs(slicefamlist(i));
+         end
+     end
+end
+
+if (not(isempty(cpslice_fam)))
+    DVCoupl = 0;
+    for i=1:length(slicefamlist)
+        DVCoupl = DVCoupl+DVs(slicefamlist(i));
+    end
+    DVCoupl = LatticeOptData.cpslice_angle - DVCoupl;
+    for i=1:length(Ifams_cpsliceUC)
+        NewLAT{Ifams_cpsliceUC(i)}.BendingAngle = DVCoupl;
+    end
+end
+ 
 end
 

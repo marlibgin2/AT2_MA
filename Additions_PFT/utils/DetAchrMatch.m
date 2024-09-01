@@ -143,7 +143,7 @@ LatticeOptData.TolDisp  = TolDisp;
 LatticeOptData.TolAlpha = TolAlpha;
 LatticeOptData.DAoptions = DAoptions;
 
-%% preamble
+%% Preamble
 if (verboselevel>0)
     fprintf('******* \n');
     fprintf('%s Deterministic Achromat match  \n', datetime);

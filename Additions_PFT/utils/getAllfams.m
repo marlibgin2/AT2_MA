@@ -5,7 +5,7 @@ function DVs = getAllfams(nLAT, LAT, LatticeOptData)
 %
 % nLAT is :
 %          1 if DVs are to be taken from LAT with same structure as HACHRO in LatticeOptData
-%          2 if DVs are to tbe taken from LAT with same structure as ACHRO in LatticeOptData
+%          2 if DVs are to be taken from LAT with same structure as ACHRO in LatticeOptData
 %          3 if DVs are to be taken from LAT with same structure as UC in LatticeOptData
 %          4 if DVs are to be taken from LAT with same structure as IMC1 in LatticeOptData
 %          5 if DVs are to be taken from LAT with same structure as RING in LatticeOptData
@@ -17,7 +17,9 @@ function DVs = getAllfams(nLAT, LAT, LatticeOptData)
 
 %% History
 % PFT 2023,first version
-% PFT 2024/08/19: included bend angles with fixed profile as set DV 
+% PFT 2024/08/19: included bend angles with fixed profile as DV 
+% PFT 2024/08/24: included handling of element lengths as DV
+% PFT 2024/08/28: included handling of element slice bend angles as DV
 
 All_fams = LatticeOptData.All_fams;
 nallfams = LatticeOptData.nallfams;
@@ -36,8 +38,13 @@ else
     Lfamlist = [];
 end
 
+if (isfield(LatticeOptData,'All_slicefamlist'))
+    slicefamlist = LatticeOptData.All_slicefamlist;
+else
+    slicefamlist = [];
+end
 
-famtype     = LatticeOptData.All_famtype;
+famtype      = LatticeOptData.All_famtype;
 
 UC           = LatticeOptData.UC;
 ACHRO        = LatticeOptData.ACHRO;
@@ -152,7 +159,13 @@ for i=1:length(Lfamlist)
     end
 end
 
-
+for i=1:length(slicefamlist)
+    if (not(isempty(Ifams{slicefamlist(i)})))
+        DVs(slicefamlist(i))=LAT{Ifams{slicefamlist(i)}(1)}.BendingAngle;
+    else
+        DVs(slicefamlist(i))= NaN;
+    end
+end
 
 end
 

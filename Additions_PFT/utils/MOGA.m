@@ -4,7 +4,7 @@ function MOGAResults = MOGA(varargin)
 %
 %% Inputs
 % Mandatory arguments:
-%         LatticeOptData : structure withOptimzation configiurationinfo
+%         LatticeOptData : structure withOptimzation configiuration info
 %         optfnct : function to be minimized
 %              LattOpt_EmitCHRO  : Emittance and squared sum of chromaticities 
 %              LattOpt_EmitDynap : Emittance and on-momentum Dynamic Aperture
@@ -44,6 +44,11 @@ function MOGAResults = MOGA(varargin)
 % MOGAResults=MOGA(LatticeOptData,'RINGOpt_EmitDynAp','X0',X0_b3,'dx',20, 'PopSize',1000,'MaxGens',50,'comp','save','cont');
 % MOGAResults=MOGA(LatticeOptData,'RINGOpt_EmitDynAp','X0',X0_b3,'dx',20, 'PopSize',1000,'MaxGens',50,'comp');
 
+%% History
+% PFT 2023, first version
+% PFT 2024/08/27 : added UC optimization options
+% PFT 2024/08/28 : added output field with formatted ParetoFront table
+% PFT 2024/09/02 : added new optimziaiton function Lattopt_EmitSext
 %% Input Argument Parsing
 [LatticeOptData, optfnct]=getargs(varargin,[],'LattOpt_EmitDynAp');
 X0             = getoption(varargin,'X0',[]);
@@ -69,26 +74,49 @@ optMode   = LatticeOptData.optMode;
 switch optfnct
     case 'LattOpt_EmitChro'
         fitvars     = {'Emit[pmrad]';'Sqrt(Chrox**2+Chroy**2)'};
+        consfnct    = 'stabcon';
+    case 'LattOpt_EmitSext'
+        fitvars     = {'Emit[pmrad]';'Sext Strength[m**-3]'};
+        consfnct    = 'stabcon';
     case {'LattOpt_EmitDynAp';'RINGOpt_EmitDynAp'}
         fitvars     = {'Emit[pmrad]';'-AD[mm**2]'};  
+        consfnct    = 'stabcon';
     case 'LattOpt_EmitRDT'
         fitvars     = {'Emit[pmrad]';'RDT'};
+        consfnct    = 'stabcon';
     case 'LattOpt_EmitDiffRate'
         fitvars     = {'Emit[pmrad]';'DiffusionRate'};
+        consfnct    = 'stabcon';
+    case 'UCOpt_EmitChro'
+        fitvars     = {'Emit[pmrad]';'Sqrt(Chrox**2+Chroy**2)'};
+        consfnct    = 'stabconUC';
+    case 'UCOpt_EmitSext'
+        fitvars     = {'Emit[pmrad]';'Sext Strength[m**-3]'};
+        consfnct    = 'stabconUC';
 
     otherwise    
         fprintf('Invalid optimization function %s . Aborting .\n', optfnct);
         MOGAResults=[];
         return;
 end
-fh = str2func(optfnct);
+
+% Handles to optimization and constraint functions
+%
+fh          = str2func(optfnct);
 LattOptfnct = @(x)fh(x,LatticeOptData);
+fhconst     = str2func(consfnct);
+Constfnct   = @(x)fhconst(x,LatticeOptData);
+
 %
 % Checks compatibility between optimization mode and optimization function
 %
 switch optMode
     case {'Linear'}
-       if (not(strcmp(optfnct,'LattOpt_EmitChro')))
+       if (not(strcmp(optfnct,'LattOpt_EmitChro'))&& ...
+           not(strcmp(optfnct,'LattOpt_EmitRDT'))&&...
+           not(strcmp(optfnct,'RINGOpt_EmitDynAp'))&&...
+           not(strcmp(optfnct,'LattOpt_EmitDynAp'))&&...
+           not(strcmp(optfnct,'LattOpt_EmitSext')))
            fprintf('Incompatible optimization function %s \n', optfnct);
            fprintf('for optimization mode %s \n', optMode);
            fprintf('Aborting...\n');
@@ -103,6 +131,18 @@ switch optMode
            MOGAResults=[];
            return
       end
+
+    case {'UC'}
+      if (not(strcmp(optfnct,'UCOpt_EmitChro'))&& ...
+          not(strcmp(optfnct,'UCOpt_EmitSext')))
+           fprintf('Incompatible optimization function %s \n', optfnct);
+           fprintf('for optimization mode %s \n', optMode);
+           fprintf('Aborting...\n');
+           MOGAResults=[];
+           return
+      end
+
+
    otherwise
        fprintf ('Invalid optimization mode. Aborting \n');
        MOGAResults=[];
@@ -180,6 +220,9 @@ if(contf)
 
         case 'FullOct'
             cancontinue = ismember(OldoptMode,['Full' 'FullOct']);
+        
+        case 'UC'
+            cancontinue = ismember(OldoptMode,['UC']);
     end
     if(not(cancontinue)) 
         fprintf('Inconsistent optmization modes (%s to %s ) in continuation run. Aborting...\n',...
@@ -235,7 +278,7 @@ if (strcmp(optMode,'NonLinear'))
   end
 end
 
-Constfnct=@(x)stabcon(x,LatticeOptData);
+
 
 %% Runs genetic algorithm
 tstart=tic;
@@ -246,12 +289,18 @@ try
 catch ME
     fprintf('%s Error during MOGA run \n', datetime);
     fprintf('Error message was:%s \n',ME.message);
+    error_line = ME.stack(1).line;
+    file = ME.stack(1).file;
+    fnct = ME.stack(1).name;
+    fprintf('at line number %3d \n', error_line);
+    fprintf('file %s \n', file);
+    fprintf('function %s \n', fnct);
 end
 
 %% Collects results in output structure
 MOGAResults.LatticeOptData=LatticeOptData;
 MOGAResults.options=options;
-MOGAResults.opffnct=optfnct;
+MOGAResults.optfnct=optfnct;
 MOGAResults.fitvars=fitvars;
 MOGAResults.constraints = {'abs(Tr(Mx))<2';'abs(Tr(My))<2';...
                     strcat('BetaX<',num2str(LatticeOptData.BetaXMAX));...
@@ -262,7 +311,10 @@ MOGAResults.constraints = {'abs(Tr(Mx))<2';'abs(Tr(My))<2';...
                     strcat('BetaY0 - BetaX0 < ', num2str(LatticeOptData.DBetaXY));...
                     strcat('BetaX0 < ', num2str(LatticeOptData.BetaX0Max));...
                     strcat('BetaY0 < ', num2str(LatticeOptData.BetaY0Max));...
-                    strcat('Jx < 3.0 ')};
+                    strcat('Jx < 3.0 ');...
+                    strcat('AlphasUCb <',num2str(LatticeOptData.AlphaUCb));...
+                    strcat('EtaxPUBc <',num2str(LatticeOptData.EtaxPUCb))};
+
 MOGAResults.FuncTol=FuncTol;
 MOGAResults.MaxGens=MaxGens;
 MOGAResults.PopSize=PopSize;
@@ -316,6 +368,27 @@ if (compf)
    end
    toc;
 end
+PFTableHeader={};
+for i=1:nvars
+    PFTableHeader{i}=strcat(scan_fams{i},'_',num2str(i));
+end
+for i=1:nfitvars
+    PFTableHeader{i+nvars}=fitvars{i};
+end
+
+if (compf)
+    PFTableHeader{nvars+nfitvars+1}='TuneUCX';
+    PFTableHeader{nvars+nfitvars+2}='TuneUCY';
+    PFTableHeader{nvars+nfitvars+3}='Beta0X';
+    PFTableHeader{nvars+nfitvars+4}='Beta0Y';
+    PFTableHeader{nvars+nfitvars+5}='Eta0X';
+    PFTableHeader{nvars+nfitvars+6}='Jx';
+    PFTableHeader{nvars+nfitvars+7}='Sc1';
+    PFTableHeader{nvars+nfitvars+8}='Sc2';
+    PFTableHeader{nvars+nfitvars+9}='Index';
+end
+
+MOGAResults.PFTable = array2table(MOGAResults.ParetoFront,'VariableNames',PFTableHeader);
 %
 %% Saves results file
 
