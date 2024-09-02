@@ -565,7 +565,7 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                  added progress bar
 % PFT 2024/07/14 : added exitflag output
 % PFT 2024/07/17 : added lattice layout determination
-% PFT 2024/07/18 : added calcualtion of chamber and magnet aperture
+% PFT 2024/07/18 : added calculation of chamber and magnet aperture
 %                  geometries
 % PFT 2024/07/21 : added log of structure creation,
 %                  changed LMA calculation without errors from single
@@ -594,12 +594,12 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                  field
 %                  added options to orbit correction
 % PFT 2024/08/07 : changed default value of DAoptions.nturns to nan
-% SJ  2024/08/07 : introduced posibility of inputing either voltage or bucket height
-%                   to determine RF voltage  and pass this
+% SJ  2024/08/07 : introduced posibility of inputing either voltage or 
+%                   bucket height to determine RF voltage  and pass this
 %                   voltage to RF cavity when generating the RING cell
 %                   array
-% SJ  2024/08/20 : introduced call to estimate optimum RF voltage (Voptimum) for
-%                  maximum Touschek lifetime and update V0= Voptimum 
+% SJ  2024/08/20 : introduced call to estimate optimum RF voltage 
+%                  (Voptimum) formaximum Touschek lifetime and update V0= Voptimum 
 % SJ  2024/08/21 : introduced a call to calculate RDT using a function
 %                  computeRDTfluctuation.m
 % PFT 2024/08/25 : improved handling of default values for optional
