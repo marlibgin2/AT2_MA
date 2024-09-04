@@ -4,12 +4,26 @@ such as the tune and the chromaticity
 """
 from typing import Optional
 import numpy
-from ..lattice import Lattice, Refpts, set_value_refpts
+from ..lattice import Lattice, Refpts
+from ..lattice import get_value_refpts, set_value_refpts
 from ..lattice import AtWarning, AtError
 from ..physics import get_tune, get_chrom
 
 
 __all__ = ['fit_tune', 'fit_chrom']
+
+
+def _set_magnets(ring, refpts, attname, delta, index=None,
+                 increment=True, regex=False, scaling=False):
+    if scaling:
+        val0 = get_value_refpts(ring, refpts, attname, index=index,
+                                regex=regex)
+        set_value_refpts(ring, refpts, attname, val0*(1+delta/numpy.mean(val0)),
+                         index=index, regex=regex)                        
+    else:
+        set_value_refpts(ring, refpts, attname, delta, index=index,
+                         increment=True, regex=regex)
+                 
 
 
 def _get_tune(ring: Lattice, dp: float, **kwargs):
@@ -25,18 +39,19 @@ def _fit_tune_chrom(ring: Lattice, index: int, func,
                     refpts1: Refpts, refpts2: Refpts, newval,
                     tol: Optional[float] = 1.0e-12,
                     dp: Optional[float] = 0, niter: Optional[int] = 3,
-                    regex=False, **kwargs):
+                    delta: Optional[float] = None,
+                    regex=False, scaling=False, **kwargs):
 
     def _get_resp(ring: Lattice, index: int, func, refpts, attname,
-                  delta, dp, regex=False, **kwargs):
-        set_value_refpts(ring, refpts, attname, delta, index=index,
-                         increment=True, regex=regex)
+                  delta, dp, regex=False, scaling=False, **kwargs):
+        _set_magnets(ring, refpts, attname, delta, index=index,
+                     increment=True, regex=regex, scaling=scaling)
         datap = func(ring, dp, **kwargs)
-        set_value_refpts(ring, refpts, attname, -2*delta, index=index,
-                         increment=True, regex=regex)
+        _set_magnets(ring, refpts, attname, -2*delta, index=index,
+                     increment=True, regex=regex, scaling=scaling)
         datan = func(ring, dp, **kwargs)
-        set_value_refpts(ring, refpts, attname, delta, index=index,
-                         increment=True, regex=regex)
+        _set_magnets(ring, refpts, attname, delta, index=index,
+                     increment=True, regex=regex, scaling=scaling)
         data = numpy.subtract(datap, datan)/(2*delta)
         return data
 
@@ -44,15 +59,17 @@ def _fit_tune_chrom(ring: Lattice, index: int, func,
              dp: Optional[float] = 0, regex=False, **kwargs):
         val = func(ring, dp, **kwargs)
         dk = numpy.linalg.solve(J, numpy.subtract(newval, val))
-        set_value_refpts(ring, refpts1, 'PolynomB', dk[0], index=index,
-                         increment=True, regex=regex)
-        set_value_refpts(ring, refpts2, 'PolynomB', dk[1], index=index,
-                         increment=True, regex=regex)
+        _set_magnets(ring, refpts1, 'PolynomB', dk[0], index=index,
+                     increment=True, regex=regex, scaling=scaling)
+        _set_magnets(ring, refpts2, 'PolynomB', dk[1], index=index,
+                     increment=True, regex=regex, scaling=scaling)
         val = func(ring, dp, **kwargs)
         sumsq = numpy.sum(numpy.square(numpy.subtract(val, newval)))
         return sumsq
 
-    delta = 1e-6 * 10 ** index
+    if delta is None:
+        delta = 1.e-6 * 10 ** index
+        
     dq1 = _get_resp(ring, index, func, refpts1, 'PolynomB',
                     delta, dp, regex=regex, **kwargs)
     dq2 = _get_resp(ring, index, func, refpts2, 'PolynomB',
@@ -73,7 +90,8 @@ def _fit_tune_chrom(ring: Lattice, index: int, func,
 
 def fit_tune(ring: Lattice, refpts1: Refpts, refpts2: Refpts, newval,
              tol: float = 1.0e-12,
-             dp: Optional[float] = 0, niter: int = 3, regex=False,
+             dp: Optional[float] = 0, niter: int = 3, regex=False, 
+             KStep: Optional[float] = None,
              **kwargs) -> None:
     """Fits the tunes using 2 families
 
@@ -91,6 +109,9 @@ def fit_tune(ring: Lattice, refpts1: Refpts, refpts2: Refpts, newval,
         fit_integer: bool (default=False), use integer tune
         regex:      Using regular expressions for refpt string matching;
                     Default: False
+        KStep: gradient variation applied to magnets. Default 1e-5
+        scaling: Scales the families instead of incrementing.
+                 Default False
 
     Typical usage:
     at.fit_tune(ring, refpts1, refpts2, [0.1,0.25])
@@ -99,12 +120,13 @@ def fit_tune(ring: Lattice, refpts1: Refpts, refpts2: Refpts, newval,
     if numpy.any(numpy.floor(newval) != 0.0):
         kwargs['fit_integer'] = True
     _fit_tune_chrom(ring, 1, _get_tune, refpts1, refpts2, newval, tol=tol,
-                    dp=dp, niter=niter, regex=regex, **kwargs)
+                    dp=dp, niter=niter, regex=regex, delta=KStep, **kwargs)
 
 
 def fit_chrom(ring: Lattice, refpts1: Refpts, refpts2: Refpts, newval,
               tol: Optional[float] = 1.0e-12,
               dp: Optional[float] = 0, niter: Optional[int] = 3, regex=False,
+              HStep: Optional[float] = None,
               **kwargs) -> None:
     """Fit the chromaticities using 2 families
 
@@ -120,10 +142,13 @@ def fit_chrom(ring: Lattice, refpts1: Refpts, refpts2: Refpts, newval,
         niter:      Maximum number of iterations. Default 3
         regex:      Using regular expressions for refpt string matching;
                     Default: False
+        HStep: gradient variation applied to magnets. Default 1e-4
+        scaling: Scales the families instead of incrementing them.
+                 Default False
 
     Typical usage:
     at.fit_chrom(ring, refpts1, refpts2, [10,5])
     """
     print('\nFitting Chromaticity...')
     _fit_tune_chrom(ring, 2, _get_chrom, refpts1, refpts2, newval, tol=tol,
-                    dp=dp, niter=niter, regex=regex)
+                    dp=dp, niter=niter, regex=regex, delta=HStep, **kwargs)

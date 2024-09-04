@@ -6,6 +6,10 @@ function varargout = mcf(RING,varargin)
 % MCF(RING,...,'Display') plots dL(dpp) along with fitted mcf polynomial.
 %
 % [A1, A2, ...] = MCF(RING, ...) computes higher order mom. compaction
+%
+% IMPORTANT!!!
+% MCF gives a wrong result with 6-d rings. The RING should be set to 4d.
+% See also: ATDISABLE_6D, CHECK_6D
 
 % if nargin < 2, dp0=0; end
 mcforder = nargout;
@@ -39,7 +43,7 @@ ddp = (-0.5:min(0.5/mcforder,max_dp_step/dp_range):0.5)*dp_range;
 % transversally, but with energy shifts and with cT = 0
 X0 = nan(6,numel(ddp));
 for n = 1:numel(ddp)
-    X0(1:4,n) = findorbit4(RING,dp0 + ddp(n));
+    X0(1:4,n) = findorbit4(RING,dp0 + ddp(n),'strict', -1);
     X0(5,n) = dp0 + ddp(n);
     X0(6,n) = 0;
 end
@@ -59,7 +63,7 @@ ddp = ddp(iok);
 
 % Track X0 for 1 turn for all energy shifts to determine the path
 % difference (6th canonical variable)
-T = ringpass(atdisable_6d(RING),X0);
+T = ringpass(RING,X0,'KeepLattice');
 dL = T(6,:)';
 
 % Get circumference

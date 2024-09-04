@@ -32,6 +32,7 @@ function [RDT,buildup_fluctuation,natural_fluctuation] = computeRDTfluctuation(r
 %    [3] A. Franchi, L. Farvacque, F. Ewald, G. Le Bec, and K. B. Scheidt, Phys. Rev. ST Accel. Beams 17, 074001 (2014)
 %    [4] B. Wei, Z. Bai, J. Tan, L. Wang, and G. Feng, Phys. Rev. Accel. Beams 26, 084001 (2023)
 %
+
 % Validates the input arguements.
 [nslices,varargs]=getoption(varargin,'nslices',4);
 [nperiods,varargs]=getoption(varargs,'nperiods',1);
@@ -39,6 +40,7 @@ if ~ isempty(varargs)
     throw(MException('RDTFluctuation:parameterError', ...
         ['Unsupported parameter: ' varargs{1}]))
 end
+
 if ~(isnumeric(nslices) && isreal(nslices) && isfinite(nslices) ...
         && (nslices > 0) && round(nslices) == nslices)
     throw(MException('RDTFluctuation:variableTypeError', ...
@@ -49,6 +51,7 @@ if ~(isnumeric(nperiods) && isreal(nperiods) && isfinite(nperiods) ...
     throw(MException('RDTFluctuation:variableTypeError', ...
         'nperiods must be a positive integer'))
 end
+
 % slice sextupoles
 % the number of slices affects the computation of crossing terms.
 if nslices == 1
@@ -57,12 +60,14 @@ else
     r2=cellfun(@splitelem,ring,'UniformOutput',false);
     splitring=cat(1,r2{:});
 end
+
 % prapering the twiss data and magnet data.
 % same as computeRDT().
 indDQSO=findcells(splitring,'Class','Bend','Quadrupole','Sextupole','Octupole','Multipole');
-[~,AVEBETA,AVEMU,AVEDISP,nu,~]=atavedata(splitring,0,1:length(splitring));
-s=[0,findspos(splitring,indDQSO)];
 
+[~,AVEBETA,AVEMU,AVEDISP,nu,~]=atavedata(splitring,0,1:length(splitring));
+
+s=[0,findspos(splitring,indDQSO)];
 betax=AVEBETA(indDQSO,1);
 betay=AVEBETA(indDQSO,2);
 etax=AVEDISP(indDQSO,1);
@@ -133,7 +138,6 @@ f10002 = h10002 / (1 - exp(1i * period_phix));
 f21000s = f21000 - h21000s;
 f30000s = f30000 - h30000s;
 f10110s = f10110 - h10110s;
-
 f10020s = f10020 - h10020s;
 f10200s = f10200 - h10200s;
 
@@ -274,7 +278,6 @@ end
         h20001s2 = complex(zeros(total_length, 1));
         h00201s2 = complex(zeros(total_length, 1));
         h10002s2 = complex(zeros(total_length, 1));
-
         h31000s2 = complex(zeros(total_length, 1));
         h40000s2 = complex(zeros(total_length, 1));
         h20110s2 = complex(zeros(total_length, 1));

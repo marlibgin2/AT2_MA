@@ -7,6 +7,7 @@ function [h21000s, h30000s, h10110s, h10020s, h10200s, h20001s, h00201s, h10002s
 %   This function can show the build-up and cancellation of RDTs.
 %   DON'T use this function directly!!! 
 %   use computeRDTfluctuation()
+
 h21000s = complex(zeros(nData, 1));
 h30000s = complex(zeros(nData, 1));
 h10110s = complex(zeros(nData, 1));
@@ -26,6 +27,7 @@ h20020s = complex(zeros(nData, 1));
 h20200s = complex(zeros(nData, 1));
 h00310s = complex(zeros(nData, 1));
 h00400s = complex(zeros(nData, 1));
+
 h21000 = 0;
 h30000 = 0;
 h10110 = 0;
@@ -136,7 +138,6 @@ for ii=1:(nData-1)
         h00400 = h00400 + 1i * (h10200 * h01200j - h01200 * h10200j);
 
         h21000 = h21000 + h21000j;
-
         h30000 = h30000 + h30000j;
         h10110 = h10110 + h10110j;
         h10020 = h10020 + h10020j;

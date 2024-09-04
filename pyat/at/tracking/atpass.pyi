@@ -2,10 +2,10 @@
 
 import numpy as np
 from typing import List, Optional
-from at.lattice import Element, Particle
+from at.lattice import Element, Particle, Refpts
 
 def atpass(line: List[Element], r_in: np.ndarray, nturns: int,
-           refpts: np.ndarray,
+           refpts: Optional[Refpts] = [],
            turn: Optional[int] = None,
            energy: Optional[float] = None,
            particle: Optional[Particle] = None,
@@ -20,6 +20,6 @@ def elempass(element: Element, r_in,
              particle: Optional[Particle] = None,
              ): ...
 
-def reset_rng(rank: int = 0, seed: Optional[int] = None) -> None: ...
+def reset_rng(*, rank: int = 0, seed: Optional[int] = None) -> None: ...
 def common_rng() -> float: ...
 def thread_rng() -> float: ...

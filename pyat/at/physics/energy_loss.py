@@ -6,7 +6,7 @@ import numpy
 from scipy.optimize import least_squares
 from at.lattice import Lattice, Dipole, Wiggler, RFCavity, Refpts, EnergyLoss
 from at.lattice import check_radiation, AtError, AtWarning
-from at.lattice import QuantumDiffusion, Collective
+from at.lattice import QuantumDiffusion, Collective, SimpleQuantDiff
 from at.lattice import get_bool_index, set_value_refpts
 from at.constants import clight, Cgamma
 from at.tracking import internal_lpass
@@ -76,7 +76,7 @@ def get_energy_loss(ring: Lattice,
         """Losses from tracking
         """
         ringtmp = ring.disable_6d(RFCavity, QuantumDiffusion, Collective,
-                                  copy=True)
+                                  SimpleQuantDiff, copy=True)
         o6 = numpy.squeeze(internal_lpass(ringtmp, numpy.zeros(6),
                                           refpts=len(ringtmp)))
         if numpy.isnan(o6[0]):
@@ -132,7 +132,10 @@ def get_timelag_fromU0(ring: Lattice,
 
     def eq(x, freq, rfv, tl0, u0):
         omf = 2*numpy.pi*freq/clight
-        eq1 = (numpy.sum(-rfv*numpy.sin(omf*(x-tl0)))-u0)/u0
+        if u0 > 0.0:
+            eq1 = (numpy.sum(-rfv*numpy.sin(omf*(x-tl0)))-u0)/u0
+        else:
+            eq1 = numpy.sum(-rfv * numpy.sin(omf * (x - tl0)))
         eq2 = numpy.sum(-omf*rfv*numpy.cos(omf*(x-tl0)))
         if eq2 > 0:
             return numpy.sqrt(eq1**2+eq2**2)

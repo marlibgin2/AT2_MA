@@ -52,17 +52,17 @@ void BeamMomentsPass(double *r_in, int nbunch, int num_particles, struct elem *E
     MPI_Allreduce(MPI_IN_PLACE,nparts,nbunch,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
     #endif
-    
-    for (i=0; i<nbunch; i++){       
+
+    for (i=0; i<nbunch; i++){
         for (ii=0; ii<6; ii++){
             meanp[6*i+ii] = meanp[6*i+ii]/nparts[i];
             stdp[6*i+ii] = sqrt(stdp[6*i+ii]/nparts[i]-meanp[6*i+ii]*meanp[6*i+ii]); 
         }
     }    
-     
+
     means += 6*nbunch*turn;
     stds += 6*nbunch*turn;
-    memcpy(means, meanp, 6*nbunch*sizeof(double)); 
+    memcpy(means, meanp, 6*nbunch*sizeof(double));
     memcpy(stds, stdp, 6*nbunch*sizeof(double));
     atFree(buffer);  
 }
@@ -72,11 +72,15 @@ void BeamMomentsPass(double *r_in, int nbunch, int num_particles, struct elem *E
 ExportMode struct elem *trackFunction(const atElem *ElemData,struct elem *Elem,
                                       double *r_in, int num_particles, struct parameters *Param)
 {
-    double *means;
-    double *stds;  
-    if (!Elem) {   
+    if (!Elem) {
+        double *means;
+        double *stds;
+        int ndim = 3;
+        int dims[] = {6, Param->nbunch, Param->num_turns};
         means=atGetDoubleArray(ElemData,"_means"); check_error();
         stds=atGetDoubleArray(ElemData,"_stds"); check_error();
+        atCheckArrayDims(ElemData,"_means", ndim, dims); check_error();
+        atCheckArrayDims(ElemData,"_stds", ndim, dims); check_error();
         Elem = (struct elem*)atMalloc(sizeof(struct elem));
         Elem->stds=stds;
         Elem->means=means;
@@ -118,8 +122,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     else if (nrhs == 0) {
         /* list of required fields */
         plhs[0] = mxCreateCellMatrix(2,1);
-        mxSetCell(plhs[0],0,mxCreateString("_positions"));
-        mxSetCell(plhs[0],1,mxCreateString("_sizes"));
+        mxSetCell(plhs[0],0,mxCreateString("_means"));
+        mxSetCell(plhs[0],1,mxCreateString("_stds"));
     }
     else {
         mexErrMsgIdAndTxt("AT:WrongArg","Needs 2 or 0 arguments");
