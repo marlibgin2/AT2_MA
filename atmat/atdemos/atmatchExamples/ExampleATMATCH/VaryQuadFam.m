@@ -5,4 +5,4 @@ function R=VaryQuadFam(R,K1val,fam)
 indfam=findcells(R,'FamName',fam);
 %*ones(size(indfam))
 R=setcellstruct(R,'PolynomB',indfam,K1val*ones(size(indfam)),1,2); 
-
+R=setcellstruct(R,'K',indfam,K1val*ones(size(indfam)));
