@@ -1,6 +1,10 @@
 function Voptimum = optimV(varargin)
 % Calculates the optimum rf volatge needed to get maximum Touscheck
 % lifetime 
+% 
+% Note (2024/09/07) : a small discrepancy (~10%) has been found between the model
+% used in this function and the results of straightforward 6D tracking,
+% under investigatio
 %
 %% Mandatory Inputs
 % RING: Lattice array structure for whole ring
