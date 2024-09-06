@@ -1,5 +1,5 @@
 function DAS=calcDA(varargin)
-%
+%% General description
 % Calculates and plots Dynamic Aperture. Tracking can be 6d or 4d
 % as defined by the input lattice. This is a higherlevel wrapper function
 % that in turn calls the lower level function "calcDA_raw"
@@ -9,7 +9,8 @@ function DAS=calcDA(varargin)
 % RING : AT2 lattice array
 % DAoptions :Structure containing the following fields:
 %               DAmode   = 'grid', 'border', 'smart_in' or 'smart_out'
-%               nturns   : number of turns
+%               nturns   : number of turns; if nan use nsynchT synchrotron periods
+%               nsyncT   : number of synchrotron periods to be used if nturns is nan
 %               betax0   : horizontal beta for normalization - if NaN, no normalization is done
 %               betay0   : vertical beta for normalization - if NaN no normalization is done
 %               xmaxdas  : limits of the range in which the DA border is searched
@@ -95,7 +96,9 @@ function DAS=calcDA(varargin)
 %
 % PFT 2024/07/28 : adapted to incude DAmode='smart_in'
 % PFT 2024/07/30 : added handling of nan as input value for DAoptions.nturns
-% PFT 2024/08/07 : fixed bug handling of ntursn=nan
+% PFT 2024/08/07 : fixed bug handling of nturns=nan
+% PFT 2024/09/06 : added handling of DAoptions.nsyncT
+%
 %% Input argument parsing
 [RING,DAoptions] = getargs(varargin,[],[]);
 DAS.inputs.RING=RING;
@@ -106,6 +109,7 @@ if (isempty(DAoptions))
     DAoptions.z0=nan;
     DAoptions.DAmode='grid';
     DAoptions.nturns=nan;
+    DAoptions.nsyncT=3;
     DAoptions.betax0=nan;
     DAoptions.betay0=nan;
     DAoptions.xmaxdas=0.015;
@@ -138,6 +142,11 @@ dp               = getoption(varargin,'dp',DAoptions.dp);
 z0               = getoption(varargin,'z0',DAoptions.z0);
 DAmode           = getoption(varargin,'DAmode',DAoptions.DAmode);
 nturns           = getoption(varargin,'nturns',DAoptions.nturns);
+if isfield(DAoptions,'nsyncT')
+    nsyncT       = getoption(varargin,'nsyncT',DAoptions.nsyncT);
+else
+    nsyncT       = 3;
+end
 betax0           = getoption(varargin,'betax0',DAoptions.betax0);
 betay0           = getoption(varargin,'betay0',DAoptions.betay0);
 xmaxdas          = getoption(varargin,'xmaxdas',DAoptions.xmaxdas);
@@ -163,6 +172,7 @@ DAoptions.dp=dp;
 DAoptions.z0=z0;
 DAoptions.DAmode=DAmode;
 DAoptions.nturns=nturns;
+DAoptions.nsyncT=nsyncT;
 DAoptions.betax0=betax0;
 DAoptions.betay0=betay0;
 DAoptions.xmaxas=xmaxdas;
@@ -237,7 +247,7 @@ if (strcmp(DAmode,'grid'))
     DAoptions.Y0da=Y0da;
     DAoptions.dxdy=dxdy;
 end
-%% preamble
+%% Preamble
 PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
 PhysConst = PC.PC;      %Load physical constants
 
@@ -245,12 +255,6 @@ DAXp=zeros(1,npd);
 DAXm=zeros(1,npd);
 DAYp=zeros(1,npd);
 
-%% Calculates DA
-tstart=tic;
-if (verboselevel>0)
-    fprintf('*** \n');
-    fprintf('%s Starting DA calculation \n', datetime);
-end
 try
    rpara = atsummary(RING);
    etax = rpara.etax;
@@ -267,15 +271,30 @@ try
    end
    %
    % if input number of turns is nan, and lattice is 6d set it to
-   %  1.2*synchrotron period
+   %  nsyncT synchrotron periods
    if (isnan(nturns))
        if (check_6d(RING))
-            nturns = round(1.2/rpara.synctune);
+            nturns = round(nsyncT/rpara.synctune);
        else
             nturns = 1024;
        end
        DAoptions.nturns=nturns;
    end
+
+catch ME
+     fprintf('%s Error in calcDA \n', datetime);
+     fprintf('Error message was:%s \n',ME.message);
+     DAS.outputs=struct();
+     return;
+end
+
+%% Calculates DA
+tstart=tic;
+
+if (verboselevel>0)
+    fprintf('*** \n');
+    fprintf('%s Starting DA calculation \n', datetime);
+end
 
    switch mode
        case {'xy';'XY'}
@@ -307,10 +326,7 @@ try
 
    telapsed=toc(tstart);
 
-catch ME
-     fprintf('%s Error in calcDA \n', datetime);
-     fprintf('Error message was:%s \n',ME.message);
-end
+
 
 %% Collects data for output structure
 

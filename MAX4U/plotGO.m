@@ -47,6 +47,7 @@ function plotGO(LattStruct,varargin)
 % PFT 2024/07/22 : changed name from plotDO to plotGO 
 % PFT 2024/08/16 : added option to indicate BPM positions in the orbit
 %                  deviation plot
+% PFT 2024/08/29 : improved handling of missing fields in input structures
 %% Input argument parsing
 %
 plotdof         = any(strcmpi(varargin,'do'));
@@ -87,39 +88,40 @@ x2d_ref       = geometry.ref.DesignOrbit.x2d;
 y2d_ref       = geometry.ref.DesignOrbit.y2d;
 orbdev        = geometry.DesignOrbit.Deviation;
 
+if (isfield(geometry,'Magnets'))
+    magHAperture  = geometry.Magnets.HAperture;
+    x2d_magce     = geometry.Magnets.Centre.x2d;
+    y2d_magce     = geometry.Magnets.Centre.y2d;
+    magdevce      = geometry.Magnets.Centre.Deviation;
 
-magHAperture  = geometry.Magnets.HAperture;
-x2d_magce     = geometry.Magnets.Centre.x2d;
-y2d_magce     = geometry.Magnets.Centre.y2d;
-magdevce      = geometry.Magnets.Centre.Deviation;
+    magceTobeam   = geometry.Magnets.magceTobeam;
 
-magceTobeam   = geometry.Magnets.magceTobeam;
+    x2d_magup     = geometry.Magnets.Walls.x2d_up;
+    y2d_magup     = geometry.Magnets.Walls.y2d_up;
+    magdevup      = geometry.Magnets.Walls.dev_up;
 
-x2d_magup     = geometry.Magnets.Walls.x2d_up;
-y2d_magup     = geometry.Magnets.Walls.y2d_up;
-magdevup      = geometry.Magnets.Walls.dev_up;
+    x2d_magdown  = geometry.Magnets.Walls.x2d_down;
+    y2d_magdown  = geometry.Magnets.Walls.y2d_down;
+    magdevdown   = geometry.Magnets.Walls.dev_down;
+end
 
-x2d_magdown  = geometry.Magnets.Walls.x2d_down;
-y2d_magdown  = geometry.Magnets.Walls.y2d_down;
-magdevdown   = geometry.Magnets.Walls.dev_down;
+if (isfield(geometry,'Chambers'))
+    chaHAperture = geometry.Chambers.HAperture;
+    x2d_chace    = geometry.Chambers.Centre.x2d;
+    y2d_chace    = geometry.Chambers.Centre.y2d;
+    chadevce     = geometry.Chambers.Centre.Deviation;
 
+    chaceTobeam  = geometry.Chambers.chaceTobeam;
+    effectiveAperture = geometry.Chambers.effectiveAperture;
 
-chaHAperture = geometry.Chambers.HAperture;
-x2d_chace    = geometry.Chambers.Centre.x2d;
-y2d_chace    = geometry.Chambers.Centre.y2d;
-chadevce     = geometry.Chambers.Centre.Deviation;
+    x2d_chaup    = geometry.Chambers.Walls.x2d_up;
+    y2d_chaup    = geometry.Chambers.Walls.y2d_up;
+    chadevup     = geometry.Chambers.Walls.dev_up;
 
-chaceTobeam  = geometry.Chambers.chaceTobeam;
-effectiveAperture = geometry.Chambers.effectiveAperture;
-
-x2d_chaup    = geometry.Chambers.Walls.x2d_up;
-y2d_chaup    = geometry.Chambers.Walls.y2d_up;
-chadevup     = geometry.Chambers.Walls.dev_up;
-
-x2d_chadown  = geometry.Chambers.Walls.x2d_down;
-y2d_chadown  = geometry.Chambers.Walls.y2d_down;
-chadevdown   = geometry.Chambers.Walls.dev_down;
-
+    x2d_chadown  = geometry.Chambers.Walls.x2d_down;
+    y2d_chadown  = geometry.Chambers.Walls.y2d_down;
+    chadevdown   = geometry.Chambers.Walls.dev_down;
+end
 
 iBPM = findcells(ACHRO,'FamName','BPM');
 if (isempty(iBPM))
@@ -127,7 +129,7 @@ if (isempty(iBPM))
 end
 
 if (isempty(iBPM))
-    fprintf('%s Error in calcOrb; no BPMs in Lattice to plot orbit, aborting... \n', datetime);
+    fprintf('%s plotGO Warning: no BPMs in Lattice. \n', datetime);
 end
 sBPM = findspos(ACHRO,iBPM);
 nBPMs=numel(sBPM);
@@ -161,9 +163,11 @@ if(plotdodevf||plotdosf||plotallf)
 
     xlabel('X[m]');ylabel('dZ[mm]');
     grid on; 
-    title(strcat(lattname,' Design Orbit Deviation'));
+    title(lattname);
     if ((nBPMs>0)&&(showBPMsf))
         legend({'orbit deviation';'BPMs'});
+    else
+        legend({'orbit deviation'});
     end
 end
 
@@ -270,7 +274,7 @@ if (plotchaapf||plotchasf||plotallf)
     grid on; 
     title(lattname);
 end
-%% Plots Effective aperture
+%% Plots effective aperture
 if (plotefffapf||plotchasf||plotallf)
     figure;
     if (numel(x2d)==numel(effectiveAperture))

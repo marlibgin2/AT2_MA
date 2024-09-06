@@ -12,6 +12,7 @@ function plotfield(varargin)
 % SJ  2024/06/27: first version
 % PFT 2024/06/28: added grid lines and title
 
+%%
 FG    = getargs(varargin,[]);
 desc  = FG.desc;
 Spos  = FG.Spos;

@@ -134,11 +134,20 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                          families
 %
 % ********************************************************
+% cLoptions.RDToptions : structure with RDT calculation options, 
+%                                   with fields:
+% cLoptions.RDToptions.nperiods : Number of periods,Default=1
+% cLoptions.RDToptions.nslices  : Number of slices of each sextupole, Default=4
+%
+%
+% ********************************************************
 % cLoptions.DAoptions   : structure with DA aperture calculation
 %                                options, with fields: 
 %
 % cLoptions.DAoptions.DAmode : dynamics aperture calculation mode (, "grid", "smart_in" or "mart_out") , default = "smart_in"
-% cLoptions.DAoptions.nturns : number of turns, default = 1024;
+% cLoptions.DAoptions.nturns : number of turns; if nan use nsynchT
+% cLpotions.DAoptions.nsyncT : number of synchrotron periods to be used if
+%                              nturns is nan, default = 3
 % cLoptions.DAoptions.betax0 : horizontal beta for normalization - if
 %                                   NaN, no normalization is done, default = NaN
 % cLoptions.DAoptions.betay0 : vertical beta for normalization - if
@@ -495,19 +504,18 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %       see calcLMA.m, calcTLT.m, calcLMAdist.m and calcTLTdist.m 
 %       for details.
 %
-% LattStructe.Lattperf.LMA      : local momentum aperture without errors
+% LattStructure.LattPerf.LMA      : local momentum aperture without errors
 %
-% LattStructe.Lattperf.LMAdist  : local momentum aperture without errors
+% LattStructure.LattPerf.LMAdist  : local momentum aperture without errors
 %
-% LattStructe.Lattperf.TL       : Touschek lifetime for achromat without
+% LattStructure.LattPerf.TL       : Touschek lifetime for achromat without
 %                                 errors 
 %
-% LattStructe.Lattperf.TLdist  : (1x2) array : Average and standard
-%                                 deviation of Touscke lifeftime for ring
+% LattStructure.LattPerf.TLdist  : (1x2) array : Average and standard
+%                                 deviation of Touschek lifetime for ring
 %                                 with errors [hr]. 
-% LattStructe.Lattperf.TLdist  : tune diffusion map for lattice wirh errors
 %
-% LattStructe.Lattperf.RDT     : RDT fluctuations along longitudinal
+% LattStructe.LattPerf.RDT     : RDT fluctuations along longitudinal
 %                                position of the ring
 %
 %
@@ -566,7 +574,7 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                  added progress bar
 % PFT 2024/07/14 : added exitflag output
 % PFT 2024/07/17 : added lattice layout determination
-% PFT 2024/07/18 : added calcualtion of chamber and magnet aperture
+% PFT 2024/07/18 : added calculation of chamber and magnet aperture
 %                  geometries
 % PFT 2024/07/21 : added log of structure creation,
 %                  changed LMA calculation without errors from single
@@ -595,17 +603,26 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                  field
 %                  added options to orbit correction
 % PFT 2024/08/07 : changed default value of DAoptions.nturns to nan
-% SJ  2024/08/07 : introduced posibility of inputing either voltage or bucket height
-%                   to determine RF voltage  and pass this
+% SJ  2024/08/07 : introduced posibility of inputing either voltage or 
+%                   bucket height to determine RF voltage  and pass this
 %                   voltage to RF cavity when generating the RING cell
 %                   array
-% SJ  2024/08/20 : introduced call to estimate optimum RF voltage (Voptimum) for
-%                  maximum Touschek lifetime and update V0= Voptimum 
+% SJ  2024/08/20 : introduced call to estimate optimum RF voltage 
+%                  (Voptimum) formaximum Touschek lifetime and update V0= Voptimum 
 % SJ  2024/08/21 : introduced a call to calculate RDT using a function
 %                  computeRDTfluctuation.m
 % PFT 2024/08/25 : improved handling of default values for optional
 %                  arguments
-%% preamble
+% PFT 2024/08/30 : fixes length of PolynomB fields in all elements to avoid
+%                  crash of RDT calculation
+% PFT 2024/08/31 : added possibility o storing LatticeOptData structure in
+%                  the resulting m4UT structure. Useful for dealing with 
+%                  lattices generaed through optimzaiton runs configured
+%                  with parameters set in LatticeOptData
+% SJ  2024/09/03 : added the optional arguments to RDT computation
+% PFT 2024/09/06 : added handling of DAoptions.nsyncT and MAoptions.nsyncT
+%
+%% Preamble
 PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
 PhysConst = PC.PC;      %Load physical constants
 %% Input argument parsing
@@ -617,6 +634,7 @@ ACHRO                = getoption(varargin,'ACHRO',{});
 ACHRO_ref            = getoption(varargin,'ACHRO_ref',{});
 RING                 = getoption(varargin,'RING',{});
 cLoptions            = getoption(varargin,'cLoptions',struct);
+LatticeOptData       = getoption(varargin,'LatticeOptData',struct);
 MagnetStrengthLimits = getoption(varargin,'MagnetStrengthLimits',struct);
 split                = getoption(varargin,'split',[]);
 V0                   = getoption(varargin,'V0',[]);
@@ -692,7 +710,8 @@ if (isempty(LattSt))
         end
     end
     LattStruct.Log = {strcat(sprintf('%s', datetime),{': Structure Created, args = '}, {args})};
-    LattStruct.cLoptions    = cLoptions;
+    LattStruct.cLoptions      = cLoptions;
+    LattStruct.LatticeOptData = LatticeOptData;
     %
     LattStruct.LattData.ACHROMAT_ref = ACHRO_ref;
     LattStruct.LattData.corchrof = corchrof;
@@ -911,9 +930,13 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.GOoptions.chamberTomagnetGap =  0.5E-3;
     cLoptions.GOoptions.chamberThickness   =  1.0E-3;
     cLoptions.GOoptions.chamberShift       =  0.5E-3;
-    %
+%
+    cLoptions.RDToptions.nperiods = 1;
+    cLoptions.RDToptions.nslices = 4;
+%
     cLoptions.DAoptions.DAmode   = 'smart_in';
     cLoptions.DAoptions.nturns   = nan;
+    cLoptions.DAoptions.nsyncT   = 3;
     cLoptions.DAoptions.betax0   = NaN; 
     cLoptions.DAoptions.betay0   = NaN;
     cLoptions.DAoptions.xmindas  = -0.015;
@@ -985,6 +1008,7 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.MAoptions.splits             = 10;
     cLoptions.MAoptions.split_step_divisor = 2;
     cLoptions.MAoptions.nturns             = nan; 
+    cLoptions.Maoptions.nsyncT             = 3;
 %
     cLoptions.TLoptions.Ib                = 0.5/176;
     cLoptions.TLoptions.integrationmethod = 'integral';
@@ -1023,6 +1047,15 @@ fb=waitbar(0,'Lattice Structure Creation/Update', 'Name','Progress', 'CreateCanc
 setappdata(fb,'canceling',0);
 frac=0.0;
 dfrac=100/11;
+%% Makes all PolynomB Fields of equal length
+for i=1:length(ACHRO)
+    if (isfield(ACHRO{i},'PolynomB'))
+        nm=length(ACHRO{i}.PolynomB);
+        if(nm<4)
+            ACHRO{i}.PolynomB(nm+1:4)=0;
+        end
+    end
+end
 %% Corrects chromaticity
 if (corchrof&&not(isempty(cLoptions.chrom_fams))) 
     TolChrom     = cLoptions.DAoptions.TolChrom; % Chromaticity tolerances
@@ -1455,7 +1488,17 @@ if (RDTf||allf||(contf&&isempty(fields(LattStruct.LattPerf.RDT))))
     if (verboselevel>0)
         fprintf('%s cLatt: calculating RDTs \n', datetime);
     end
-[RDT,buildup_fluctuation,natural_fluctuation]=computeRDTfluctuation(RING);
+    if (isfield(cLoptions,'RDToptions'))
+        nperiods = cLoptions.RDToptions.nperiods;
+        nslices = cLoptions.RDToptions.nslices;
+    else
+        nperiods=1;
+        nslices=4;
+    end
+
+[RDT,buildup_fluctuation,natural_fluctuation]=computeRDTfluctuation(RING,...
+                                'nperiods', nperiods,'nslices',nslices);
+
 
     LattStruct.LattPerf.RDT.RDT=RDT;
     LattStruct.LattPerf.RDT.buildup_fluctuation=buildup_fluctuation;
@@ -1532,7 +1575,6 @@ if (basicf||allf||(contf&&isempty(fields(LattStruct.LattData.FG))))
     FG = calcFields(ACHRO,cLoptions.All_famsO,'desc',lattname,'split',split);
     LattStruct.LattData.FG=FG;
 end
-
 %% Calculates atsummary for full ring (or an achromat if ring not available)
 if (basicf||allf||(contf&&isempty(fields(LattStruct.LattPerf.atsummary))))
     if (verboselevel>0)
@@ -2102,7 +2144,6 @@ delete(fb);
 exitflag = 'normal';
 fprintf('%s Lattice structure creation/update/evaluation completed. \n', datetime);
 fprintf(' ************* \n');
-
 %% Auxiliary functions
 
 function ringW=SetBPMWeights(ring)

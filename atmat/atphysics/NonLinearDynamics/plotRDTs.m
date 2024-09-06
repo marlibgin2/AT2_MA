@@ -1,4 +1,4 @@
-function plotRDTs(varargin)
+function phandles=plotRDTs(varargin)
 % It plots 3rd and 4th order RDT fluctuations along s for RING 
 %% Inputs
 % Mandatory argument
@@ -9,14 +9,14 @@ function plotRDTs(varargin)
 
 %% History
 % SJ  2024/08/21 
+% SJ 2024/08/26: added the lattice name to the title of plot
 
 RDT = getargs(varargin,[]);
 Spos  = RDT.buildup_fluctuation.s;
 buildup_fluctuation =RDT.buildup_fluctuation;
-
-
+plottitle = getoption(varargin,'plottitle','');
 %% plotting 3rd order RDTs
-figure()
+figure;
 plot(Spos, abs(buildup_fluctuation.h21000), '-g','LineWidth',2);
 hold on;
 plot(Spos, abs(buildup_fluctuation.h30000), '-b','LineWidth',2);
@@ -33,12 +33,13 @@ plot(Spos, abs(buildup_fluctuation.h00201), 'Color','#7E2F8E','LineWidth',2);
 hold on;
 plot(Spos, abs(buildup_fluctuation.h10002), 'Color','#EDB120','LineWidth',2);
 xlabel('S[m]');ylabel('Amplitude of RDTs');
-grid on;set(gca,'Fontsize',14)
-title('3rd order RDTs ');
+grid on;set(gca,'Fontsize',10)
+title(strcat(plottitle,{' :3rd order RDTs'}));
 legend('h21000', 'h30000', 'h10110', 'h10020',...
        'h10200', 'h20001', 'h00201', 'h10002','NumColumns', 3,'Location','northwest');
+phandles{1}=gcf;
 %% plotting 4th order RDTs
-figure()
+figure;
 plot(Spos, abs(buildup_fluctuation.h22000), '-g','LineWidth',2);
 hold on;
 plot(Spos, abs(buildup_fluctuation.h11110), '-b','LineWidth',2);
@@ -61,7 +62,8 @@ plot(Spos, abs(buildup_fluctuation.h00310), 'Color','#D95319','LineWidth',2);
 hold on;
 plot(Spos, abs(buildup_fluctuation.h00400), '-y','LineWidth',2);
 xlabel('S[m]');ylabel('Amplitude of RDTs');
-grid on;set(gca,'Fontsize',14)
-title('4th order RDTs ');
+grid on;set(gca,'Fontsize',10)
+title(strcat(plottitle,{' :4th order RDTs'}));
 legend('h22000', 'h11110', 'h00220', 'h31000', 'h40000',...
        'h20110', 'h11200', 'h20020', 'h20200', 'h00310', 'h00400','NumColumns', 3,'Location','northwest');
+phandles{2}=gcf;

@@ -78,12 +78,14 @@ if any(a2L)
     throw(MException('RDTFluctuation:Unfinished', ...
         'The coupling case cannot be handled in the current version.'))
 end
+
 b2L=getcellstruct(splitring,'PolynomB',indDQSO,1,2).*getcellstruct(splitring,'Length',indDQSO);
 b2L(isnan(b2L))=0;
 b3L=getcellstruct(splitring,'PolynomB',indDQSO,1,3).*getcellstruct(splitring,'Length',indDQSO);
 b3L(isnan(b3L))=0;
 b4L=getcellstruct(splitring,'PolynomB',indDQSO,1,4).*getcellstruct(splitring,'Length',indDQSO);
 b4L(isnan(b4L))=0;
+
 nData=length(indDQSO) + 1;
 
 % calculate the build-up fluctuation of RDTs.

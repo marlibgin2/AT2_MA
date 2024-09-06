@@ -51,6 +51,7 @@ function plotLatt(LS,varargin)
 %               without errors.
 % 'DAdistxy'  : DA distribution with errors on the (x,y) plane. 
 % 'DAdistxydp': DA distribution with errors on the (x,dp) and (y,dp) planes.
+% 'RDT'       : Ressonance Driving Terms
 % 'TMs'       : all tune maps
 % 'TM_xy'     : tune map along x and y axes
 % 'TM_gridxy' : tunes on a grid of points on on (x,y) plane.
@@ -88,6 +89,8 @@ function plotLatt(LS,varargin)
 % PFT 2024/07/26 : added plots of corrected orbit based on ERlat structure
 %                  calculated by the "generate_errlatt" function.
 % PFT 2024/08/06 : eliminated redundat orbit rms plots
+% SJ  2024/08/26  : added plots of RDT fluctuation along s 
+% PFT 2024/09/01 : updated RDT plot follow Saroj's new plotRDTs function
 %
 %% Input argument parsing
 
@@ -100,6 +103,7 @@ DAxydpf     = any(strcmpi(varargin,'DAxydp'));
 DAdistxyf   = any(strcmpi(varargin,'DAdistxy'));
 DAdistxydpf = any(strcmpi(varargin,'DAdistxydp'));
 TMsf        = any(strcmpi(varargin,'TMs'));
+RDTf       = any(strcmpi(varargin,'RDT'));
 TM_xyf      = any(strcmpi(varargin,'TM_xy'));
 TM_gridxyf  = any(strcmpi(varargin,'TM_gridxy'));
 TM_gridxdpf = any(strcmpi(varargin,'TM_gridxdp'));
@@ -113,6 +117,7 @@ LMAdistf    = any(strcmpi(varargin,'LMAdist'));
 TLTdistf    = any(strcmpi(varargin,'TLTdist'));
 TMdistf     = any(strcmpi(varargin,'TMdist'));
 nogridf     = any(strcmpi(varargin,'nogrid'));
+
 %
 savef       = any(strcmpi(varargin,'save'));
 %
@@ -268,7 +273,18 @@ if (allf||basicf)
         fprintf('%s plotLattice: Warning - Challenge Levels fields are empty. \n', datetime);
     end
 
-
+end
+%% RDTs
+if (RDTf)
+    if (not(isempty(fields(LS.LattPerf.RDT))))
+        phandles=plotRDTs(LS.LattPerf.RDT,'plottitle',LS.Lattice_Name);
+         if (savef)
+            nhandles=numel(phandles);
+            for i=1:nhandles
+                exportgraphics(phandles{i},fn,'Append',true);
+            end
+        end
+    end
 end
 %% Dynamic Aperture without errors on and off-energy
 if (allf||DAsf||DAxyf)

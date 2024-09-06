@@ -39,7 +39,7 @@ function famLayout=famLayout(ACHRO,varargin)
 %
 %% Input argument parsing
 uniquef      = any(strcmpi(varargin,'unique'));
-
+%% Calcuates layiut
 famLayout={};
 j=0;
 for i=1:numel(ACHRO)

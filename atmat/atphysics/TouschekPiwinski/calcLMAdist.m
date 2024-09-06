@@ -25,7 +25,8 @@ function LMAdist = calcLMAdist(varargin)
 %            deltastepsize: step size for LMA search;
 %            splits : number of iterations of step division
 %            split_step_divisor: factor to reduce step size at each iteration
-%            nturns: numbr of turns. If nan then number of turns is chosen as 1.2/Qs           
+%            nturns: number of turns. if nan use nsynchT synchrotron periods
+%            nsyncT: number of synchrotron periods to be used if nturns is nan
 %            S0max: maximum longitudinal position at which to calculate LMA
 %            S0min: minimum longitudinal position at which to calculate LMA
 %  
@@ -121,6 +122,7 @@ function LMAdist = calcLMAdist(varargin)
 %                 if the number of seeds was larger than the default (10)
 % PFT 2024/08/06: bug fix - incorrect extraction of rms orbits from ERlat.
 % PFT 2024/08/07: update of MAoptions.nturns when input nturns is nan.
+% PFT 2024/09/06: added handling of nsyncT in MAoptions.
 %
 %% Input argument parsing
 [RING,ErrorModel,MAoptions] = getargs(varargin,[],[],[]);
@@ -143,6 +145,7 @@ if (isempty(MAoptions))
     MAoptions.splits=10;
     MAoptions.split_step_divisor=2;
     MAoptions.nturns=nan;
+    MAoptions.nsyncT=3;
     MAoptions.S0max=528/20;
     MAoptions.S0min=0.0;
 end
@@ -164,6 +167,11 @@ deltastepsize      = getoption(varargin,'deltastepsize',MAoptions.deltastepsize)
 splits             = getoption(varargin,'splits',MAoptions.splits);
 split_step_divisor = getoption(varargin,'split_step_divisor',MAoptions.split_step_divisor);
 nturns             = getoption(varargin,'nturns',MAoptions.nturns);
+if isfield(MAoptions,'nsyncT')
+    nsyncT       = getoption(varargin,'nsyncT',MAoptions.nsyncT);
+else
+    nsyncT       = 3;
+end
 S0max              = getoption(varargin,'S0max', MAoptions.S0max);
 S0min              = getoption(varargin,'S0min', MAoptions.S0min);
 
@@ -176,6 +184,7 @@ MAoptions.deltastepsize =  deltastepsize;
 MAoptions.splits        = splits;
 MAoptions.split_step_divisor = split_step_divisor;
 MAoptions.nturns             = nturns;
+MAoptions.nsyncT             = nsyncT;
 MAoptions.S0max              = S0max;
 MAoptions.S0min              = S0min;
 
@@ -226,7 +235,7 @@ catch ME
 end
    
 if (isnan(nturns))
-    nturns = round(1.2/rpara.synctune);
+    nturns = round(nsyncT/rpara.synctune);
     MAoptions.nturns=nturns;
     if (verboselevel>0)
         fprintf('%s calcLMAdist: nturns = %3d \n', datetime, nturns);
