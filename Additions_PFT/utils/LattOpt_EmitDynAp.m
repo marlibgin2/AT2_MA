@@ -42,7 +42,7 @@ function f = LattOpt_EmitDynAp(x, LatticeOptData)
 DAoptions  = LatticeOptData.DAoptions;
 chroms0    = DAoptions.chroms0; % Target chromaticity for one superperiod
 TolChrom   = DAoptions.TolChrom;% Chromaticity tolerances
-Nitchro    = DAoptions.Nitchro; % Max n. iterations of chromaticty correction
+Nitchro    = DAoptions.Nitchro; % Max n. iterations of chromaticity correction
 
 %% For backward compatibilty
 if (~isfield(DAoptions,'xmaxdas'))

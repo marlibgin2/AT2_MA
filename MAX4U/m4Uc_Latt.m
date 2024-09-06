@@ -93,8 +93,11 @@ function m4UT=m4Uc_Latt(ACHRO,lattname,desc,cLoptions,ACHRO_ref,MagnetStrengthLi
 % PFT 2024/08/30 : added optional flags to suppress calculations 
 % PFT 2024/08/31 : added possibility o storing LatticeOptData structure in
 %                  the resulting m4UT structure. Useful for dealing with 
-%                  lattices generaed through optimzaiton runs configured
+%                  lattices generated through optimization runs configured
 %                  with parameters set in LatticeOptData
+% SJ  2024/09/03 : added the optional arguments to RDT calculation
+% PFT 2024/09/06 : added handling of DAoptions.nsyncT and MAoptions.nsyncT
+%
 %                  
 
 %% Input argument parsing
@@ -155,12 +158,27 @@ if (~isfield(cLoptions,'ErrorModel'))
                             'strran',1.0,'bpmran',1.0);
 end
 %
+if (isfield(cLoptions,'RDToptions'))
+    if (~isfield(cLoptions.RDToptions,'nperiods'))
+        cLoptions.RDToptions.nperiods   = 1; % umber of periods,Default=1
+    end
+    if (~isfield(cLoptions.RDToptions,'nslices'))
+        cLoptions.RDToptions.nslices   = 4; % number of slices of each sextupole, Default=4
+    end
+else 
+   cLoptions.RDToptions.nperiods   = 1;
+   cLoptions.RDToptions.nslices    = 4;
+end
+%
 if (isfield(cLoptions,'DAoptions'))
     if (~isfield(cLoptions.DAoptions,'DAmode'))
         cLoptions.DAoptions.DAmode   = 'smart_in'; % dynamics aperture calculation mode: "border", "grid", "smart_in" or "smart_out"
     end
     if (~isfield(cLoptions.DAoptions,'nturns'))
         cLoptions.DAoptions.nturns   = nan; % number of turns
+    end
+    if (~isfield(cLoptions.DAoptions,'nsyncT'))
+        cLoptions.DAoptions.nsyncT   = 3; % number of synchrotron periods in case nturns=nan
     end
     if (~isfield(cLoptions.DAoptions,'betax0'))
         cLoptions.DAoptions.betax0   = NaN; % horizontal beta for normalization - if NaN, no normalization is don
@@ -228,6 +246,7 @@ if (isfield(cLoptions,'DAoptions'))
 else
     cLoptions.DAoptions.DAmode   = 'smart_in';
     cLoptions.DAoptions.nturns   = nan; 
+    cLoptions.DAoptions.nsyncT   = 3; 
     cLoptions.DAoptions.betax0   = NaN; 
     cLoptions.DAoptions.betay0   = NaN; 
     cLoptions.DAoptions.xmindas  = -0.015;
@@ -390,6 +409,9 @@ if (isfield(cLoptions,'MAoptions'))
     if (~isfield(cLoptions.MAoptions,'nturns'))
         cLoptions.MAoptions.nturns             = nan; 
     end
+    if (~isfield(cLoptions.MAoptions,'nsyncT'))
+        cLoptions.MAoptions.nsyncT             = 3; 
+    end
     if (~isfield(cLoptions.MAoptions,'S0min'))
         cLoptions.MAoptions.S0min              = 0.0;
     end
@@ -407,6 +429,7 @@ else
     cLoptions.MAoptions.splits             = 10;
     cLoptions.MAoptions.split_step_divisor = 2;
     cLoptions.MAoptions.nturns             = nan; 
+    cLoptions.MAoptions.nsyncT             = 3; 
     cLoptions.MAoptions.S0min              = 0.0;
     cLoptions.MAoptions.S0max              = findspos(ACHRO,length(ACHRO)+1);
 end

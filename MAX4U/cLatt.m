@@ -134,11 +134,20 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                          families
 %
 % ********************************************************
+% cLoptions.RDToptions : structure with RDT calculation options, 
+%                                   with fields:
+% cLoptions.RDToptions.nperiods : Number of periods,Default=1
+% cLoptions.RDToptions.nslices  : Number of slices of each sextupole, Default=4
+%
+%
+% ********************************************************
 % cLoptions.DAoptions   : structure with DA aperture calculation
 %                                options, with fields: 
 %
 % cLoptions.DAoptions.DAmode : dynamics aperture calculation mode (, "grid", "smart_in" or "mart_out") , default = "smart_in"
-% cLoptions.DAoptions.nturns : number of turns, default = 1024;
+% cLoptions.DAoptions.nturns : number of turns; if nan use nsynchT
+% cLpotions.DAoptions.nsyncT : number of synchrotron periods to be used if
+%                              nturns is nan, default = 3
 % cLoptions.DAoptions.betax0 : horizontal beta for normalization - if
 %                                   NaN, no normalization is done, default = NaN
 % cLoptions.DAoptions.betay0 : vertical beta for normalization - if
@@ -610,6 +619,8 @@ function [LattStruct, exitflag] = cLatt(varargin)
 %                  the resulting m4UT structure. Useful for dealing with 
 %                  lattices generaed through optimzaiton runs configured
 %                  with parameters set in LatticeOptData
+% SJ  2024/09/03 : added the optional arguments to RDT computation
+% PFT 2024/09/06 : added handling of DAoptions.nsyncT and MAoptions.nsyncT
 %
 %% Preamble
 PC=load('PC.mat');      %to prevent matlab from complaining about variable name being the same as script name.
@@ -919,9 +930,13 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.GOoptions.chamberTomagnetGap =  0.5E-3;
     cLoptions.GOoptions.chamberThickness   =  1.0E-3;
     cLoptions.GOoptions.chamberShift       =  0.5E-3;
-    %
+%
+    cLoptions.RDToptions.nperiods = 1;
+    cLoptions.RDToptions.nslices = 4;
+%
     cLoptions.DAoptions.DAmode   = 'smart_in';
     cLoptions.DAoptions.nturns   = nan;
+    cLoptions.DAoptions.nsyncT   = 3;
     cLoptions.DAoptions.betax0   = NaN; 
     cLoptions.DAoptions.betay0   = NaN;
     cLoptions.DAoptions.xmindas  = -0.015;
@@ -993,6 +1008,7 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.MAoptions.splits             = 10;
     cLoptions.MAoptions.split_step_divisor = 2;
     cLoptions.MAoptions.nturns             = nan; 
+    cLoptions.Maoptions.nsyncT             = 3;
 %
     cLoptions.TLoptions.Ib                = 0.5/176;
     cLoptions.TLoptions.integrationmethod = 'integral';
@@ -1472,7 +1488,17 @@ if (RDTf||allf||(contf&&isempty(fields(LattStruct.LattPerf.RDT))))
     if (verboselevel>0)
         fprintf('%s cLatt: calculating RDTs \n', datetime);
     end
-[RDT,buildup_fluctuation,natural_fluctuation]=computeRDTfluctuation(RING);
+    if (isfield(cLoptions,'RDToptions'))
+        nperiods = cLoptions.RDToptions.nperiods;
+        nslices = cLoptions.RDToptions.nslices;
+    else
+        nperiods=1;
+        nslices=4;
+    end
+
+[RDT,buildup_fluctuation,natural_fluctuation]=computeRDTfluctuation(RING,...
+                                'nperiods', nperiods,'nslices',nslices);
+
 
     LattStruct.LattPerf.RDT.RDT=RDT;
     LattStruct.LattPerf.RDT.buildup_fluctuation=buildup_fluctuation;

@@ -18,7 +18,8 @@ function DAdist = calcDAdist(varargin)
 % DAoptions: Structure containing the following fields:
 %     DAoptions.DAmode   = 'grid','border', 'smart_in' or 'smart_out'(plots are only produced if
 %                           DAmode is NOT 'grid')
-%      DAoptions.nturns   : number of turns
+%      DAoptions.nturns   : number of turns, if nan use nsynchT synchrotron periods
+%      DAoptions.nsyncT   : number of synchrotron periods to be used if nturns is n
 %      DAoptions.betax0   : horizontal beta for normalization - if NaN, no normalization is done
 %      DAoptions.betay0   : vertical beta for normalization - if NaN no normalization is done
 %      DAoptions.xmaxdas  : limits of the range in which the DA border is searched
@@ -184,6 +185,7 @@ function DAdist = calcDAdist(varargin)
 % PFT 2024/08/05: fixed bug - incorrect initilization of output vectors
 %                 if the number of seeds was larger than the default (10)
 % PFT 2024/08/07: fixed bug handling of nturns=nan
+% PFT 2024/09/06: added handling of DAoptions.nsyncT
 
 %% Input argument parsing
 [RING,ErrorModel,DAoptions] = getargs(varargin,[],[],[]);
@@ -198,7 +200,8 @@ if (isempty(DAoptions))
     DAoptions.dp=0.0;
     DAoptions.z0=nan;
     DAoptions.DAmode='border';
-    DAoptions.nturns=1024;
+    DAoptions.nturns=nan;
+    DAoptions.nsyncT=3;
     DAoptions.betax0=nan;
     DAoptions.betay0=nan;
     DAoptions.xmaxdas=0.007;
@@ -236,6 +239,11 @@ dp               = getoption(varargin,'dp',DAoptions.dp);
 z0               = getoption(varargin,'z0',DAoptions.z0);
 DAmode           = getoption(varargin,'DAmode',DAoptions.DAmode);
 nturns           = getoption(varargin,'nturns',DAoptions.nturns);
+if isfield(DAoptions,'nsyncT')
+    nsyncT       = getoption(varargin,'nsyncT',DAoptions.nsyncT);
+else
+    nsyncT       = 3;
+end
 betax0           = getoption(varargin,'betax0',DAoptions.betax0);
 betay0           = getoption(varargin,'betay0',DAoptions.betay0);
 xmaxdas          = getoption(varargin,'xmaxdas',DAoptions.xmaxdas);
@@ -268,6 +276,7 @@ if (strcmpi(mode,'xydp'))
 end
 DAoptions.DAmode=DAmode;
 DAoptions.nturns=nturns;
+DAoptions.nsyncT=nsyncT;
 DAoptions.betax0=betax0;
 DAoptions.betay0=betay0;
 DAoptions.xmaxdas=xmaxdas;
@@ -368,10 +377,10 @@ if (not(isempty(ERlat.outputs.rparae{1})))
    end
    %
    % if input number of turns is nan, and lattice is 6d set it to
-   %  1.2*synchrotron period
+   %  nsyncT synchrotron period
    if (isnan(nturns))
        if (check_6d(RING))
-            nturns = round(1.2/rpara.synctune);
+            nturns = round(nsyncT/rpara.synctune);
        else
             nturns = 1024;
        end
