@@ -21,19 +21,20 @@ Sub-packages
 
 .. toctree::
    :maxdepth: 2
-   :caption: Getting started:
+   :caption: Guides:
    :hidden:
 
-   getting_started
+   howto/Installation
+   howto/Primer
+   notebooks/variables
+   notebooks/observables
 
 .. toctree::
    :maxdepth: 2
    :caption: How to:
    :hidden:
 
-   howto/Installation
    howto/multiprocessing
-   howto/Primer
    howto/CavityControl
    howto/Collective
 
@@ -42,14 +43,15 @@ Sub-packages
    :caption: Packages:
    :recursive:
 
-   at.acceptance
-   at.collective
    at.lattice
+   at.latticetools
+   at.tracking
+   at.physics
    at.load
    at.matching
-   at.physics
+   at.acceptance
+   at.collective
    at.plot
-   at.tracking
    at.constants
 
 Indices and tables

@@ -9,17 +9,22 @@
 #include <string.h>
 #include <omp.h>
 #endif /*_OPENMP*/
+#ifdef MPI
+#include <mpi.h>
+#endif /* MPI */
 #include "attypes.h"
 #include <stdbool.h> 
 #include <math.h>
 #include <float.h>
 #include <atrandom.c>
 
+#define atPrintf(...) PySys_WriteStdout(__VA_ARGS__)
+
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/ndarrayobject.h>
-
-#define NUMPY_IMPORT_ARRAY_RETVAL NULL
-#define NUMPY_IMPORT_ARRAY_TYPE void *
+#if NPY_ABI_VERSION < 0x02000000
+    #define NPY_RAVEL_AXIS 32
+#endif
 
 typedef PyObject atElem;
 
@@ -303,11 +308,11 @@ void set_energy_particle(PyObject *lattice, PyObject *energy,
 void set_current_fillpattern(PyArrayObject *bspos, PyArrayObject *bcurrents,
                              struct parameters *param){ 
     if(bcurrents != NULL){
-        PyObject *bcurrentsum = PyArray_Sum(bcurrents, NPY_MAXDIMS, 
+        PyObject *bcurrentsum = PyArray_Sum(bcurrents, NPY_RAVEL_AXIS,
                                             PyArray_DESCR(bcurrents)->type_num,
-                                            NULL); 
+                                            NULL);
         param->beam_current = PyFloat_AsDouble(bcurrentsum);
-        Py_DECREF(bcurrentsum);    
+        Py_DECREF(bcurrentsum);
         param->nbunch = PyArray_SIZE(bspos);
         param->bunch_spos = PyArray_DATA(bspos);
         param->bunch_currents = PyArray_DATA(bcurrents); 
@@ -316,7 +321,7 @@ void set_current_fillpattern(PyArrayObject *bspos, PyArrayObject *bcurrents,
         param->nbunch=1;
         param->bunch_spos = (double[1]){0.0};
         param->bunch_currents = (double[1]){0.0};
-    }   
+    }
 }
 
 /*
@@ -404,14 +409,15 @@ static PyObject *at_atpass(PyObject *self, PyObject *args, PyObject *kwargs) {
     param.thread_rng=&thread_state;
     param.energy=0.0;
     param.rest_energy=0.0;
-    param.charge=-1.0;       
+    param.charge=-1.0;
+    param.num_turns=num_turns;
     
     if (keep_counter)
         param.nturn = last_turn;
     else
         param.nturn = counter;
 
-    set_energy_particle(lattice, energy, particle, &param);   
+    set_energy_particle(lattice, energy, particle, &param);
     set_current_fillpattern(bspos, bcurrents, &param);
 
     num_particles = (PyArray_SIZE(rin)/6);
@@ -519,9 +525,11 @@ static PyObject *at_atpass(PyObject *self, PyObject *args, PyObject *kwargs) {
             Py_DECREF(PyPassMethod);
             if (!LibraryListPtr) return print_error(elem_index, rout);  /* No trackFunction for the given PassMethod: RuntimeError */
             pylength = PyObject_GetAttrString(el, "Length");
-            length = PyFloat_AsDouble(pylength);
-            Py_XDECREF(pylength);
-            if (PyErr_Occurred()) {
+            if (pylength) {
+                length = PyFloat_AsDouble(pylength);
+                Py_XDECREF(pylength);
+            }
+            else {
                 length = 0.0;
                 PyErr_Clear();
             }
@@ -693,10 +701,16 @@ static PyObject *at_elempass(PyObject *self, PyObject *args, PyObject *kwargs)
 static PyObject *reset_rng(PyObject *self, PyObject *args, PyObject *kwargs)
 {
     static char *kwlist[] = {"rank", "seed", NULL};
-    uint64_t rank = 0;
     uint64_t seed = AT_RNG_STATE;
+#ifdef MPI
+    int irank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &irank);
+    uint64_t rank = irank;
+#else
+    uint64_t rank = 0;
+#endif /* MPI */
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|K$K", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|$KK", kwlist,
         &rank, &seed)) {
         return NULL;
     }
@@ -755,11 +769,13 @@ static PyMethodDef AtMethods[] = {
               ":meta private:"
             )},
     {"reset_rng",  (PyCFunction)reset_rng, METH_VARARGS | METH_KEYWORDS,
-    PyDoc_STR("reset_rng(rank=0, seed=None)\n\n"
+    PyDoc_STR("reset_rng(*, rank=0, seed=None)\n\n"
               "Reset the *common* and *thread* random generators.\n\n"
+              "The seed is applied unchanged to the \"common\" generator, and modified in a\n"
+              "thread-specific way to the \"thread\" generator\n\n"
               "Parameters:\n"
               "    rank (int):    thread identifier (for MPI and python multiprocessing)\n"
-              "    seed (int):    single seed for both generators\n"
+              "    seed (int):    single seed for both generators. Default: initial seed\n"
             )},
     {"common_rng",  (PyCFunction)common_rng, METH_NOARGS,
     PyDoc_STR("common_rng()\n\n"

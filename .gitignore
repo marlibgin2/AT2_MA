@@ -5,9 +5,11 @@
 *.mex
 *.mexa64
 *.mexmaci64
+*.mexw64
 
 # Compiled python
 *.pyc
+*.pyd
 
 # pytest cache
 .cache
@@ -50,3 +52,9 @@ athelp.mat
 
 # octave files
 octave-workspace
+
+# MATLAB autosave files
+*.asv
+
+# Auto-generated Contents.m files
+Contents.m

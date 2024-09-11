@@ -32,6 +32,7 @@ function [map_l,map_h]=calcLMA_raw(RING,points,varargin)
 %% History
 % PFT 2024/03/08. 
 % PFT 2024/06/16: changed handling of verbose level
+<<<<<<< HEAD
 
 %% Input argument parsing
 
@@ -43,10 +44,36 @@ splits        = getoption(varargin,'splits',2);
 split_step_divisor = getoption(varargin,'split_step_divisor',10);
 nturns        = getoption(varargin,'nturns',500);
 verboselevel  = getoption(varargin,'verbose',0);
+=======
+% PFT 2024/07/30: changed handling of initcoord
+
+%% Input argument parsing
+
+deltalimit      = getoption(varargin,'deltalimit',0.1);
+initcoord       = getoption(varargin,'initcoord',[]);
+delta           = getoption(varargin,'delta',0.1);
+deltastepsize   = getoption(varargin,'deltastepsize',0.001);
+splits          = getoption(varargin,'splits',2);
+split_step_divisor = getoption(varargin,'split_step_divisor',10);
+nturns          = getoption(varargin,'nturns',1024);
+verboselevel    = getoption(varargin,'verbose',0);
+>>>>>>> MAXIV_addition
 
 %% Calculates Momentum Aperture
 map_h=zeros(length(points),1);
 map_l=zeros(length(points),1);
+<<<<<<< HEAD
+=======
+
+% Adjusts the initial phase to the synchronous phase if input is nan
+if (not(isempty(initcoord)))
+    if(isnan(initcoord(6)))
+        initco=findorbit6(RING,1);
+        initcoord(6)=initco(6);
+    end
+end
+
+>>>>>>> MAXIV_addition
 parfor i=1:length(points)
     %cycle ring
      RING_cycl=[RING(points(i):end); RING(1:points(i)-1)];
@@ -61,8 +88,15 @@ parfor i=1:length(points)
                 map_h(i)=momentum_aperture_at(RING_cycl,deltalimit,initcoord,...
                     delta,0.0,deltastepsize,splits,split_step_divisor);
             end
+<<<<<<< HEAD
         catch
             map_h(i)=0;
+=======
+        catch ME
+            map_h(i)=0;
+            fprintf('%s calcLMA_raw: Error in momentum_aperture_at \n', datetime);
+            fprintf('Error message was:%s \n',ME.message);
+>>>>>>> MAXIV_addition
         end
         
         try
@@ -78,6 +112,11 @@ parfor i=1:length(points)
             end
         catch
             map_l(i)=0;
+<<<<<<< HEAD
+=======
+            fprintf('%s calcLMA_raw: Error in momentum_aperture_at \n', datetime);
+            fprintf('Error message was:%s \n',ME.message);
+>>>>>>> MAXIV_addition
         end
        
 end

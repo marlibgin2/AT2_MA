@@ -144,7 +144,9 @@ index_magnetslices = getmagnetslices(RING);
 % NB! Relies on marker elements with FamName GS and GE being present in the
 % lattice to indicate girders.
 index_girderelements = getMagGroupsFromGirderIndex(RING);
-
+if isempty(index_girderelements)
+    warning('applyErrorModel:No girders identified in lattice!');
+end
 
 %% Deploy magnet errors
 
@@ -742,4 +744,5 @@ end
 
 
 end
+
 

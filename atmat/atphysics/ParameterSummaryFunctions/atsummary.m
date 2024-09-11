@@ -30,6 +30,7 @@ function varargout = atsummary(varargin)
 %
 %  Written by Eugene Tan
 %  Revised by Laurent S. Nadolski
+%  2024/02/16 PFT : Added values to output structure etax, betax, betay
 
 global THERING %#ok<GVMIS>
 
@@ -78,18 +79,20 @@ global THERING %#ok<GVMIS>
         [I1e,I2e,I3e,I4e,I5e] = ElossRadiation(ring,TD);
         smm.integrals=[I1d+I1w+I1e,I2d+I2w+I2e,I3d+I3w+I3e,I4d+I4w+I4e,I5d+I5w+I5e,I6];
         
+        alphac = nan(1,3);
         if is6d
-            alphac=mcf(atdisable_6d(ring),dp);
+            [alphac(1), alphac(2), alphac(3)] = mcf(atdisable_6d(ring),dp);
             eloss=atgetU0(ring,'method','tracking','periods',1);            % eV
         else
-            alphac=mcf(ring,dp);
+            [alphac(1), alphac(2), alphac(3)] = mcf(ring,dp);
             eloss=1.0e9*Cgamma/2/pi*smm.e0.^4*smm.integrals(2); % eV
         end
         
-        etac=1/gamma/gamma- alphac;
+        etac=1/gamma/gamma- alphac(1);
         smm.compactionFactor = alphac;
         smm.etac = etac;
         smm.tunes = ringdata.tune;
+        smm.Itunes=[TD(length(TD)).mu(1)/(2*pi), TD(length(TD)).mu(2)/(2*pi)];
         smm.chromaticity = ringdata.chromaticity;
 
 
@@ -137,6 +140,10 @@ global THERING %#ok<GVMIS>
         etaprimex = TD(1).Dispersion(2);
         etaprimey = TD(1).Dispersion(4);
 
+        smm.etax = etax;
+        smm.etay = etay;
+        smm.beta0 = [bx by];
+
         if DisplayFlag
             SeparatorString = '   ******************************************************************\n';
             fprintf('\n');
@@ -147,6 +154,7 @@ global THERING %#ok<GVMIS>
             fprintf('   Revolution time: \t\t% 4.5f [ns] (%4.5f [MHz]) \n', smm.revTime*1e9,smm.revFreq*1e-6);
             fprintf('   Betatron tune H: \t\t% 4.5f (%4.5f [kHz])\n', smm.tunes(1),smm.tunes(1)/smm.revTime*1e-3);
             fprintf('                 V: \t\t% 4.5f (%4.5f [kHz])\n', smm.tunes(2),smm.tunes(2)/smm.revTime*1e-3);
+            fprintf('   Full tunes H/V \t\t %4.5f %4.5f\n', smm.Itunes(1),smm.Itunes(2));
             fprintf('   Momentum Compaction Factor: \t% 4.5e\n', smm.compactionFactor);
             fprintf('   Chromaticity H: \t\t%+4.5f\n', smm.chromaticity(1));
             fprintf('                V: \t\t%+4.5f\n', smm.chromaticity(2));
@@ -167,7 +175,9 @@ global THERING %#ok<GVMIS>
             fprintf('                     V: \t% 4.5f [ms] or %4.2f turns\n', smm.radiationDamping(2)*1e3, smm.radiationDamping(2)/smm.revTime);
             fprintf('                     E: \t% 4.5f [ms] or %4.2f turns\n', smm.radiationDamping(3)*1e3, smm.radiationDamping(3)/smm.revTime);
             fprintf('   Slip factor: \t\t%4.5e\n', smm.etac);
-            fprintf('   Momentum compaction factor: \t %4.5e (%4.5e)\n',  alphac2, smm.compactionFactor);
+            fprintf('   Momentum compaction factor: \t %4.5e (%4.5e d + %4.5e d^2 + %4.5e d^3)\n',  alphac2, smm.compactionFactor(:));
+%             fprintf('                               \t (%4.5e)\n',  alphac(2));
+%             fprintf('                               \t (%4.5e)\n',  alphac(3));
             fprintf(SeparatorString);
             fprintf('   Assuming cavities Voltage: \t% 4.5f [kV]\n', v_cav/1e3);
             fprintf('                   Frequency: \t% 4.5f [MHz]\n', freq/1e6);

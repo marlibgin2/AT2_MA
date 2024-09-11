@@ -37,6 +37,8 @@ function [newring,radelemIndex,cavitiesIndex,energy] = atenable_6d(ring,varargin
 %   'wigglerpass'    pass method for wigglers. Default 'auto'
 %   'quantdiffpass'  pass method for quantum radiation. default 'auto'
 %   'energylosspass' pass method for energyloss element. default 'auto'
+%   'simplequantdiffpass' pass method for SimpleQuantDiff element. Default 'auto'
+%   'simpleradiationpass' pass method for SimpleRadiation element. Default 'auto'
 %
 %  OUPUTS:
 %  1. NEWRING   Output ring
@@ -66,6 +68,8 @@ function [newring,radelemIndex,cavitiesIndex,energy] = atenable_6d(ring,varargin
 [cavipass,varargs]=getoption(varargs,'cavipass',default_pass('auto'));
 [quantdiffpass,varargs]=getoption(varargs,'quantdiffpass',default_pass('auto'));
 [energylosspass,varargs]=getoption(varargs,'energylosspass',default_pass('auto'));
+[simplequantdiffpass,varargs]=getoption(varargs,'simplequantdiffpass',default_pass('auto'));
+[simpleradiationpass,varargs]=getoption(varargs,'simpleradiationpass',default_pass('auto'));
 % Process the positional arguments
 [cavipass,bendpass,quadpass]=getargs(varargs,cavipass,bendpass,quadpass);
 
@@ -78,8 +82,10 @@ mod.Quadrupole=autoMultipolePass(quadpass,energy);
 mod.Sextupole=autoMultipolePass(sextupass,energy);
 mod.Octupole=autoMultipolePass(octupass,energy);
 mod.Wiggler=autoMultipolePass(wigglerpass,energy);
-mod.QuantDiff=autoElemPass(quantdiffpass,'QuantDiffPass');
+mod.QuantDiff=autoClassPass(quantdiffpass);
 mod.EnergyLoss=autoElemPass(energylosspass,'EnergyLossRadPass', energy);
+mod.SimpleQuantDiff=autoClassPass(simplequantdiffpass);
+mod.SimpleRadiation=autoClassPass(simpleradiationpass);
 mod.Other=@(elem) elem;
 
 % Generate the new lattice
@@ -130,6 +136,23 @@ end
             else
                 modfun=setpass(newpass);
             end
+        end
+    end
+
+    function modfun=autoClassPass(newpass)
+        % Returns a processing function which sets the PassMethod according
+        % to the Class
+        if isempty(newpass)
+            modfun=@(elem) elem;
+        else
+            if strcmp(newpass, 'auto')
+                modfun=@newelem;
+            else
+                modfun=setpass(newpass);
+            end
+        end
+        function elem=newelem(elem)
+            elem.PassMethod=[elem.Class 'Pass'];
         end
     end
 

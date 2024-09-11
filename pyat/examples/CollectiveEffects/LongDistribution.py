@@ -13,7 +13,7 @@ freq = 10e9
 qfactor = 1
 Rs = 1e4
 current = 5e-4
-m = 50  # 30 is quite coarse, 70 or 80 is very fine. 50 is middle
+m = 60  # 30 is quite coarse, 70 or 80 is very fine. 50 is middle
 kmax = 8
 
 
@@ -60,7 +60,7 @@ Nbunches = 1
 ring.beam_current = current
 ring.set_fillpattern(Nbunches)
 
-ring.radiation_on()
+ring.enable_6d()
 ring.set_cavity_phase()
 _, fring = at.fast_ring(ring)
 fring.append(welem)
@@ -78,7 +78,7 @@ id0 = 0
 for t in numpy.arange(Nturns):
     if t % 1000 == 0:
         print('Tracking turn ', t, ' of ', Nturns)
-    at.track_function(fring, part)
+    fring.track(part, in_place=True, refpts=None)
 
     if t > Nturns-numAve:
 

@@ -1,5 +1,5 @@
 function newring=atfitchrom(ring,varargin)
-%ATFITCHROM Fit chromaticites by scaling 2 sextupole families
+%ATFITCHROM Fit chromaticites by adjusting 2 sextupole families
 %
 % NEWRING = ATFITCHROM(RING,NEWCHROM,SEXTFAMILY1,SEXTFAMILY2)
 % NEWRING = ATFITCHROM(RING,DPP,NEWCHROM,SEXTFAMILY1,SEXTFAMILY2)
@@ -38,9 +38,9 @@ newring=wrapper6d(ring,@fitchrom,newargs{:});
     function newring=fitchrom(ring,~,varargin)
         [deltaS,varargs]=getoption(varargin,'HStep',1.0e-5);
         [newchrom,famname1,famname2,varargs]=getargs(varargs,[],[],[]);
-
         idx1=varelem(ring,famname1);
         idx2=varelem(ring,famname2);
+       
         kl1=atgetfieldvalues(ring(idx1),'PolynomB',{3});
         kl2=atgetfieldvalues(ring(idx2),'PolynomB',{3});
         %if true
@@ -48,6 +48,7 @@ newring=wrapper6d(ring,@fitchrom,newargs{:});
         chrom=getchrom(ring,varargs{:});
 
         % Take Derivative
+        
         chrom1 = getchrom(setsx(ring,idx1,kl1,deltaS),varargs{:});
         chrom2 = getchrom(setsx(ring,idx2,kl2,deltaS),varargs{:});
 
@@ -58,9 +59,12 @@ newring=wrapper6d(ring,@fitchrom,newargs{:});
         % Apply new strengths
         newring=setsx(ring,idx1,kl1,dK(1));
         newring=setsx(newring,idx2,kl2,dK(2));
-
-        function ring2=setsx(ring,idx,k0,delta)
-            ring2=atsetfieldvalues(ring,idx,'PolynomB',{3},k0*(1+delta));
+ 
+        function ring2=setsx(ring,idx,k0,delta) %updated P.F.Tavares 2023/08/19 to deal with the case k0=0.0
+           
+           ring2=atsetfieldvalues(ring,idx,'PolynomB',{3},k0+delta);
+         % ring2=atsetfieldvalues(ring,idx,'PolynomB',{3},k0*(1+delta));
+           
         end
 
         function res=varelem(ring,arg)

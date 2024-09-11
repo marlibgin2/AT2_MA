@@ -52,7 +52,7 @@ rank = comm.Get_rank()
 print(size, rank)
 
 ring = at.load_lattice('../../../machine_data/esrf.m')
-ring.radiation_on(cavity_pass='RFCavityPass')
+ring.enable_6d(cavity_pass='RFCavityPass')
 ring.set_rf_frequency()
 
 
@@ -74,7 +74,7 @@ fring.pop(-1)  # drop diffusion element
 
 # Here we specify whether we want to use PHASOR or WAKE
 # beam loading models.
-mode = 'PHASOR'
+mode = 'WAKE'
 if mode == 'WAKE':
     blm = BLMode.WAKE
 else:
@@ -86,7 +86,7 @@ Npart = Nbunches
 # Now we give the fring and convert it
 # into a beam loaded cavity.
 add_beamloading(fring, qfactor, rshunt, Nslice=1,
-                Nturns=50, mode=blm,
+                Nturns=50, blmode=blm,
                 VoltGain=0.1, PhaseGain=0.1)
 
 bl_elem = fring[at.get_refpts(fring, BeamLoadingElement)[0]]
@@ -108,12 +108,24 @@ if rank == 0:
     z_all = numpy.zeros((Nturns, Nbunches))
     dp_all = numpy.zeros((Nturns, Nbunches))
 
+
+# Here it should be considered that there are 2 ways to run
+# simulations in pyat. Either with ring.track(part, nturns=Nturns)
+# or with for i in np.arange(Nturns): ring.track(part, nturns=1).
+# With the former, you should use the BeamMoments element to acquire
+# the means and stds of each bunch turn by turn when using MPI.
+# However, when you want to kick after a certain turn, you have 1
+# of 2 choices. Either you use a BeamMoments element, and split the 
+# tracking into 2 (before and after). You can then concatenate the
+# the results. Or you can use the code below to gather all particles
+# yourself with the MPICOMM after each turn.
+
 for i in numpy.arange(Nturns):
     # Apply a kick to ensure the coherent tune is large
     if i == kickTurn:
         part[4, :] += 3e-3
 
-    at.track_function(fring, part, nturns=1)
+    fring.track(part, nturns=1, refpts=None, in_place=True)
 
     # Gather particles over all cores (compatible with MPI on or off)
     allPartsg = comm.gather(part)
@@ -132,7 +144,8 @@ for i in numpy.arange(Nturns):
 if rank == 0:
     qscoh = numpy.zeros(Nbunches)
     for ib in numpy.arange(Nbunches):
-        qs = harmonic_analysis.get_tunes_harmonic(dp_all[kickTurn:, ib],
+        dp_dat = dp_all[kickTurn:, ib] - numpy.mean(dp_all[kickTurn:, ib])
+        qs = harmonic_analysis.get_tunes_harmonic(dp_dat,
                                                   num_harmonics=20,
                                                   fmin=1e-5, fmax=0.1)
         qscoh[ib] = qs

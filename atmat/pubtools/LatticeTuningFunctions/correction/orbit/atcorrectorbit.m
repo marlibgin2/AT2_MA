@@ -56,12 +56,13 @@ function [rcor,inCOD,hs,vs]=atcorrectorbit(...
 % kval=1e-5;
 % delta=1e-3;
 
+
 indrfc=find(atgetcells(rerr,'Frequency'));
 f0=rerr{indrfc(1)}.Frequency;
 
 % default arguments
 if nargin<12 || isempty(printouttext)
-    printouttext=true;
+    printouttext=true;  % temporary fix
 end
 if nargin<11 || isempty(steererlimit)
     steererlimit=[];
@@ -90,19 +91,29 @@ if nargin<5 || isempty(inCOD)
     inCOD=[0 0 0 0 0 0]';
 end
 
+if nargin<7 || isempty(correctflags)
+    correctflags=[true true];
+end
+
+
 if nargin<6 || isempty(neigSteerer)
 %     neigSteerer=ones(10,1)*[length(indHCor)-20 length(indVCor)-20];
 svhmax = min([numel(indHCor), numel(indBPM)]);
 svvmax = min([numel(indVCor), numel(indBPM)]);
-Niter = 10;
-svh = round(svhmax/2):round((svhmax-round(svhmax/2))/(Niter)):svhmax;
-svv = round(svvmax/2):round((svvmax-round(svvmax/2))/(Niter)):svvmax;
+Niter = 10; fracStart=0.75;
+scaleV = fracStart:(1-fracStart)/Niter:1;
+svh = round(svhmax*scaleV);
+svv = round(svvmax*scaleV);
 neigSteerer = [svh; svv]';
+
+% If corrector mean is being corrected using the RF, add another singular
+% value to the horizontal plane
+if correctflags(2)
+    neigSteerer(:,1) = neigSteerer(:,1) + 1;
 end
 
-if nargin<7 || isempty(correctflags)
-    correctflags=[true true];
 end
+
 
 if nargin<8 || isempty(scalefactor)
     if printouttext, disp(' --- scale set to .75'); end
@@ -132,7 +143,6 @@ end
 % end
 
 
-
 % Check whether lattice is 6D or 4D
 use6d = check_6d(rerr);
 
@@ -144,7 +154,6 @@ end
 if strcmpi(rerr{indVCor(1)}.PassMethod,'CorrectorPass'), yfname = 'KickAngle'; yfi = 1; yfj = 2; ...
 else, yfname = 'PolynomA'; yfi = 1; yfj = 1; ...
 end
-
 
 
 % Attempt to get initial orbit
@@ -190,7 +199,8 @@ if any(isnan(o(:)))
 
     % Attempt to correct the easier case
     % NB! This is a recursive call!
-    RING_RED = atcorrectorbit(RING_RED,indBPM,indHCor,indVCor);
+    RING_RED = atcorrectorbit(RING_RED,indBPM,indHCor,indVCor,[],neigSteerer,[],[],ModelRM,reforbit,steererlimit,printouttext);
+%    RING_RED = atcorrectorbit(RING_RED,indBPM,indHCor,indVCor,[],neigSteerer,correctflags,scalefactor,ModelRM,reforbit,steererlimit,printouttext); %PFT
 
     % Extract the obtained corrections and scale them up, then use them as
     % the initial guess for the original lattice.
@@ -201,107 +211,129 @@ if any(isnan(o(:)))
 
     % Re-calculate the closed orbit at the BPMs
     if use6d
-        o=findorbit6Err(rerr,indBPM,inCOD);
+        o=findorbit6Err(rerr,[1; indBPM(:)],inCOD);
     else
-        o=findorbit4Err(rerr,0,indBPM,inCOD);
+        o=findorbit4Err(rerr,0,[1; indBPM(:)],inCOD);
     end
 end
 
 ox0=o(1,:);
 oy0=o(3,:);
 
-
-% Load or compute response matrix
-% NB! This is done outside the orbit correction loop for speed reasons; the
-% loss of accuracy is generally not an issue as the correction loop can
-% tolerate fairly large errors in the ORM. 
-if isempty(ModelRM)
-    % get orbit RM
-    if printouttext
-        disp('Calculating ORM using adapted LOCO-routine'); end
-
-    %     ModelRM=getresponsematrices(...
-    %         rerr,...          %1 AT lattice
-    %         indBPM,...      %2 bpm indexes in at lattice
-    %         indHCor,...     %3 h cor indexes
-    %         indVCor,...     %4 v cor indexes
-    %         [],...     %5 skew cor indexes
-    %         [],...     %6 quad cor indexes
-    %         [],...     %7 sext cor indexes
-    %         inCOD,...       %8 initial coordinates
-    %         rmsel...      %9 specifiy rm to be computed
-    %         );
-    ModelRM = getlinearrespmat(rerr,indBPM,indHCor,indVCor);
-
-    if ~correctflags(1) % dpp correction
-        ModelRM.OrbHDPP=[];
-        ModelRM.OrbVDPP=[];
-    end
-
-end
-ormH=ModelRM.OrbHCor;
-ormV=ModelRM.OrbVCor;
-
-
-% Re-format the calculated ORM for the orbit correction calculations
-if correctflags(1) && correctflags(2) % dpp and mean0
-    dppH=ModelRM.OrbHDPP;
-    dppV=ModelRM.OrbVDPP;
-    RMH=[ [ormH{1};ones(size(indHCor(:)))'] [dppH(:);0] ];
-    RMV=[ [ormV{3};ones(size(indVCor(:)))'] [dppV(:);0] ];
-elseif correctflags(1) && ~correctflags(2)% dpp no mean 0
-    dppH=ModelRM.OrbHDPP;
-    dppV=ModelRM.OrbVDPP;
-    RMH=[ ormH{1} dppH(:) ];
-    RMV=[ ormV{3} dppV(:) ];
-elseif ~correctflags(1) && correctflags(2) % mean0 no dpp
-    RMH=[ormH{1};ones(size(indHCor(:)))'];
-    RMV=[ormV{3};ones(size(indVCor(:)))'];
-elseif ~correctflags(1) && ~correctflags(2) % no dpp no mean0
-    RMH=ormH{1};
-    RMV=ormV{3};
-end
-
-% If RF is being corrected, add another singular value to the horizontal
-% plane
-if correctflags(1)
-    neigSteerer(:,1) = neigSteerer(:,1) + 1;
-end
-
 % Get BPM weight information.
 W = cell2mat(atgetfieldvalues(rerr,indBPM,'Weight'));
 W(isnan(W)) = 1;    % Any BPMs without specified weight are assumed to have weight 1.
 
-% Rescale the ORM to take BPM weights into account
-for n = 1:numel(indBPM)
-    RMH(n,:) = RMH(n,:).*W(n,1);
-    RMV(n,:) = RMV(n,:).*W(n,2);
-end
-
-% Get the SV sizes and truncate the very small values, to avoid unstable
-% correction. 
-SVthreshold = 1e-6;
-[~, sh, ~] = svd(RMH);
-[~, sv, ~] = svd(RMV);
-sh = diag(sh);
-sv = diag(sv);
-shm = find(sh./max(sh) > SVthreshold,1,'last');
-svm = find(sv./max(sv) > SVthreshold,1,'last');
-neigSteerer(neigSteerer(:,1) > shm,1) = shm;
-neigSteerer(neigSteerer(:,2) > svm,1) = svm;
 
 % Compute momentum compaction
 alpha=mcf(rerr);
 
+% Load or compute response matrix
+% NB! This is done outside the orbit correction loop for speed reasons; the
+% loss of accuracy is generally not an issue as the correction loop can
+% tolerate fairly large errors in the RM. 
+[RMH, RMV] = calcRM(ModelRM);
+
+% if isempty(ModelRM)
+%     % get orbit RM
+%     if printouttext
+%         disp('Calculating ORM using adapted LOCO-routine'); end
+%         ModelRM = getlinearrespmat(rerr,indBPM,indHCor,indVCor);
+% 
+%     %     ModelRM=getresponsematrices(...
+%     %         rerr,...          %1 AT lattice
+%     %         indBPM,...      %2 bpm indexes in at lattice
+%     %         indHCor,...     %3 h cor indexes
+%     %         indVCor,...     %4 v cor indexes
+%     %         [],...     %5 skew cor indexes
+%     %         [],...     %6 quad cor indexes
+%     %         [],...     %7 sext cor indexes
+%     %         inCOD,...       %8 initial coordinates
+%     %         rmsel...      %9 specifiy rm to be computed
+%     %         );
+% end
+
+
+    function [RMH, RMV] = calcRM(ModelRM)
+
+        if isempty(ModelRM)
+            % get orbit RM
+            if printouttext
+                disp('  Calculating ORM using adapted LOCO-routine'); end
+            ModelRM = getlinearrespmat(rerr,indBPM,indHCor,indVCor);
+        end
+
+        if ~correctflags(1) % dpp correction
+            ModelRM.OrbHDPP=[];
+            ModelRM.OrbVDPP=[];
+        end
+
+        ormH=ModelRM.OrbHCor;
+        ormV=ModelRM.OrbVCor;
+
+
+        % Re-format the calculated ORM for the orbit correction calculations
+        if correctflags(1) && correctflags(2) % dpp and mean0
+            dppH=ModelRM.OrbHDPP;
+            dppV=ModelRM.OrbVDPP;
+            RMH=[ [ormH{1};ones(size(indHCor(:)))'] [dppH(:);0] ];
+            RMV=[ [ormV{3};ones(size(indVCor(:)))'] [dppV(:);0] ];
+        elseif correctflags(1) && ~correctflags(2)% dpp no mean 0
+            dppH=ModelRM.OrbHDPP;
+            dppV=ModelRM.OrbVDPP;
+            RMH=[ ormH{1} dppH(:) ];
+            RMV=[ ormV{3} dppV(:) ];
+        elseif ~correctflags(1) && correctflags(2) % mean0 no dpp
+            RMH=[ormH{1};ones(size(indHCor(:)))'];
+            RMV=[ormV{3};ones(size(indVCor(:)))'];
+        elseif ~correctflags(1) && ~correctflags(2) % no dpp no mean0
+            RMH=ormH{1};
+            RMV=ormV{3};
+        end
+
+        % Rescale the ORM to take BPM weights into account
+        for n = 1:numel(indBPM)
+            RMH(n,:) = RMH(n,:).*W(n,1);
+            RMV(n,:) = RMV(n,:).*W(n,2);
+        end
+
+        % Get the SV sizes
+        [Uh, Sh, Vh] = svd(RMH);
+        [Uv, Sv, Vv] = svd(RMV);
+        sh = diag(Sh);
+        sv = diag(Sv);
+
+%         % Then truncate the very small singular values, as these represent
+%         % a mode that cannot be corrected
+%         SVthreshold = 1e-8;
+%         shm = find(sh./max(sh) > SVthreshold,1,'last');
+%         svm = find(sv./max(sv) > SVthreshold,1,'last');
+%         neigSteerer(neigSteerer(:,1) > shm,1) = shm;
+%         neigSteerer(neigSteerer(:,2) > svm,1) = svm;
+
+        % Then apply RM regularization, i.e. rescale the SVs for better
+        % numerical behaviour
+        hlambda = max(sh) * 1e-3;
+        vlambda = max(sv) * 1e-3;
+        shn = (sh + hlambda).^2 ./ sh; for n = 1:numel(shn), Sh(n,n) = shn(n); end
+        svn = (sv + vlambda).^2 ./ sv; for n = 1:numel(svn), Sv(n,n) = svn(n); end
+        RMH = Uh*Sh*Vh';
+        RMV = Uv*Sv*Vv';
+    end
+
 
 %% MAIN CORRECTION LOOP
-% Niter=size(neigSteerer,1);
 orbitThreshold = 1e-6;
 convergenceThreshold = orbitThreshold / 2;
-% ox = inf(1,numel(indBPM));
-% oy = inf(1,numel(indBPM));
 iter = 0;
-inCOD = inCOD;
+
+% Get starting orbit at entrance (for later tune computation and guess
+% for next orbit search) and all BPMs
+if use6d
+    o=findorbit6Err(rerr,[1; indBPM(:)],inCOD);
+else
+    o=findorbit4Err(rerr,0,[1; indBPM(:)],inCOD);
+end
 
 % Loop logic:
 % a) Ramp up 
@@ -318,22 +350,13 @@ while true  %iter=1:Niter
     if iter > 1
         oxprev = ox;
         oyprev = oy;
-        corhp = corh0;
-        corvp = corv0;
     end
 
     % Get current corrector strengths
     corh0=atgetfieldvalues(rerr,indHCor,xfname,{xfi,xfj});
     corv0=atgetfieldvalues(rerr,indVCor,yfname,{yfi,yfj});
 
-    % Get current orbit at entrance (for later tune computation and guess
-    % for next orbit search) and all BPMs 
-    if use6d
-        o=findorbit6Err(rerr,[1; indBPM(:)],inCOD);
-    else
-        o=findorbit4Err(rerr,0,[1; indBPM(:)],inCOD);
-    end
-    inCOD = o(:,1);
+    % Get current orbit
     ox=o(1,2:end);
     oy=o(3,2:end);
 
@@ -359,9 +382,7 @@ while true  %iter=1:Niter
     if iter > size(neigSteerer,1) + 2
         % If not enough improvement in rms orbit, exit loop
         if std(oxprev) - std(ox) < convergenceThreshold && ...
-                std(oyprev) - std(oy) < convergenceThreshold
-
-
+            std(oyprev) - std(oy) < convergenceThreshold
             break;
         end
     end
@@ -401,10 +422,6 @@ while true  %iter=1:Niter
     rtest=atsetfieldvalues(rerr,indHCor,xfname,{xfi,xfj},hs);
     rtest=atsetfieldvalues(rtest,indVCor,yfname,{yfi,yfj},vs);
 
-    % Make an educated guess for the next closed orbit
-    % Comment: will likely not work as well with a non-zero reference
-    inCOD(1:4) = inCOD(1:4)*(1-scalefactor);
-    
     if correctflags(1)
         rtest=atsetfieldvalues(rtest,indrfc,'Frequency',f0-alpha*(dd)*f0);
 
@@ -413,8 +430,27 @@ while true  %iter=1:Niter
         end
     end
 
-    %[~,t,~]=atlinopt(rtest,0,1);
-    t=tunechrom(rtest,'orbit',o(:,1));
+    % Make an educated guess for the new closed orbit
+    % Comment: will likely not work as well with a non-zero reference
+    inCOD(1:4) = inCOD(1:4)*(1-scalefactor);
+    
+    % Get the orbit at entrance (for later tune computation and guess
+    % for next orbit search) and all BPMs 
+    if use6d
+        o=findorbit6Err(rtest,[1; indBPM(:)],inCOD);
+    else
+        o=findorbit4Err(rtest,0,[1; indBPM(:)],inCOD);
+    end
+
+    % Update the input now that we know it
+    inCOD = o(:,1);
+
+    % Attempt to calculate the tunes to check lattice stability
+    try
+        t=tunechrom(rtest,'orbit',inCOD);   % Re-use the calculated orbit
+    catch
+        t = nan(2,1);
+    end
     if printouttext
         disp(['  [nux, nuy]: ' num2str(t(1)) ' / ' num2str(t(2)) ]);
     end
@@ -431,6 +467,14 @@ while true  %iter=1:Niter
 
     % lattice start point for next iteration
     rerr=rcor;
+
+    % Update the response matrix, if not given
+    % NB! Expensive calculation-wise but may be required if the orbit has
+    % changed a lot.
+    if isempty(ModelRM)
+        [RMH, RMV] = calcRM(ModelRM);
+    end
+
 end
 
 %% DATA EXTRACTION AND POST-PROCESSING
@@ -474,4 +518,13 @@ end
 function N = getRecursiveDepth
 stack = dbstack;
 N = sum(strcmp({stack.name},stack(2).name));
+end
+
+function recursive = isrecursivecall
+stack=dbstack;
+if numel(stack) < 3
+    recursive = false;
+else
+    recursive = strcmp(stack(2).name,stack(3).name);
+end
 end

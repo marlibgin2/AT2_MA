@@ -43,7 +43,7 @@ posdata=struct('x',num2cell(xx(refpts)),'y',num2cell(yy(refpts)),...
         if isfield(elem,'R1')
             rots(elem.R1);
         end
-        if isfield(elem,'BendingAngle')
+        if isfield(elem,'BendingAngle') && elem.BendingAngle ~= 0
             ang=0.5*elem.BendingAngle;
             L=elem.Length/ang*sin(ang);
             hkick(-ang);
