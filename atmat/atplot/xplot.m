@@ -49,6 +49,22 @@ if numel(outp) >= 2
     [ax2,curve.left,curve.right]=plotyy(ax,...
         s(plrange),outp(1).values(plrange,:),...
         s(plrange),outp(2).values(plrange,:)); %#ok<PLOTYY> 
+    %
+    % modif MA 27092024 / allow to plot and see negative 
+    % gradient elements 
+    %
+    dLLeft_b = ax2(1).YLim(2) - ax2(1).YLim(1);
+    ax2(1).YLim(1) = ax2(1).YLim(1) - 1.1; % rescale to show neg grad elements
+    dLLeft_a = ax2(1).YLim(2) - ax2(1).YLim(1);
+    ratio  = dLLeft_a/dLLeft_b;
+    %set(ax2(1),'YLim'); 
+    y22   = ax2(2).YLim(2); y21   = ax2(2).YLim(1);
+    delta = (ratio-1)*y22 -(ratio-1)*y21;
+    ax2(2).YLim(1) = ax2(2).YLim(1) - delta;
+    %set(ax2(2),'YLim'); 
+    %
+    %
+    %
     set(ax2(2),'XTick',[],'YColor',get(ax2(1),'YColor'),rightargs{:});
     ylabel(ax2(1),outp(1).axislabel);
     ylabel(ax2(2),outp(2).axislabel);
