@@ -78,20 +78,49 @@ else
 end
 
 ampl=0.03*tlim;     % Other multipoles
+ttt = find(mpoles>0);
+
+pureSext = find(atgetfieldvalues(rok(mpoles),'PolynomB',{3})~=0&atgetfieldvalues(rok(mpoles),'PolynomB',{2})==0);
+pureQuad = find(atgetfieldvalues(rok(mpoles),'PolynomB',{2})~=0&atgetfieldvalues(rok(mpoles),'PolynomB',{3})==0);
+mpolesS  = false(size(mpoles)); mpolesQ  = false(size(mpoles));
+mpolesQ(ttt(pureQuad))=true;
+mpolesS(ttt(pureSext))=true;
+
+
+segno = sign(atgetfieldvalues(rok(mpolesQ),'PolynomB',{2}));
+[xplot,yplot]=setxpl(sl(mpolesQ),ll(mpolesQ),[0;0;1;1;0],1.0*[0;1;1;0;0]);
+yplot = yplot .* segno'; 
+if (~isempty(xplot) && ~isempty(yplot))
+    p4=patch(xplot,yplot,[0.9 0.0 0.1]);
+else
+    p4={};
+end
+
+
+segno = sign(atgetfieldvalues(rok(mpolesS),'PolynomB',{3}));
+[xplot,yplot]=setxpl(sl(mpolesS),ll(mpolesS),[0;0;1;1;0],0.8*[0;1;1;0;0]);
+yplot = yplot.*segno'; 
+if (~isempty(xplot) && ~isempty(yplot))
+    p4=patch(xplot,yplot,[0.0 0.8 0.9]);
+else  
+    p4={};
+end
+
+mpoles = boolean(mpoles - mpolesQ - mpolesS); 
 [xplot,yplot]=setxpl(sl(mpoles),ll(mpoles),[0;0;1;1;0],ampl*[0;1;1;0;0]);
    %[xplot,yplot]=setxpl(sl(mpoles),ll(mpoles),[0;0;1;1;0],ampl*[-1;1;1;-1;-1]);
 if (~isempty(xplot) && ~isempty(yplot))
-  p4=patch(xplot,yplot,[0 0.5 0]);
+    p4=patch(xplot,yplot,[0 0.5 0]);
   %p4=patch(ax,xplot,yplot,[0 0.5 0]);
 else
   p4={};
 end
 
 ampl=0.015*tlim;    % BPMs
-amplx=0.005*slim;
+amplx=0.0025*slim;
 [xplot,yplot]=setxpl(sl(bpms),ones(1,sum(bpms)),[-amplx;0;amplx;0;-amplx],[0;-ampl;0;ampl;0]);
 if (~isempty(xplot) && ~isempty(yplot))
-  p5=patch(xplot,yplot,[0 0.5 0],'DisplayName','BPM');
+  p5=patch(xplot,yplot,[0 0 0],'DisplayName','BPM');
   %p5=patch(ax,xplot,yplot,[0 0 0],'clipping','off');
 else
   p5={};
