@@ -57,11 +57,9 @@ if numel(outp) >= 2
     ax2(1).YLim(1) = ax2(1).YLim(1) - 1.1; % rescale to show neg grad elements
     dLLeft_a = ax2(1).YLim(2) - ax2(1).YLim(1);
     ratio  = dLLeft_a/dLLeft_b;
-    %set(ax2(1),'YLim'); 
     y22   = ax2(2).YLim(2); y21   = ax2(2).YLim(1);
     delta = (ratio-1)*y22 -(ratio-1)*y21;
     ax2(2).YLim(1) = ax2(2).YLim(1) - delta;
-    %set(ax2(2),'YLim'); 
     %
     %
     %
