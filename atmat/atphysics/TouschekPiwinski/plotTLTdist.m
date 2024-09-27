@@ -38,6 +38,15 @@ phandles={};
 
 nseeds=TLdist.inputs.nseeds;
 figure; plot(0:nseeds,TLdist.outputs.TLs/3600, '-o')
+% -----------------------------------------
+% MA 27092024
+% calculate and print average TLT +/- error
+% -----------------------------------------
+aTLT = mean(TLdist.outputs.TLs(2:end)/3600);
+sTLT = std(TLdist.outputs.TLs(2:end)/3600); 
+ypl   = get(gca,'YLim');
+xpl   = get(gca,'XLim');
+text(mean(xpl)-2,mean(ypl),['<TLT> = ' num2str(aTLT,3) ' +/- ' num2str(sTLT,2) ' (hr)'])
 xlabel('Seed');ylabel('Touschek LIfetime [hr]');
 grid on;
 title(plottitle);
