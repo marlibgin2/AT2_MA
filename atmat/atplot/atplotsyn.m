@@ -86,24 +86,26 @@ mpolesS  = false(size(mpoles)); mpolesQ  = false(size(mpoles));
 mpolesQ(ttt(pureQuad))=true;
 mpolesS(ttt(pureSext))=true;
 
-
-segno = sign(atgetfieldvalues(rok(mpolesQ),'PolynomB',{2}));
-[xplot,yplot]=setxpl(sl(mpolesQ),ll(mpolesQ),[0;0;1;1;0],1.0*[0;1;1;0;0]);
-yplot = yplot .* segno'; 
-if (~isempty(xplot) && ~isempty(yplot))
-    p4=patch(xplot,yplot,[0.9 0.0 0.1]);
-else
-    p4={};
+if ~isempty(rok(mpolesQ))
+    segno = sign(atgetfieldvalues(rok(mpolesQ),'PolynomB',{2}));
+    [xplot,yplot]=setxpl(sl(mpolesQ),ll(mpolesQ),[0;0;1;1;0],1.0*[0;1;1;0;0]);
+    yplot = yplot .* segno';
+    if (~isempty(xplot) && ~isempty(yplot))
+        p4=patch(xplot,yplot,[0.9 0.0 0.1]);
+    else
+        p4={};
+    end
 end
 
-
-segno = sign(atgetfieldvalues(rok(mpolesS),'PolynomB',{3}));
-[xplot,yplot]=setxpl(sl(mpolesS),ll(mpolesS),[0;0;1;1;0],0.8*[0;1;1;0;0]);
-yplot = yplot.*segno'; 
-if (~isempty(xplot) && ~isempty(yplot))
-    p4=patch(xplot,yplot,[0.0 0.8 0.9]);
-else  
-    p4={};
+if ~isempty(rok(mpolesS))
+    segno = sign(atgetfieldvalues(rok(mpolesS),'PolynomB',{3}));
+    [xplot,yplot]=setxpl(sl(mpolesS),ll(mpolesS),[0;0;1;1;0],0.8*[0;1;1;0;0]);
+    yplot = yplot.*segno';
+    if (~isempty(xplot) && ~isempty(yplot))
+        p4=patch(xplot,yplot,[0.0 0.8 0.9]);
+    else
+        p4={};
+    end
 end
 
 mpoles = boolean(mpoles - mpolesQ - mpolesS); 
