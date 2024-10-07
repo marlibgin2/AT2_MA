@@ -11,7 +11,7 @@ function [tau_p, tau_h, tau_v] = ibs_bane(RING,N,s_s,s_p,e_h,e_v)
 re = 2.8179409e-15;
 c = 2.99792458e8;
 
-global GLOBVAL;
+%global GLOBVAL;
 
 L = length(RING);
 spos = findspos(RING,1:L+1);
@@ -82,7 +82,8 @@ Hy = gammay.*etay.*etay + 2*alphay.*etay.*etayp + betay.*etayp.*etayp;
 % grid on
 % addlabel(datestr(now));
 %/////////////////////////////////////////////////////////////////////////////////
-gamm = (GLOBVAL.E0./511e3);
+%gamm = (GLOBVAL.E0./511e3);
+gamm = (3e+9/511e3);
 
 clog = log(gamm.^2.*sqrt(mean(abs(betay)).*e_v).*e_h./(re.*mean(abs(betax))));
 
