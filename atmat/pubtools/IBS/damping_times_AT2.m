@@ -14,9 +14,9 @@ BENDINDEX = findcells(ring,'BendingAngle');
 bend_angle = getcellstruct(ring,'BendingAngle',BENDINDEX);
 bend_l = getcellstruct(ring,'Length',BENDINDEX);
 rho = bend_l./bend_angle;
-max(rho)
-sum(rho.*bend_l)./sum(bend_l)
-min(rho)
+max(rho);
+sum(rho.*bend_l)./sum(bend_l);
+min(rho);
 k = getcellstruct(ring,'PolynomB',BENDINDEX,2);
 
 ring = atdisable_6d(ring);
@@ -26,8 +26,8 @@ dispersion = (findorbit4(ring,0.001,1:length(ring))-findorbit4(ring,-0.001,1:len
 
 dispersion = dispersion(1,BENDINDEX)';
 
-I2 = sum(bend_l./(rho.^2))
-I4x = sum(dispersion./(rho.^3).*(1+2.*(rho.^2).*k).*bend_l)
+I2 = sum(bend_l./(rho.^2));
+I4x = sum(dispersion./(rho.^3).*(1+2.*(rho.^2).*k).*bend_l);
 I4y = 0;
 
 tx = (Ca./L0_tot.*(E.^3).*I2.*(1-I4x./I2)).^-1;
