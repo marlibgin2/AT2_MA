@@ -27,7 +27,9 @@ dispersion = (findorbit4(ring,0.001,1:length(ring))-findorbit4(ring,-0.001,1:len
 dispersion = dispersion(1,BENDINDEX)';
 
 I2 = sum(bend_l./(rho.^2));
-I4x = sum(dispersion./(rho.^3).*(1+2.*(rho.^2).*k).*bend_l);
+%I4x = sum(dispersion./(rho.^3).*(1+2.*(rho.^2).*k).*bend_l);
+I4x = sum(dispersion.*(1./(rho.^3) + 2./rho.*k).*bend_l); % corrected to avoid cases like 0 * Inf, causing a Nan
+
 I4y = 0;
 
 tx = (Ca./L0_tot.*(E.^3).*I2.*(1-I4x./I2)).^-1;
