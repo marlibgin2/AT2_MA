@@ -17,12 +17,8 @@ function LMA = calcLMA(varargin)
 %  MAoptions.deltastepsize: step size for LMA search;
 %  MAoptions.splits : number of iterations of step division
 %  MAoptions.split_step_divisor: factor to reduce step size at each iteration
-<<<<<<< HEAD
-%  MAoptions.nturns: number of turns. If nan then number of turns is chosen as 1.2/Qs           
-=======
 %  MAoptions.nturns: number of turns. if nan use nsynchT synchrotron periods
 %  MAoptions.nsyncT: number of synchrotron periods to be used if nturns is nan
->>>>>>> MAXIV_addition
 %  MAoptions.S0max: maximum longitudinal position at which to calculate LMA
 %  MAoptions.S0min: minimum longitudinal position at which to calculate LMA
 %  
@@ -73,13 +69,10 @@ function LMA = calcLMA(varargin)
 % PFT 2024/03/08. 
 % PFT 2024/06/16: changed output into a structure
 % PFT 2024/07/12: corrected naming of PeriodDev field in output Structure
-<<<<<<< HEAD
-=======
 % PFT 2024/07/30: changed initcoord default for handling of nan as initial
 %                 phase
 % PFT 2024/09/06: added handling of nsyncT in MAoptions.
 
->>>>>>> MAXIV_addition
 %% Input argument parsing
 [RING,MAoptions] = getargs(varargin,[],[]);
 if (isempty(MAoptions))
@@ -87,15 +80,7 @@ if (isempty(MAoptions))
     MAoptions.lmafams='all';
     MAoptions.stepfam=1;
     MAoptions.stepfam=1;
-<<<<<<< HEAD
-    MAoptions.deltalimit=0.1;
-    MAoptions.initcoord=[0.0 0.0 0.0 0.0 0.0 0.0]';
-    MAoptions.delta=0.01;
-    MAoptions.deltastepsize=0.001;
-    MAoptions.splits=10;
-    MAoptions.split_step_divisor=2;
-    MAoptions.nturns=500;
-=======
+
     MAoptions.deltalimit=0.3;
     MAoptions.initcoord=[0 0 0 0 0 nan]';
     MAoptions.delta=0.01;
@@ -104,7 +89,6 @@ if (isempty(MAoptions))
     MAoptions.split_step_divisor=2;
     MAoptions.nturns=nan;
     MAoptions.nsyncT=3;
->>>>>>> MAXIV_addition
     MAoptions.S0max=528/20;
     MAoptions.S0min=0.0;
 end
@@ -121,14 +105,12 @@ deltastepsize      = getoption(varargin,'deltastepsize',MAoptions.deltastepsize)
 splits             = getoption(varargin,'splits',MAoptions.splits);
 split_step_divisor = getoption(varargin,'split_step_divisor',MAoptions.split_step_divisor);
 nturns             = getoption(varargin,'nturns',MAoptions.nturns);
-<<<<<<< HEAD
-=======
+
 if isfield(MAoptions,'nsyncT')
     nsyncT       = getoption(varargin,'nsyncT',MAoptions.nsyncT);
 else
     nsyncT       = 3;
 end
->>>>>>> MAXIV_addition
 S0max              = getoption(varargin,'S0max', MAoptions.S0max);
 S0min              = getoption(varargin,'S0min', MAoptions.S0min);
 
@@ -142,10 +124,8 @@ MAoptions.deltastepsize =  deltastepsize;
 MAoptions.splits     = splits;
 MAoptions.split_step_divisor = split_step_divisor;
 MAoptions.nturns             = nturns;
-<<<<<<< HEAD
-=======
+
 MAoptions.nyncT              = nsyncT;
->>>>>>> MAXIV_addition
 MAoptions.S0max              = S0max;
 MAoptions.S0min              = S0min;
 
@@ -181,17 +161,13 @@ if (isnan(nturns))
         fprintf('%s calcLMA: nturns=nan, calculating atsummary \n', datetime);
     end
     ats=atsummary(RING);
-<<<<<<< HEAD
-    nturns = 1.2/ats.synctune;
-    MAoptions.nturns=nturns;
-=======
+
 
     nturns = round(nsyncT/ats.synctune);
     MAoptions.nturns=nturns;
     if (verboselevel>0)
         fprintf('%s calcLMA: nturns = %3d \n', datetime, nturns);
     end
->>>>>>> MAXIV_addition
 end
 
 if (verboselevel>0)
