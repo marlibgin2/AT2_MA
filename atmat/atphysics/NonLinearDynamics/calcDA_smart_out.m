@@ -101,5 +101,5 @@ parfor i=1:nsteps+1
         r_new=(r1+r2)/2;
     end
     DAV(i,:)=[rstable*cos(angle),rstable*sin(angle)];
-    disp([' DAV(' num2str(i) ') = ' num2str(DAV(i,:)) ])
+    %disp([' DAV(' num2str(i) ') = ' num2str(DAV(i,:)) ])
 end
