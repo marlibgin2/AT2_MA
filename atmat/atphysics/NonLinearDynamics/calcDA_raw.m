@@ -53,6 +53,11 @@ function [DA,DAV] = calcDA_raw(RING,DAoptions,etax,betax,betay)
 %                 modes
 % PFT 2024/06/28: improved documentation
 %
+% MA  2024/09/29: introduced DAoptions.smart_divider used in calcDA_smart_out
+% MA  2024/10/15: redefined the DAarea calculation in the smart_in,out cases using polyarea 
+% MA  2024/10/29: introduced DAoptions.da_yclip to chop the top of DA, used in optimisations
+%
+
 %% Collects data from DAoptions structure
 betax0     = DAoptions.betax0;  % hor beta for normalization - if NaN no normalizatinis done
 betay0     = DAoptions.betay0;  % ver beta for normalization - if NaN no normalization is done
@@ -60,11 +65,13 @@ DAmode     = DAoptions.DAmode;  % DAmode  = 'border', 'grid', 'smart_in' or 'sma
 xmaxdas    = DAoptions.xmaxdas;
 xmindas    = DAoptions.xmindas;
 ymaxdas    = DAoptions.ymaxdas;
+smart_divider = DAoptions.smart_divider; 
+da_yclip   = DAoptions.da_yclip; % DA vertical clip (default 1e+19, no clip) 
 
 % Parameters for "border" DA calculation mode
 r0         = DAoptions.r0;      % initial guess [m];
 nangs      = DAoptions.nang;    % number of angular steps
-dang       = pi/(nangs-1);      % angular step size [rad}
+dang       = pi/(nangs-1);                     % angular step size [rad}
 nturns     = DAoptions.nturns;  % number of turns
 dp         = DAoptions.dp;      % initial dp/p (6d tracking) or fixed dp/p (4d tracking)
 if (check_6d(RING))
@@ -86,7 +93,7 @@ dxdy       = DAoptions.dxdy;    % grid cell area [m**2]
 X0da       = DAoptions.X0da;    % horizontal coordinates of grid points [m]
 Y0da       = DAoptions.Y0da;    % vertical coordinates of grid points [m]
 
-%% Calculates Dynamic Aperture
+%% Calculates Dynamics Aperture
 
 try
   switch DAmode
@@ -118,21 +125,34 @@ try
         else
            DAVN = DAV;
         end
-        RDA = DAVN.*DAVN*1E6; % converts to mm**2
-        RA  = RDA(:,1)+RDA(:,2);
-        DA  = sum(RA)*dang/2; 
+        if ~ismatrix(DAVN)||~isnumeric(DAVN)||sum(sum(isnan(DAVN),1))>0
+            DAVN = zeros(nangs,2);
+            DAV  = zeros(nangs,2);
+        end
+        DAVN(DAVN(:,2)>=da_yclip,2)=da_yclip; % control on maximal height to push on the x-sides
+%         RDA = DAVN.*DAVN*1E6; % converts to mm**2
+%         RA  = RDA(:,1)+RDA(:,2);
+%         DA  = sum(RA)*dang/2; 
+        DA = 1e6 * polyarea(DAVN(:,1), DAVN(:,2)); 
 
      case 'smart_out'
-        DAV = calcDA_smart_out(RING, nangs, nturns, dp, z0, res, xmaxdas, xmindas, ymaxdas);
+        DAV = calcDA_smart_out(RING, nangs, nturns, dp, z0, res, xmaxdas, xmindas, ymaxdas, smart_divider);
         if (not(isnan(betax0))&&not(isnan(betay0))&&not(isnan(betax))&&not(isnan(betay))) 
            DAVN(:,1)=DAV(:,1)*sqrt(betax0/betax);
            DAVN(:,2)=DAV(:,2)*sqrt(betay0/betay);
         else
            DAVN = DAV;
         end
-        RDA = DAVN.*DAVN*1E6; % converts to mm**2
-        RA  = RDA(:,1)+RDA(:,2);
-        DA  = sum(RA)*dang/2; 
+        if ~ismatrix(DAVN)||~isnumeric(DAVN)||sum(sum(isnan(DAVN),1))>0
+            DAVN = zeros(nangs,2);
+            DAV  = zeros(nangs,2);
+        end
+        %DAVN(DAVN(:,2)>=2e-3,2)=2e-3; % control on maximal height to push on the x-sides
+        DAVN(DAVN(:,2)>=da_yclip,2)=da_yclip; % control on maximal height to push on the x-sides
+%         RDA = DAVN.*DAVN*1E6; % converts to mm**2
+%         RA  = RDA(:,1)+RDA(:,2);
+%         DA  = sum(RA)*dang/2
+        DA = 1e6 * polyarea(DAVN(:,1), DAVN(:,2)); 
         
      otherwise
         fprintf('%s Error in calcDA_raw: uknown DA calculation mode %s \n', datetime, DAmode);
@@ -142,11 +162,5 @@ try
 catch ME
     fprintf('%s Error in calcDA_raw:  \n', datetime);
     fprintf('Error message was:%s \n',ME.message);
-    error_line = ME.stack(1).line;
-    file = ME.stack(1).file;
-    fnct = ME.stack(1).name;
-    fprintf('at line number %3d \n', error_line);
-    fprintf('file %s \n', file);
-    fprintf('function %s \n', fnct);
     DA=0.0;
 end

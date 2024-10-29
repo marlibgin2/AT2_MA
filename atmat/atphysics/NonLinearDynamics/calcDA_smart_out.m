@@ -1,4 +1,4 @@
-function DAV = calcDA_smart_out( RING, nsteps, nturns, dp, z0, res, xmax, xmin, ymax,div)
+function DAV = calcDA_smart_out( RING, nsteps, nturns, dp, z0, res, xmax, xmin, ymax, div)
 %% Calculates Dynamic Aperture by tracking particles along radial lines on the XY plane until they are lost.
 %% It does outward search
 %% Mandatory input arguments
@@ -26,9 +26,9 @@ RRc=linspace(1e-3,11e-3,15);   % The radii where it starts searching
 %% Generate the no. of turns to start with, as per the input:nturns
 jj = 1;
 while true
-    den = div^(jj-1);
+    den = 2^(jj-1);
     numero = nturns / den;
-    if numero >= 50 && numero <= 100
+    if numero > 50 && numero < 100
         jok = jj;
         break;
     end
@@ -101,5 +101,4 @@ parfor i=1:nsteps+1
         r_new=(r1+r2)/2;
     end
     DAV(i,:)=[rstable*cos(angle),rstable*sin(angle)];
-    %disp([' DAV(' num2str(i) ') = ' num2str(DAV(i,:)) ])
 end
