@@ -20,6 +20,13 @@ function DAV = calcDA_smart_out( RING, nsteps, nturns, dp, z0, res, xmax, xmin, 
 % DAV=calcDA_smart(RING,24,2000,0,0,100e-6,12e-3,-12e-3,7e-3)
 %% History
 % 2024/06/10 Saroj
+%
+% 2024/10/29 MA
+%
+
+if nargin<10 %% divider can be controlled (default==2)
+    div = 2;
+end
 angle_step=pi/nsteps;
 DAV   = zeros(nsteps+1,2);
 RRc=linspace(1e-3,11e-3,15);   % The radii where it starts searching
