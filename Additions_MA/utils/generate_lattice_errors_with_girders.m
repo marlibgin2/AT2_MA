@@ -1,2 +1,0 @@
-function generate_lattice_errors_with_girders
-RING = m4U_240114_b1_3_1__grd;
