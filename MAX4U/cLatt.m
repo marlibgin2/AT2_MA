@@ -947,7 +947,7 @@ if (isempty(fieldnames(cLoptions)))
     cLoptions.DAoptions.dpmin    = -0.04;
     cLoptions.DAoptions.dpmax    = 0.04;
     cLoptions.DAoptions.npd      = 11;
-    cLoptions.DAoptions.chroms0  = [1 1]/20;
+    cLoptions.DAoptions.chroms0  = 2*[1 1]/20;
     cLoptions.DAoptions.TolChrom = [0.0001 0.0001];
     cLoptions.DAoptions.Nitchro  = 10;
     cLoptions.DAoptions.dp       = 0.0;     
@@ -1640,7 +1640,7 @@ if ( (bascorf||allf||(contf&&isempty(LattStruct.LattPerf.ERlat))))
          fprintf('%s cLatt: generating lattices with errors and correcting\n',datetime);
     end
     if (not(isempty(RINGGRD)))
-        ERlat = generate_errlatt(RINGGRD,cLoptions.ErrorModel,...
+         ERlat = generate_errlatt(RINGGRD,cLoptions.ErrorModel,...
             'tunfams',cLoptions.ringtune_fams, ...
             'nseeds',cLoptions.nseeds,'nittune', cLoptions.nittune, ...
             'TolTune', cLoptions.TolTune,'frac',cLoptions.tunfrac, 'useORM0', ...

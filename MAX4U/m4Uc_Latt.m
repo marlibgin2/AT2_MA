@@ -205,7 +205,7 @@ if (isfield(cLoptions,'DAoptions'))
         cLoptions.DAoptions.npd      = 11;% number of points along momentum deviation axis
     end
     if (~isfield(cLoptions.DAoptions,'chroms0'))
-        cLoptions.DAoptions.chroms0  = [1 1]/20;% Target chromaticity for one superperiod
+        cLoptions.DAoptions.chroms0  = 2*[1 1]/20;% Target chromaticity for one superperiod
     end
     if (~isfield(cLoptions.DAoptions,'Tolchrom'))
         cLoptions.DAoptions.TolChrom = [0.0001 0.0001];% Chromaticity tolerances
@@ -255,7 +255,7 @@ else
     cLoptions.DAoptions.dpmin    = -0.04;
     cLoptions.DAoptions.dpmax    = 0.04; 
     cLoptions.DAoptions.npd      = 11;
-    cLoptions.DAoptions.chroms0  = [1 1]/20;
+    cLoptions.DAoptions.chroms0  = 2*[1 1]/20;
     cLoptions.DAoptions.TolChrom = [0.0001 0.0001];
     cLoptions.DAoptions.Nitchro  = 10; 
     cLoptions.DAoptions.dp       = 0.0;
