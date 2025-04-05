@@ -1,8 +1,8 @@
 function RP = check_main_params(ring, per)
 %clear THERING
-%global THERING
-%THERING = ring;
-
+global THERING
+THERING = ring;
+ring_s0 = ring; 
 [~,lindata]=atlinopt6(ring,1:length(ring)+1);
 
 if nargin<2
@@ -13,30 +13,63 @@ end
 %
 mu   = cat(1,lindata.mu)/2/pi; mux = mu(:,1); muy= mu(:,2);
 
-if 1 == 0
+if 1 == 1
+s1   = findcells(ring,'FamName','S1');
 s2   = findcells(ring,'FamName','S2');
+s3   = findcells(ring,'FamName','S3');
 s5   = findcells(ring,'FamName','S5');
 s4   = findcells(ring,'FamName','S4');
+s6   = findcells(ring,'FamName','S6');
+ring_s0 = setcellstruct(ring_s0,'PolynomB',s1,0,1,3);
+ring_s0 = setcellstruct(ring_s0,'PolynomB',s2,0,1,3);
+ring_s0 = setcellstruct(ring_s0,'PolynomB',s3,0,1,3);
+ring_s0 = setcellstruct(ring_s0,'PolynomB',s4,0,1,3);
+ring_s0 = setcellstruct(ring_s0,'PolynomB',s5,0,1,3);
+ring_s0 = setcellstruct(ring_s0,'PolynomB',s6,0,1,3);
+
 ns4_2   = numel(s4)/1; ns4_1 = numel(s4)/2;
 ns2_2   = numel(s2)/1; ns2_1 = numel(s2)/2;
 ns5_2   = numel(s5)/1; ns5_1 = numel(s5)/2;
 
+mms2 = findcells(ring,'FamName','MMS2');
+mms4 = findcells(ring,'FamName','MMS4');
+mms5 = findcells(ring,'FamName','MMS5');
+
+if ~isempty(mms2)&&~isempty(mms4)&&~isempty(mms5)
+dmux_24=  (mux(mms4(1))-mux(mms2(1)));
+dmuy_24=  (muy(mms4(1))-muy(mms2(1)));
+dmux_45=  (mux(mms5(1))-mux(mms4(1)));
+dmuy_45=  (muy(mms5(1))-muy(mms4(1)));
+dmux_55=  (mux(mms5(2))-mux(mms5(1)));
+dmuy_55=  (muy(mms5(2))-muy(mms5(1)));
+elseif (ns4_1)~=0&&(ns2_1)~=0&&(ns5_1)~=0
 dmux_24 =  (mux(s4(ns4_1))-mux(s2(ns2_1)));
 dmuy_24 =  (muy(s4(ns4_1))-muy(s2(ns2_1)));
 dmux_45 =  (mux(s5(ns5_1))-mux(s4(ns4_1)));
 dmuy_45 =  (muy(s5(ns5_1))-muy(s4(ns4_1)));
 dmux_55 =  (mux(s5(ns5_2))-mux(s5(ns5_1)));
 dmuy_55 =  (muy(s5(ns5_2))-muy(s5(ns5_1)));
+else
+dmux_24 =  0;
+dmuy_24 =  0;
+dmux_45 =  0;
+dmuy_45 =  0;
+dmux_55 =  0;
+dmuy_55 =  0;
 end
 
+end
 % dmux_24 =  (mux(s4(2))-mux(s2(2)))/2/pi;
 % dmuy_24 =  (muy(s4(2))-muy(s2(2)))/2/pi;
 % dmux_45 =  (mux(s5(2))-mux(s4(2)))/2/pi;
 % dmuy_45 =  (muy(s5(2))-muy(s4(2)))/2/pi;
 % dmux_55 =  (mux(s5(4))-mux(s5(2)))/2/pi;
 % dmuy_55 =  (muy(s5(4))-muy(s5(2)))/2/pi;
+% % % AAA_s0  = atsummary_ring(ring_s0); XInat = AAA_s0.chromaticity;
+% % % AAA  = atsummary_ring(ring);
+AAA_s0  = atsummary(ring_s0); XInat = AAA_s0.chromaticity;
+AAA  = atsummary(ring);
 
-AAA  = atsummary_ring(ring);
 RP.damping = AAA.damping;
 RP.naturalEnergySpread = AAA.naturalEnergySpread;
 RP.emix = AAA.naturalEmittance;
@@ -78,13 +111,15 @@ disp(['TotAng = ' num2str(RP.TotAng,9) ' (deg)'])
 disp(['TotLen = ' num2str(RP.C*RP.period,9) ' (m)'])
 
 disp(['BETAx,y   = ' num2str(bx(1)) '/'  num2str(by(1))  ' (m)'])
+disp(['ETAx      = ' num2str(etax(1)*1e3)  ' (mm)'])
 
-RP.nup = RP.nu*RP.period; RP.xip = RP.xi*RP.period;
-disp(['  nu = ' num2str(RP.nup,8) ''])
-disp(['  xi = ' num2str(RP.xip,8) ''])
+RP.nup = RP.nu*RP.period; RP.xip = RP.xi*RP.period; XInatp = XInat*RP.period; 
+disp(['  nu = ' num2str(RP.nup,8) ' per achr = ' num2str(RP.nup/per,8)])
+disp(['  xi = ' num2str(RP.xip,8) ' per achr = ' num2str(RP.xip/per,8)])
+disp(['  xinat = ' num2str(XInatp,8) ' per achr = ' num2str(XInatp/per,8)])
 disp([' a_C = ' num2str(RP.alfa_C,8) ''])
 
-if 1 == 0
+if 1 == 1
 disp([' dmu_24 = ' num2str(dmux_24,5) ' ' num2str(dmuy_24,5) ' th.: [' num2str(3/7) ' ' num2str(1/7) ' ]'])
 disp([' dmu_45 = ' num2str(dmux_45,5) ' ' num2str(dmuy_45,5) ' th.: [' num2str(3/7) ' ' num2str(1/7) ' ]'])
 disp([' dmu_55 = ' num2str(dmux_55,5) ' ' num2str(dmuy_55,5) ' th.: [' num2str(3/7) ' ' num2str(1/7) ' ]'])
